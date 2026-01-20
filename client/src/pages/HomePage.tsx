@@ -26,7 +26,6 @@ import iconTeleponUrl from "@assets/icon_telepon_1763489481909.png";
 import iconWAUrl from "@assets/icon_WA_1763489481911.png";
 
 export default function HomePage() {
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
 
   const { data: banners, isLoading: bannersLoading } = useQuery<Banner[]>({
@@ -52,36 +51,6 @@ export default function HomePage() {
   // Helper to get safe banner count (minimum 1 to prevent NaN in modulo)
   const getBannerCount = () => {
     return banners && banners.length > 0 ? banners.length : 1;
-  };
-
-  // Reset slide index when banners length changes
-  useEffect(() => {
-    if (banners && banners.length > 0) {
-      setCurrentSlide(prev => prev >= banners.length ? 0 : prev);
-    } else {
-      setCurrentSlide(0);
-    }
-  }, [banners]);
-
-  // Auto-rotate banners
-  useEffect(() => {
-    const bannerCount = getBannerCount();
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % bannerCount);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [banners]);
-
-  const nextSlide = () => {
-    const bannerCount = getBannerCount();
-    if (bannerCount <= 0) return;
-    setCurrentSlide((prev) => (prev + 1) % bannerCount);
-  };
-
-  const prevSlide = () => {
-    const bannerCount = getBannerCount();
-    if (bannerCount <= 0) return;
-    setCurrentSlide((prev) => (prev - 1 + bannerCount) % bannerCount);
   };
 
   // Hero banner carousel controls
@@ -132,46 +101,7 @@ export default function HomePage() {
       <div className="max-w-undifest mx-auto pb-20">
         <MobileHeader />
 
-        {/* Banner Carousel */}
-        <div className="relative overflow-hidden" data-testid="banner-carousel">
-          <div className="relative">
-            {bannersLoading ? (
-              <div className="h-56 bg-gray-800/50 animate-pulse" />
-            ) : banners && banners.length > 0 ? (
-              <img
-                src={banners[currentSlide]?.imageUrl || banner01Url}
-                alt={banners[currentSlide]?.title || `Banner ${currentSlide + 1}`}
-                className="w-full h-auto"
-              />
-            ) : (
-              <img
-                src={banner01Url}
-                alt="Default Banner"
-                className="w-full h-auto"
-              />
-            )}
-          </div>
-          {!bannersLoading && (
-            <>
-              <button
-                onClick={prevSlide}
-                data-testid="button-prev-slide"
-                className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-sm"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <button
-                onClick={nextSlide}
-                data-testid="button-next-slide"
-                className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-sm"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Hero Banner Carousel - Added above Events Section */}
+        {/* Hero Banner Carousel */}
         <div className="bg-[#16202a] px-4 pt-6">
           <div className="relative overflow-hidden rounded-2xl" data-testid="hero-banner-carousel">
             <div className="relative">
