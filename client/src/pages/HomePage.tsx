@@ -104,20 +104,20 @@ export default function HomePage() {
         {/* Hero Banner Carousel */}
         <div className="bg-[#16202a] px-4 pt-6">
           <div className="relative overflow-hidden rounded-2xl" data-testid="hero-banner-carousel">
-            <div className="relative">
+            <div className="relative aspect-[16/9]">
               {bannersLoading ? (
-                <div className="h-48 bg-gray-800/50 animate-pulse rounded-2xl" />
+                <div className="w-full h-full bg-gray-800/50 animate-pulse rounded-2xl" />
               ) : banners && banners.length > 0 ? (
                 <img
                   src={banners[currentHeroSlide]?.imageUrl || banner01Url}
                   alt={banners[currentHeroSlide]?.title || `Hero Banner ${currentHeroSlide + 1}`}
-                  className="w-full h-auto rounded-2xl"
+                  className="w-full h-full object-cover rounded-2xl"
                 />
               ) : (
                 <img
                   src={banner01Url}
                   alt="Default Hero Banner"
-                  className="w-full h-auto rounded-2xl"
+                  className="w-full h-full object-cover rounded-2xl"
                 />
               )}
             </div>
