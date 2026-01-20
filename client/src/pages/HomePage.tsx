@@ -27,6 +27,7 @@ import iconWAUrl from "@assets/icon_WA_1763489481911.png";
 
 export default function HomePage() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   const { data: banners, isLoading: bannersLoading } = useQuery<Banner[]>({
     queryKey: ["/api/banners"],
@@ -208,55 +209,102 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Rekomendasi Video */}
+        {/* Undifest Video */}
         <div className="px-4 py-6 bg-[#16202a]">
-          <h2 className="text-xl font-bold text-white mb-4">Rekomendasi Video</h2>
+          <h2 className="text-xl font-bold text-white mb-4">Undifest Video</h2>
           <div className="grid grid-cols-2 gap-3">
-            {/* Live Card */}
-            <Link href="/live">
-              <div 
-                data-testid="card-live"
-                className="bg-gradient-to-r from-[#4DD0E1] to-[#26A69A] rounded-2xl p-5 cursor-pointer hover-elevate transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-white font-bold text-[21px]">Live</span>
-                    <span className="text-white/90 text-[18px] font-normal">Lihat</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <img
-                      src={thumbVideoUrl}
-                      alt="Live 2"
-                      className="w-28 h-28 rounded-xl object-contain"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Link>
+            {/* Video 1 */}
+            <div
+              onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.14.06 PM.mp4')}
+              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black"
+            >
+              <video
+                src="/attached_assets/WhatsApp Video 2026-01-19 at 7.14.06 PM.mp4"
+                className="w-full h-40 object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            </div>
 
-            {/* Testimoni Card */}
-            <Link href="/live">
-              <div 
-                data-testid="card-testimoni"
-                className="bg-gradient-to-r from-[#7C9EF8] to-[#F48FB1] rounded-2xl p-5 cursor-pointer hover-elevate transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-white font-bold text-[21px]">Testimoni</span>
-                    <span className="text-white/90 text-[18px] font-normal">Lihat</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <img
-                      src={thumbTestimoniUrl}
-                      alt="Testimoni 2"
-                      className="w-28 h-28 rounded-xl object-contain"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Link>
+            {/* Video 2 */}
+            <div
+              onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.14.26 PM.mp4')}
+              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black"
+            >
+              <video
+                src="/attached_assets/WhatsApp Video 2026-01-19 at 7.14.26 PM.mp4"
+                className="w-full h-40 object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            </div>
+
+            {/* Video 3 */}
+            <div
+              onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.14.55 PM.mp4')}
+              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black"
+            >
+              <video
+                src="/attached_assets/WhatsApp Video 2026-01-19 at 7.14.55 PM.mp4"
+                className="w-full h-40 object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            </div>
+
+            {/* Video 4 */}
+            <div
+              onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.16.29 PM.mp4')}
+              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black"
+            >
+              <video
+                src="/attached_assets/WhatsApp Video 2026-01-19 at 7.16.29 PM.mp4"
+                className="w-full h-40 object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            </div>
           </div>
         </div>
+
+        {/* Video Fullscreen Modal */}
+        {selectedVideo && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+            <div className="relative w-full h-full">
+              {/* Header dengan tombol back */}
+              <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent p-4">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setSelectedVideo(null)}
+                    className="text-white p-2 hover:bg-white/10 rounded-full transition-all"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <h3 className="text-white text-lg font-semibold">Pengundian 10.13.25</h3>
+                </div>
+              </div>
+
+              {/* Video Player */}
+              <video
+                src={selectedVideo}
+                className="w-full h-full object-contain"
+                controls
+                autoPlay
+                playsInline
+              />
+            </div>
+          </div>
+        )}
 
         {/* Metode Pembayaran */}
         <div className="px-4 py-6 bg-[#16202a]">
