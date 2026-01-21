@@ -2,28 +2,24 @@ import { useQuery } from "@tanstack/react-query";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Footer } from "@/components/Footer";
-import type { Transaction } from "@shared/schema";
-import { useLocation } from "wouter";
-import { useEffect, useState } from "react";
+import type { Winner, Transaction, User, Event } from "@shared/schema";
 import historyPicUrl from "@assets/history pic_1763511883477.png";
 
+// Extended Winner type with joined data
+interface WinnerWithDetails extends Winner {
+  transaction?: Transaction;
+  user?: User;
+  event?: Event;
+}
+
 export default function HistoryPage() {
-  const [, navigate] = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Check if user is logged in
-  useEffect(() => {
-    const userToken = localStorage.getItem("user_token");
-    setIsLoggedIn(!!userToken);
-  }, []);
-
-  const { data: transactions, isLoading } = useQuery<Transaction[]>({
-    queryKey: ["/api/user/transactions"],
-    enabled: isLoggedIn,
+  // Fetch winners data (public - no auth required)
+  const { data: winners, isLoading } = useQuery<WinnerWithDetails[]>({
+    queryKey: ["/api/winners"],
   });
 
   const maskPhoneNumber = (phone: string) => {
-    if (phone.length <= 6) return phone;
+    if (!phone || phone.length <= 6) return phone;
     return phone.slice(0, 4) + "*".repeat(phone.length - 7) + phone.slice(-3);
   };
 
@@ -33,15 +29,21 @@ export default function HistoryPage() {
         <MobileHeader />
 
         <div className="px-4 py-6 bg-[#16202a]">
-          <div className="flex items-center justify-between rounded-xl p-4 pt-[0px] pb-[0px] bg-[#2e3e59a8] mt-[15px] mb-[15px]">
+          {/* Red Header */}
+          <div className="bg-red-600 rounded-t-xl p-3 mt-[15px]">
+            <h2 className="text-white text-center font-bold">Perbaikan halaman History</h2>
+          </div>
+
+          {/* Banner Section */}
+          <div className="flex items-center justify-between rounded-b-xl p-4 pt-[0px] pb-[0px] bg-[#2e3e59a8] mb-[15px]">
             <div>
               <h1 className="text-2xl font-bold text-white">Riwayat Pemenang</h1>
               <p className="text-gray-400 text-sm">Daftar lengkap pemenang Undifest</p>
             </div>
             <div className="relative">
-              <img 
-                src={historyPicUrl} 
-                alt="Winner Badge" 
+              <img
+                src={historyPicUrl}
+                alt="Winner Badge"
                 className="w-24 h-24 object-contain mt-[-15px] mb-[-15px]"
                 data-testid="winner-badge-image"
               />
@@ -62,41 +64,36 @@ export default function HistoryPage() {
 
             {/* Rows */}
             <div className="divide-y divide-gray-800">
-              {!isLoggedIn ? (
-                <div className="p-12 text-center">
-                  <p className="text-gray-400 text-sm mb-4">Silakan login untuk melihat riwayat transaksi Anda</p>
-                  <button
-                    onClick={() => navigate("/account")}
-                    data-testid="button-login-redirect"
-                    className="holographic-btn px-8 py-3 rounded-xl text-lg font-bold"
-                  >
-                    Login
-                  </button>
-                </div>
-              ) : isLoading ? (
+              {isLoading ? (
                 <div className="p-6 text-center text-gray-400">Loading...</div>
-              ) : transactions && transactions.length > 0 ? (
-                transactions.map((transaction) => (
+              ) : winners && winners.length > 0 ? (
+                winners.map((winner) => (
                   <div
-                    key={transaction.id}
-                    data-testid={`transaction-${transaction.id}`}
+                    key={winner.id}
+                    data-testid={`winner-${winner.id}`}
                     className="grid grid-cols-4 gap-2 p-3 text-white text-sm bg-[#1a2332]/50 hover:bg-[#1a2332] transition-colors"
                   >
                     <div className="font-medium">
-                      {new Date(transaction.createdAt).toLocaleDateString("en-GB", {
+                      {new Date(winner.announcedAt).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "short",
                         year: "2-digit"
                       }).replace(/ /g, ' ')}
                     </div>
-                    <div className="font-mono text-xs">{maskPhoneNumber(transaction.phoneNumber)}</div>
-                    <div className="font-bold">{transaction.amount.toLocaleString('id-ID')}</div>
-                    <div className="truncate">{transaction.eventName || 'Event'}</div>
+                    <div className="font-mono text-xs">
+                      {maskPhoneNumber(winner.user?.phoneNumber || winner.transaction?.phoneNumber || '')}
+                    </div>
+                    <div className="font-bold">
+                      {(winner.transaction?.amount || 0).toLocaleString('id-ID')}
+                    </div>
+                    <div className="truncate">
+                      {winner.event?.name || winner.transaction?.eventName || 'Event'}
+                    </div>
                   </div>
                 ))
               ) : (
                 <div className="p-12 text-center text-gray-400 text-sm">
-                  Belum ada transaksi
+                  Belum ada pemenang
                 </div>
               )}
             </div>

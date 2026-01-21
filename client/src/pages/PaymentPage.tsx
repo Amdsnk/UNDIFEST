@@ -27,8 +27,8 @@ export default function PaymentPage() {
   const { toast } = useToast();
   const [showTermsDropdown, setShowTermsDropdown] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'va' | 'qris' | 'cstore' | 'cod'>('va');
-  const [paymentChannel, setPaymentChannel] = useState<string>('bca');
+  const [paymentMethod, setPaymentMethod] = useState<'va' | 'qris' | 'directdebit' | 'cstore' | null>(null);
+  const [paymentChannel, setPaymentChannel] = useState<string>('');
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -47,10 +47,12 @@ export default function PaymentPage() {
     return event.imageUrl;
   };
 
-  const handlePayment = async () => {
+  const handlePaymentMethodSelect = async (method: 'va' | 'qris' | 'directdebit' | 'cstore', channel: string) => {
     if (!event || isProcessing) return;
 
     setIsProcessing(true);
+    setPaymentMethod(method);
+    setPaymentChannel(channel);
 
     const userToken = localStorage.getItem("user_token");
     const headers: Record<string, string> = {
@@ -69,8 +71,8 @@ export default function PaymentPage() {
           eventId: event.id,
           amount: event.price,
           eventName: event.name,
-          paymentMethod,
-          paymentChannel,
+          paymentMethod: method,
+          paymentChannel: channel,
         }),
       });
 
@@ -164,128 +166,66 @@ export default function PaymentPage() {
 
   const cardImageUrl = getEventCardImage(event);
 
-  // Payment method options
-  const paymentMethods = [
-    { value: 'va', label: 'Virtual Account' },
-    { value: 'qris', label: 'QRIS' },
-    { value: 'cstore', label: 'Convenience Store' },
-    { value: 'cod', label: 'Cash on Delivery' },
-  ];
-
-  // Payment channel options based on selected method
-  const getChannelOptions = () => {
-    switch (paymentMethod) {
-      case 'va':
-        return [
-          { value: 'bca', label: 'BCA' },
-          { value: 'mandiri', label: 'Mandiri' },
-          { value: 'bni', label: 'BNI' },
-          { value: 'bri', label: 'BRI' },
-          { value: 'bsi', label: 'BSI' },
-          { value: 'permata', label: 'Permata' },
-          { value: 'danamon', label: 'Danamon' },
-          { value: 'cimb', label: 'CIMB Niaga' },
-          { value: 'bmi', label: 'Bank Muamalat' },
-          { value: 'bag', label: 'Bank Artha Graha' },
-        ];
-      case 'qris':
-        return [{ value: 'qris', label: 'QRIS' }];
-      case 'cstore':
-        return [
-          { value: 'indomaret', label: 'Indomaret' },
-          { value: 'alfamart', label: 'Alfamart' },
-        ];
-      case 'cod':
-        return [{ value: 'rpx', label: 'RPX' }];
-      default:
-        return [];
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#ffffff]">
       <div className="max-w-undifest mx-auto pb-20 bg-[#16202a]">
         <MobileHeader />
 
-        {/* Halaman Pembayaran (1) - Judul paling atas */}
-        <div className="px-4 pt-4 pb-2">
-          <h1 className="text-white text-xl font-bold">
-            {paymentDetails ? "Detail Pembayaran" : "Halaman pembayaran (1)"}
-          </h1>
-        </div>
-
-        {/* Event Image Card */}
-        <div className="px-4 py-4">
-          <div className="bg-transparent rounded-2xl overflow-hidden">
-            <img
-              src={cardImageUrl}
-              alt={event.name}
-              className="w-full h-auto"
-            />
+        {/* Event Title - Only show if not in payment details view */}
+        {!paymentDetails && (
+          <div className="px-4 pt-4 pb-2">
+            <h2 className="text-white text-lg font-bold">{event.name}</h2>
           </div>
-        </div>
+        )}
 
-        {/* Event Title */}
-        <div className="px-4 py-2">
-          <h2 className="text-white text-lg font-bold">{event.name}</h2>
-        </div>
-
-        {/* Syarat & Ketentuan Dropdown */}
-        <div className="px-4 py-2">
-          <div className="border border-gray-700 rounded-xl overflow-hidden">
-            <button
-              onClick={() => setShowTermsDropdown(!showTermsDropdown)}
-              className="w-full flex items-center justify-between p-4 bg-[#1a2332] hover:bg-[#1a2332]/80 transition-colors"
-            >
-              <span className="text-white text-base font-bold">Syarat & Ketentuan</span>
-              {showTermsDropdown ? (
-                <ChevronUp className="w-5 h-5 text-[#00D4FF]" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-[#00D4FF]" />
+        {/* Syarat & Ketentuan Dropdown - Only show if not in payment details view */}
+        {!paymentDetails && (
+          <div className="px-4 py-2">
+            <div className="border border-gray-700 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setShowTermsDropdown(!showTermsDropdown)}
+                className="w-full flex items-center justify-between p-4 bg-[#1a2332] hover:bg-[#1a2332]/80 transition-colors"
+              >
+                <span className="text-white text-base font-bold">Syarat & Ketentuan</span>
+                {showTermsDropdown ? (
+                  <ChevronUp className="w-5 h-5 text-[#00D4FF]" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-[#00D4FF]" />
+                )}
+              </button>
+              {showTermsDropdown && (
+                <div className="p-4 bg-[#1a2332]/50 space-y-4 text-white">
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Harga Tiket</p>
+                    <p className="text-sm">Beli e-book senilai Rp {event.price.toLocaleString()} untuk mendapatkan 1 tiket undian.</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Jaminan</p>
+                    <p className="text-sm">Jaminan uang kembali Rp {event.price.toLocaleString()}.</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Hadiah</p>
+                    <p className="text-sm">{event.prize}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Periode</p>
+                    <p className="text-sm">
+                      {new Date(event.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} -{" "}
+                      {new Date(event.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Pengumuman Pemenang</p>
+                    <p className="text-sm">
+                      {new Date(event.announcementDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}{" "}
+                      pukul 19.00 WIB melalui seluruh channel resmi kami.
+                    </p>
+                  </div>
+                </div>
               )}
-            </button>
-            {showTermsDropdown && (
-              <div className="p-4 bg-[#1a2332]/50 space-y-4 text-white">
-                <div>
-                  <p className="text-sm text-gray-400 mb-1">Harga Tiket</p>
-                  <p className="text-sm">Beli e-book senilai Rp {event.price.toLocaleString()} untuk mendapatkan 1 tiket undian.</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400 mb-1">Jaminan</p>
-                  <p className="text-sm">Jaminan uang kembali Rp {event.price.toLocaleString()}.</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400 mb-1">Hadiah</p>
-                  <p className="text-sm">{event.prize}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400 mb-1">Periode</p>
-                  <p className="text-sm">
-                    {new Date(event.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} -{" "}
-                    {new Date(event.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400 mb-1">Pengumuman Pemenang</p>
-                  <p className="text-sm">
-                    {new Date(event.announcementDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}{" "}
-                    pukul 19.00 WIB melalui seluruh channel resmi kami.
-                  </p>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-
-        {/* Periode Section */}
-        <div className="px-4 py-2">
-          <div className="text-white">
-            <p className="text-sm text-gray-400 mb-1">Periode :</p>
-            <p className="text-sm">
-              Beli e-book senilai Rp {event.price.toLocaleString()} untuk mendapatkan 1 tiket undian dengan jaminan uang kembali Rp {event.price.toLocaleString()}.
-            </p>
-          </div>
-        </div>
+        )}
 
         {/* Payment Details or Payment Method Selection */}
         {paymentDetails ? (
@@ -356,176 +296,255 @@ export default function PaymentPage() {
               Kembali ke Beranda
             </button>
           </div>
-        ) : (
+        ) : paymentMethod === null ? (
           /* Payment Method Selection - New Design */
-          <>
-            {/* Payment Method Header */}
-            <div className="px-4 py-4">
-              <div className="bg-[#4169E1] rounded-t-2xl p-4">
-                <h2 className="text-white text-xl font-bold text-center">Payment Method</h2>
-              </div>
-
-              {/* Favorite in Indonesia Label */}
-              <div className="bg-[#3454C5] px-4 py-3 flex items-center gap-2">
-                <ThumbsUp className="w-5 h-5 text-white" fill="white" />
-                <span className="text-white text-sm font-semibold">Favorite in Indonesia</span>
-              </div>
-
-              {/* Payment Method Options */}
-              <div className="bg-[#3454C5] px-4 pb-4 rounded-b-2xl space-y-3">
-                {/* Virtual Account (VA) */}
-                <button
-                  onClick={() => {
-                    setPaymentMethod('va');
-                    setPaymentChannel('bca');
-                  }}
-                  className={`w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg ${
-                    paymentMethod === 'va' ? 'ring-2 ring-[#00D4FF]' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[#4169E1] rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">VA</span>
-                    </div>
-                    <span className="text-gray-800 font-semibold">Virtual Account (VA)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <div className="w-8 h-5 bg-blue-600 rounded"></div>
-                      <div className="w-8 h-5 bg-blue-800 rounded"></div>
-                      <div className="w-8 h-5 bg-red-600 rounded"></div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                  </div>
-                </button>
-
-                {/* QRIS */}
-                <button
-                  onClick={() => {
-                    setPaymentMethod('qris');
-                    setPaymentChannel('qris');
-                  }}
-                  className={`w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg ${
-                    paymentMethod === 'qris' ? 'ring-2 ring-[#00D4FF]' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">QR</span>
-                    </div>
-                    <span className="text-gray-800 font-semibold">QRIS</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-red-600">QRIS</span>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                  </div>
-                </button>
-
-                {/* e-Wallet */}
-                <button
-                  onClick={() => {
-                    setPaymentMethod('cstore');
-                    setPaymentChannel('indomaret');
-                  }}
-                  className={`w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg ${
-                    paymentMethod === 'cstore' ? 'ring-2 ring-[#00D4FF]' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">CS</span>
-                    </div>
-                    <span className="text-gray-800 font-semibold">Convenience Store</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-orange-600">Pay</span>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                  </div>
-                </button>
-
-                {/* Direct Debit */}
-                <button
-                  onClick={() => {
-                    setPaymentMethod('cod');
-                    setPaymentChannel('rpx');
-                  }}
-                  className={`w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg ${
-                    paymentMethod === 'cod' ? 'ring-2 ring-[#00D4FF]' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">COD</span>
-                    </div>
-                    <span className="text-gray-800 font-semibold">Cash on Delivery</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <div className="w-8 h-5 bg-red-600 rounded"></div>
-                      <div className="w-8 h-5 bg-orange-500 rounded"></div>
-                      <div className="w-8 h-5 bg-blue-700 rounded"></div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                  </div>
-                </button>
-              </div>
+          <div className="px-4 py-4">
+            <div className="bg-[#4169E1] rounded-t-2xl p-4">
+              <h2 className="text-white text-xl font-bold text-center">Payment Method</h2>
             </div>
 
-            {/* Bank/Channel Selection (shown when VA is selected) */}
-            {paymentMethod === 'va' && (
-              <div className="px-4 py-2">
-                <p className="text-white text-sm font-bold mb-3">Pilih Bank</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {getChannelOptions().map((channel) => (
-                    <button
-                      key={channel.value}
-                      onClick={() => setPaymentChannel(channel.value)}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        paymentChannel === channel.value
-                          ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-white'
-                          : 'border-gray-700 bg-[#1a2332] text-gray-400 hover:border-gray-600'
-                      }`}
-                    >
-                      <span className="text-sm font-bold">{channel.label}</span>
-                    </button>
-                  ))}
+            {/* Favorite in Indonesia Label */}
+            <div className="bg-[#3454C5] px-4 py-3 flex items-center gap-2">
+              <ThumbsUp className="w-5 h-5 text-white" fill="white" />
+              <span className="text-white text-sm font-semibold">Favorite in Indonesia</span>
+            </div>
+
+            {/* Payment Method Options */}
+            <div className="bg-[#3454C5] px-4 pb-4 rounded-b-2xl space-y-3">
+              {/* Virtual Account (VA) */}
+              <button
+                onClick={() => setPaymentMethod('va')}
+                disabled={isProcessing}
+                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-[#4169E1] rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">VA</span>
+                  </div>
+                  <span className="text-gray-800 font-semibold">Virtual Account (VA)</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-8 h-5 bg-blue-600 rounded"></div>
+                    <div className="w-8 h-5 bg-blue-800 rounded"></div>
+                    <div className="w-8 h-5 bg-red-600 rounded"></div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
+              </button>
+
+              {/* QRIS */}
+              <button
+                onClick={() => handlePaymentMethodSelect('qris', 'qris')}
+                disabled={isProcessing}
+                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">QR</span>
+                  </div>
+                  <span className="text-gray-800 font-semibold">QRIS</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-red-600">QRIS</span>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
+              </button>
+
+              {/* Direct Debit */}
+              <button
+                onClick={() => setPaymentMethod('directdebit')}
+                disabled={isProcessing}
+                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">DD</span>
+                  </div>
+                  <span className="text-gray-800 font-semibold">Direct Debit</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-8 h-5 bg-blue-700 rounded"></div>
+                    <div className="w-8 h-5 bg-red-600 rounded"></div>
+                    <div className="w-8 h-5 bg-orange-500 rounded"></div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
+              </button>
+
+              {/* Convenience Store */}
+              <button
+                onClick={() => setPaymentMethod('cstore')}
+                disabled={isProcessing}
+                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">CS</span>
+                  </div>
+                  <span className="text-gray-800 font-semibold">Convenience Store</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-orange-600">Pay</span>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Bank/Channel Selection */
+          <div className="px-4 py-4">
+            {/* Virtual Account Bank Selection */}
+            {paymentMethod === 'va' && (
+              <div className="bg-white rounded-2xl p-6 space-y-4">
+                <h3 className="text-gray-800 text-lg font-bold text-center mb-4">Pilih Bank Virtual Account</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => handlePaymentMethodSelect('va', 'bag')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">BAG</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('va', 'bca')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">BCA</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('va', 'bni')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">BNI</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('va', 'bri')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">BRI</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('va', 'bsi')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">BSI</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('va', 'cimb')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">CIMB</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('va', 'danamon')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">Danamon</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('va', 'mandiri')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">Mandiri</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('va', 'bmi')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">Muamalat</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('va', 'permata')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">Permata</span>
+                  </button>
+                </div>
+                <button
+                  onClick={() => setPaymentMethod(null)}
+                  className="w-full mt-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
+                >
+                  Kembali
+                </button>
+              </div>
+            )}
+
+            {/* Direct Debit Bank Selection */}
+            {paymentMethod === 'directdebit' && (
+              <div className="bg-white rounded-2xl p-6 space-y-4">
+                <h3 className="text-gray-800 text-lg font-bold text-center mb-4">Pilih Bank Direct Debit</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => handlePaymentMethodSelect('directdebit', 'bca')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">BCA</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('directdebit', 'mandiri')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">Mandiri</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('directdebit', 'bni')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">BNI</span>
+                  </button>
+                </div>
+                <button
+                  onClick={() => setPaymentMethod(null)}
+                  className="w-full mt-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
+                >
+                  Kembali
+                </button>
               </div>
             )}
 
             {/* Convenience Store Selection */}
             {paymentMethod === 'cstore' && (
-              <div className="px-4 py-2">
-                <p className="text-white text-sm font-bold mb-3">Pilih Toko</p>
+              <div className="bg-white rounded-2xl p-6 space-y-4">
+                <h3 className="text-gray-800 text-lg font-bold text-center mb-4">Pilih Convenience Store</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {getChannelOptions().map((channel) => (
-                    <button
-                      key={channel.value}
-                      onClick={() => setPaymentChannel(channel.value)}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        paymentChannel === channel.value
-                          ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-white'
-                          : 'border-gray-700 bg-[#1a2332] text-gray-400 hover:border-gray-600'
-                      }`}
-                    >
-                      <span className="text-sm font-bold">{channel.label}</span>
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => handlePaymentMethodSelect('cstore', 'indomaret')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">Indomaret</span>
+                  </button>
+                  <button
+                    onClick={() => handlePaymentMethodSelect('cstore', 'alfamart')}
+                    disabled={isProcessing}
+                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
+                  >
+                    <span className="text-sm font-semibold text-gray-700">Alfamart</span>
+                  </button>
                 </div>
+                <button
+                  onClick={() => setPaymentMethod(null)}
+                  className="w-full mt-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
+                >
+                  Kembali
+                </button>
               </div>
             )}
-
-            {/* Bayar & Konfir Button */}
-            <div className="px-4 py-6">
-              <button
-                onClick={handlePayment}
-                disabled={isProcessing}
-                className="holographic-btn w-full h-14 rounded-lg text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? "Memproses..." : "Bayar & Konfir"}
-              </button>
-            </div>
-          </>
+          </div>
         )}
 
         <MobileBottomNav />

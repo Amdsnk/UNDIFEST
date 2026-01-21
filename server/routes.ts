@@ -1525,7 +1525,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/winners", async (req, res) => {
     try {
       const winners = await storage.getAllWinners();
-      res.json(winners);
+      const transactions = await storage.getAllTransactions();
+      const users = await storage.getAllUsers();
+      const events = await storage.getAllEvents();
+
+      // Join winner data with transaction, user, and event details
+      const winnersWithDetails = winners.map(winner => ({
+        ...winner,
+        transaction: transactions.find(t => t.id === winner.transactionId),
+        user: users.find(u => u.id === winner.userId),
+        event: events.find(e => e.id === winner.eventId),
+      }));
+
+      res.json(winnersWithDetails);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch winners" });
     }
