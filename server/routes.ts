@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema } from "@shared/schema";
 import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite, verifyUserToken } from "./auth";
-import { createPayment, isIPaymuConfigured, getIPaymuConfig } from "./ipaymu";
+import { createPayment, createDirectPayment, isIPaymuConfigured, getIPaymuConfig } from "./ipaymu";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -501,6 +501,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.errors });
       }
       res.status(500).json({ error: "Failed to create transaction" });
+    }
+  });
+
+  // Direct Payment API endpoint
+  app.post("/api/transactions/direct", optionalAuth, async (req, res) => {
+    try {
+      // Get user info if authenticated, otherwise use guest info
+      let userId: number | null = null;
+      let phoneNumber = "Guest";
+      let userName = "Guest Customer";
+      let userEmail = "guest@undifest.com";
+
+      if ((req as any).user) {
+        userId = (req as any).user.userId;
+        phoneNumber = (req as any).user.phoneNumber;
+
+        // Get user info for payment
+        const user = await storage.getUser(userId);
+        if (user) {
+          userName = user.name || "Customer";
+          userEmail = user.email || `${phoneNumber}@undifest.com`;
+        }
+      }
+
+      const { eventId, amount, eventName, paymentMethod, paymentChannel } = req.body;
+
+      if (!eventId || !amount || !eventName || !paymentMethod || !paymentChannel) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Validate payment method
+      if (!['va', 'qris', 'cstore', 'cod'].includes(paymentMethod)) {
+        return res.status(400).json({ error: "Invalid payment method" });
+      }
+
+      // Verify event exists and is active
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      if (event.status !== "aktif") {
+        return res.status(400).json({ error: "Event is not active" });
+      }
+
+      // Create transaction with pending status (userId can be null for guests)
+      const transaction = await storage.createTransaction({
+        userId: userId || undefined,
+        eventId,
+        amount,
+        phoneNumber,
+        eventName,
+        paymentStatus: "pending",
+        paymentMethod,
+        paymentChannel,
+      });
+
+      // Check if iPaymu is configured
+      if (!isIPaymuConfigured()) {
+        console.log("[Direct Payment] iPaymu not configured, transaction created without payment");
+        return res.status(201).json({
+          ...transaction,
+          message: "Transaction created (payment gateway not configured)",
+        });
+      }
+
+      // Create direct payment request to iPaymu
+      const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+
+      try {
+        const paymentResult = await createDirectPayment({
+          name: userName,
+          phone: phoneNumber,
+          email: userEmail,
+          amount: amount,
+          notifyUrl: `${baseUrl}/api/payments/callback`,
+          returnUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+          cancelUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
+          referenceId: transaction.id,
+          product: eventName,
+          qty: 1,
+          price: amount,
+          description: `Tiket ${eventName}`,
+          paymentMethod: paymentMethod,
+          paymentChannel: paymentChannel,
+        });
+
+        console.log("[Direct Payment] iPaymu response:", paymentResult);
+
+        if (paymentResult.Status === 200 && paymentResult.Data) {
+          // Update transaction with payment info
+          await storage.updateTransaction(transaction.id, {
+            paymentId: paymentResult.Data.TransactionId.toString(),
+            paymentNumber: paymentResult.Data.PaymentNo,
+          });
+
+          return res.status(201).json({
+            ...transaction,
+            paymentId: paymentResult.Data.TransactionId.toString(),
+            paymentNo: paymentResult.Data.PaymentNo,
+            paymentName: paymentResult.Data.PaymentName,
+            total: paymentResult.Data.Total,
+            fee: paymentResult.Data.Fee,
+            expired: paymentResult.Data.Expired,
+            qrImage: paymentResult.Data.QrImage,
+            via: paymentResult.Data.Via,
+            channel: paymentResult.Data.Channel,
+          });
+        } else {
+          console.error("[Direct Payment] iPaymu error:", paymentResult.Message);
+          // Transaction created but payment failed - return transaction anyway
+          return res.status(201).json({
+            ...transaction,
+            paymentError: paymentResult.Message || "Payment gateway error",
+          });
+        }
+      } catch (paymentError) {
+        console.error("[Direct Payment] iPaymu exception:", paymentError);
+        // Transaction created but payment failed
+        return res.status(201).json({
+          ...transaction,
+          paymentError: "Failed to connect to payment gateway",
+        });
+      }
+    } catch (error) {
+      console.error("[Direct Payment] Error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create direct payment" });
     }
   });
 

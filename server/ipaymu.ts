@@ -30,6 +30,41 @@ interface IPaymuPaymentResponse {
   };
 }
 
+interface IPaymuDirectPaymentRequest {
+  name: string;
+  phone: string;
+  email: string;
+  amount: number;
+  notifyUrl: string;
+  returnUrl: string;
+  cancelUrl: string;
+  referenceId: string;
+  product: string;
+  qty: number;
+  price: number;
+  description: string;
+  paymentMethod: 'va' | 'qris' | 'cstore' | 'cod';
+  paymentChannel: string; // bca, mandiri, bni, etc for VA; qris for QRIS; indomaret/alfamart for cstore
+}
+
+interface IPaymuDirectPaymentResponse {
+  Status: number;
+  Message: string;
+  Data: {
+    SessionId: string;
+    TransactionId: number;
+    ReferenceId: string;
+    Via: string;
+    Channel: string;
+    PaymentNo: string; // VA number or QRIS code
+    PaymentName: string;
+    Total: number;
+    Fee: number;
+    Expired: string;
+    QrImage?: string; // For QRIS payments
+  };
+}
+
 /**
  * Generate signature for iPaymu API
  */
@@ -41,7 +76,7 @@ function generateSignature(body: string, method: string = 'POST'): string {
 }
 
 /**
- * Create payment request to iPaymu
+ * Create payment request to iPaymu (Redirect Payment API)
  */
 export async function createPayment(params: IPaymuPaymentRequest): Promise<IPaymuPaymentResponse> {
   const body = JSON.stringify({
@@ -77,6 +112,48 @@ export async function createPayment(params: IPaymuPaymentRequest): Promise<IPaym
   });
 
   const result = await response.json() as IPaymuPaymentResponse;
+  return result;
+}
+
+/**
+ * Create direct payment request to iPaymu (Direct Payment API)
+ */
+export async function createDirectPayment(params: IPaymuDirectPaymentRequest): Promise<IPaymuDirectPaymentResponse> {
+  const body = JSON.stringify({
+    name: params.name,
+    phone: params.phone,
+    email: params.email,
+    amount: params.amount,
+    notifyUrl: params.notifyUrl,
+    returnUrl: params.returnUrl,
+    cancelUrl: params.cancelUrl,
+    referenceId: params.referenceId,
+    product: [params.product],
+    qty: [params.qty],
+    price: [params.price],
+    description: [params.description],
+    buyerName: params.name,
+    buyerPhone: params.phone,
+    buyerEmail: params.email,
+    paymentMethod: params.paymentMethod,
+    paymentChannel: params.paymentChannel,
+  });
+
+  const signature = generateSignature(body);
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+
+  const response = await fetch(`${IPAYMU_URL}/payment/direct`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'va': IPAYMU_VA,
+      'signature': signature,
+      'timestamp': timestamp,
+    },
+    body: body,
+  });
+
+  const result = await response.json() as IPaymuDirectPaymentResponse;
   return result;
 }
 

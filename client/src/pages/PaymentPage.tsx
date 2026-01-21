@@ -4,10 +4,21 @@ import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import type { Event } from "@shared/schema";
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import undian01Url from "@assets/undian01_1763489504866.png";
 import undian02Url from "@assets/undian02_1763489504867.png";
+
+interface PaymentDetails {
+  paymentNo: string;
+  paymentName: string;
+  total: number;
+  fee: number;
+  expired: string;
+  qrImage?: string;
+  via: string;
+  channel: string;
+}
 
 export default function PaymentPage() {
   const [, params] = useRoute("/payment/:eventId");
@@ -16,6 +27,10 @@ export default function PaymentPage() {
   const { toast } = useToast();
   const [showTermsDropdown, setShowTermsDropdown] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'va' | 'qris' | 'cstore' | 'cod'>('va');
+  const [paymentChannel, setPaymentChannel] = useState<string>('bca');
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const { data: event, isLoading: eventLoading } = useQuery<Event>({
     queryKey: ["/api/events", eventId],
@@ -47,25 +62,37 @@ export default function PaymentPage() {
     }
 
     try {
-      const response = await fetch("/api/transactions", {
+      const response = await fetch("/api/transactions/direct", {
         method: "POST",
         headers,
         body: JSON.stringify({
           eventId: event.id,
           amount: event.price,
           eventName: event.name,
+          paymentMethod,
+          paymentChannel,
         }),
       });
 
       const data = await response.json();
 
-      if (data.paymentUrl) {
-        toast({
-          title: "Mengarahkan ke Pembayaran",
-          description: "Anda akan diarahkan ke halaman pembayaran iPaymu...",
+      if (data.paymentNo) {
+        // Payment successful - show payment details
+        setPaymentDetails({
+          paymentNo: data.paymentNo,
+          paymentName: data.paymentName,
+          total: data.total,
+          fee: data.fee,
+          expired: data.expired,
+          qrImage: data.qrImage,
+          via: data.via,
+          channel: data.channel,
         });
-        // Redirect to iPaymu payment page
-        window.location.href = data.paymentUrl;
+        toast({
+          title: "Pembayaran Dibuat",
+          description: "Silakan selesaikan pembayaran Anda.",
+        });
+        setIsProcessing(false);
       } else if (data.paymentError) {
         toast({
           variant: "destructive",
@@ -90,6 +117,16 @@ export default function PaymentPage() {
       });
       setIsProcessing(false);
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast({
+      title: "Berhasil Disalin",
+      description: "Nomor pembayaran telah disalin ke clipboard.",
+    });
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (eventLoading) {
@@ -127,6 +164,44 @@ export default function PaymentPage() {
 
   const cardImageUrl = getEventCardImage(event);
 
+  // Payment method options
+  const paymentMethods = [
+    { value: 'va', label: 'Virtual Account' },
+    { value: 'qris', label: 'QRIS' },
+    { value: 'cstore', label: 'Convenience Store' },
+    { value: 'cod', label: 'Cash on Delivery' },
+  ];
+
+  // Payment channel options based on selected method
+  const getChannelOptions = () => {
+    switch (paymentMethod) {
+      case 'va':
+        return [
+          { value: 'bca', label: 'BCA' },
+          { value: 'mandiri', label: 'Mandiri' },
+          { value: 'bni', label: 'BNI' },
+          { value: 'bri', label: 'BRI' },
+          { value: 'bsi', label: 'BSI' },
+          { value: 'permata', label: 'Permata' },
+          { value: 'danamon', label: 'Danamon' },
+          { value: 'cimb', label: 'CIMB Niaga' },
+          { value: 'bmi', label: 'Bank Muamalat' },
+          { value: 'bag', label: 'Bank Artha Graha' },
+        ];
+      case 'qris':
+        return [{ value: 'qris', label: 'QRIS' }];
+      case 'cstore':
+        return [
+          { value: 'indomaret', label: 'Indomaret' },
+          { value: 'alfamart', label: 'Alfamart' },
+        ];
+      case 'cod':
+        return [{ value: 'rpx', label: 'RPX' }];
+      default:
+        return [];
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#ffffff]">
       <div className="max-w-undifest mx-auto pb-20 bg-[#16202a]">
@@ -134,7 +209,9 @@ export default function PaymentPage() {
 
         {/* Halaman Pembayaran (1) - Judul paling atas */}
         <div className="px-4 pt-4 pb-2">
-          <h1 className="text-white text-xl font-bold">Halaman pembayaran (1)</h1>
+          <h1 className="text-white text-xl font-bold">
+            {paymentDetails ? "Detail Pembayaran" : "Halaman pembayaran (1)"}
+          </h1>
         </div>
 
         {/* Event Image Card */}
@@ -210,16 +287,137 @@ export default function PaymentPage() {
           </div>
         </div>
 
-        {/* Bayar & Konfir Button */}
-        <div className="px-4 py-6">
-          <button
-            onClick={handlePayment}
-            disabled={isProcessing}
-            className="holographic-btn w-full h-14 rounded-lg text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isProcessing ? "Memproses..." : "Bayar & Konfir"}
-          </button>
-        </div>
+        {/* Payment Details or Payment Method Selection */}
+        {paymentDetails ? (
+          /* Payment Details Display */
+          <div className="px-4 py-4 space-y-4">
+            {/* QR Code for QRIS */}
+            {paymentDetails.qrImage && (
+              <div className="bg-white p-4 rounded-xl">
+                <img src={paymentDetails.qrImage} alt="QR Code" className="w-full max-w-xs mx-auto" />
+              </div>
+            )}
+
+            {/* Payment Number */}
+            <div className="bg-[#1a2332] p-4 rounded-xl">
+              <p className="text-gray-400 text-sm mb-2">Nomor Pembayaran</p>
+              <div className="flex items-center justify-between">
+                <p className="text-white text-lg font-mono font-bold">{paymentDetails.paymentNo}</p>
+                <button
+                  onClick={() => copyToClipboard(paymentDetails.paymentNo)}
+                  className="p-2 hover:bg-[#00D4FF]/20 rounded-lg transition-colors"
+                >
+                  {copied ? (
+                    <Check className="w-5 h-5 text-green-400" />
+                  ) : (
+                    <Copy className="w-5 h-5 text-[#00D4FF]" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Payment Info */}
+            <div className="bg-[#1a2332] p-4 rounded-xl space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-400 text-sm">Bank/Metode</span>
+                <span className="text-white text-sm font-bold">{paymentDetails.paymentName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400 text-sm">Total</span>
+                <span className="text-white text-sm font-bold">Rp {paymentDetails.total.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400 text-sm">Biaya Admin</span>
+                <span className="text-white text-sm">Rp {paymentDetails.fee.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400 text-sm">Berlaku Hingga</span>
+                <span className="text-white text-sm">{new Date(paymentDetails.expired).toLocaleString("id-ID")}</span>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-[#1a2332] p-4 rounded-xl">
+              <p className="text-gray-400 text-sm mb-2">Instruksi Pembayaran</p>
+              <ol className="text-white text-sm space-y-1 list-decimal list-inside">
+                <li>Salin nomor pembayaran di atas</li>
+                <li>Buka aplikasi mobile banking atau ATM</li>
+                <li>Pilih menu transfer ke {paymentDetails.paymentName}</li>
+                <li>Masukkan nomor pembayaran</li>
+                <li>Konfirmasi pembayaran</li>
+              </ol>
+            </div>
+
+            {/* Back Button */}
+            <button
+              onClick={() => navigate("/")}
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-bold transition-colors"
+            >
+              Kembali ke Beranda
+            </button>
+          </div>
+        ) : (
+          /* Payment Method Selection */
+          <>
+            {/* Payment Method Selection */}
+            <div className="px-4 py-4">
+              <p className="text-white text-sm font-bold mb-3">Pilih Metode Pembayaran</p>
+              <div className="grid grid-cols-2 gap-3">
+                {paymentMethods.map((method) => (
+                  <button
+                    key={method.value}
+                    onClick={() => {
+                      setPaymentMethod(method.value as any);
+                      // Auto-select first channel when method changes
+                      const channels = getChannelOptions();
+                      if (channels.length > 0) {
+                        setPaymentChannel(channels[0].value);
+                      }
+                    }}
+                    className={`p-3 rounded-lg border-2 transition-all ${
+                      paymentMethod === method.value
+                        ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-white'
+                        : 'border-gray-700 bg-[#1a2332] text-gray-400 hover:border-gray-600'
+                    }`}
+                  >
+                    <span className="text-sm font-bold">{method.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Channel Selection */}
+            <div className="px-4 py-2">
+              <p className="text-white text-sm font-bold mb-3">Pilih Bank/Channel</p>
+              <div className="grid grid-cols-2 gap-3">
+                {getChannelOptions().map((channel) => (
+                  <button
+                    key={channel.value}
+                    onClick={() => setPaymentChannel(channel.value)}
+                    className={`p-3 rounded-lg border-2 transition-all ${
+                      paymentChannel === channel.value
+                        ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-white'
+                        : 'border-gray-700 bg-[#1a2332] text-gray-400 hover:border-gray-600'
+                    }`}
+                  >
+                    <span className="text-sm font-bold">{channel.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Bayar & Konfir Button */}
+            <div className="px-4 py-6">
+              <button
+                onClick={handlePayment}
+                disabled={isProcessing}
+                className="holographic-btn w-full h-14 rounded-lg text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isProcessing ? "Memproses..." : "Bayar & Konfir"}
+              </button>
+            </div>
+          </>
+        )}
 
         <MobileBottomNav />
       </div>
