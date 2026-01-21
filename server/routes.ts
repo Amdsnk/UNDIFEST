@@ -532,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate payment method
-      if (!['va', 'qris', 'cstore', 'cod'].includes(paymentMethod)) {
+      if (!['va', 'qris', 'cstore', 'directdebit'].includes(paymentMethod)) {
         return res.status(400).json({ error: "Invalid payment method" });
       }
 

@@ -43,7 +43,7 @@ interface IPaymuDirectPaymentRequest {
   qty: number;
   price: number;
   description: string;
-  paymentMethod: 'va' | 'qris' | 'cstore' | 'cod';
+  paymentMethod: 'va' | 'qris' | 'cstore' | 'directdebit';
   paymentChannel: string; // bca, mandiri, bni, etc for VA; qris for QRIS; indomaret/alfamart for cstore
 }
 

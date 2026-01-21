@@ -8,6 +8,10 @@ import { ChevronDown, ChevronUp, Copy, Check, ThumbsUp, ChevronRight } from "luc
 import { useToast } from "@/hooks/use-toast";
 import undian01Url from "@assets/undian01_1763489504866.png";
 import undian02Url from "@assets/undian02_1763489504867.png";
+import qrisIconUrl from "@assets/qris_default.png";
+import bankIconUrl from "@assets/bank.png";
+import cstoreIconUrl from "@assets/cstore.png";
+import debitIconUrl from "@assets/debitonline.png";
 
 interface PaymentDetails {
   paymentNo: string;
@@ -64,6 +68,14 @@ export default function PaymentPage() {
     }
 
     try {
+      console.log("Creating payment with:", {
+        eventId: event.id,
+        amount: event.price,
+        eventName: event.name,
+        paymentMethod: method,
+        paymentChannel: channel,
+      });
+
       const response = await fetch("/api/transactions/direct", {
         method: "POST",
         headers,
@@ -76,7 +88,19 @@ export default function PaymentPage() {
         }),
       });
 
+      console.log("Response status:", response.status);
       const data = await response.json();
+      console.log("Response data:", data);
+
+      if (!response.ok) {
+        toast({
+          variant: "destructive",
+          title: "Pembayaran Gagal",
+          description: data.message || data.paymentError || "Gagal membuat pembayaran. Silakan coba lagi.",
+        });
+        setIsProcessing(false);
+        return;
+      }
 
       if (data.paymentNo) {
         // Payment successful - show payment details
@@ -297,38 +321,29 @@ export default function PaymentPage() {
             </button>
           </div>
         ) : paymentMethod === null ? (
-          /* Payment Method Selection - New Design */
+          /* Payment Method Selection - New Design matching screenshot */
           <div className="px-4 py-4">
-            <div className="bg-[#4169E1] rounded-t-2xl p-4">
-              <h2 className="text-white text-xl font-bold text-center">Payment Method</h2>
+            <div className="bg-[#2952CC] rounded-t-2xl p-5">
+              <h2 className="text-white text-2xl font-bold">Payment Method</h2>
             </div>
 
             {/* Favorite in Indonesia Label */}
-            <div className="bg-[#3454C5] px-4 py-3 flex items-center gap-2">
+            <div className="bg-[#2952CC] px-5 py-3 flex items-center gap-2">
               <ThumbsUp className="w-5 h-5 text-white" fill="white" />
-              <span className="text-white text-sm font-semibold">Favorite in Indonesia</span>
+              <span className="text-white text-base font-semibold">Favorite in Indonesia</span>
             </div>
 
             {/* Payment Method Options */}
-            <div className="bg-[#3454C5] px-4 pb-4 rounded-b-2xl space-y-3">
+            <div className="bg-[#2952CC] px-5 pb-5 rounded-b-2xl space-y-3">
               {/* Virtual Account (VA) */}
               <button
                 onClick={() => setPaymentMethod('va')}
                 disabled={isProcessing}
                 className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#4169E1] rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">VA</span>
-                  </div>
-                  <span className="text-gray-800 font-semibold">Virtual Account (VA)</span>
-                </div>
+                <span className="text-gray-900 font-semibold text-base">Virtual Account (VA)</span>
                 <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <div className="w-8 h-5 bg-blue-600 rounded"></div>
-                    <div className="w-8 h-5 bg-blue-800 rounded"></div>
-                    <div className="w-8 h-5 bg-red-600 rounded"></div>
-                  </div>
+                  <img src={bankIconUrl} alt="Bank" className="h-6" />
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </button>
@@ -339,14 +354,9 @@ export default function PaymentPage() {
                 disabled={isProcessing}
                 className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">QR</span>
-                  </div>
-                  <span className="text-gray-800 font-semibold">QRIS</span>
-                </div>
+                <span className="text-gray-900 font-semibold text-base">QRIS</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-red-600">QRIS</span>
+                  <img src={qrisIconUrl} alt="QRIS" className="h-6" />
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </button>
@@ -357,18 +367,12 @@ export default function PaymentPage() {
                 disabled={isProcessing}
                 className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">DD</span>
-                  </div>
-                  <span className="text-gray-800 font-semibold">Direct Debit</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-900 font-semibold text-base">Direct Debit</span>
+                  <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded">Recommendation</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <div className="w-8 h-5 bg-blue-700 rounded"></div>
-                    <div className="w-8 h-5 bg-red-600 rounded"></div>
-                    <div className="w-8 h-5 bg-orange-500 rounded"></div>
-                  </div>
+                  <img src={debitIconUrl} alt="Direct Debit" className="h-6" />
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </button>
@@ -379,14 +383,9 @@ export default function PaymentPage() {
                 disabled={isProcessing}
                 className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">CS</span>
-                  </div>
-                  <span className="text-gray-800 font-semibold">Convenience Store</span>
-                </div>
+                <span className="text-gray-900 font-semibold text-base">Convenience Store</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-orange-600">Pay</span>
+                  <img src={cstoreIconUrl} alt="Convenience Store" className="h-6" />
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </button>
