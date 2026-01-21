@@ -212,12 +212,12 @@ export default function HomePage() {
         {/* Undifest Video */}
         <div className="px-4 py-6 bg-[#16202a]">
           <h2 className="text-xl font-bold text-white mb-4">Undifest Video</h2>
-          {/* Single row with 4 videos */}
+          {/* Single row with 4 videos - 25% width each */}
           <div className="flex gap-3 overflow-x-auto pb-2">
             {/* Video 1 */}
             <div
               onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.14.06 PM.mp4')}
-              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-[calc(50%-6px)]"
+              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
             >
               <video
                 src="/attached_assets/WhatsApp Video 2026-01-19 at 7.14.06 PM.mp4"
@@ -232,7 +232,7 @@ export default function HomePage() {
             {/* Video 2 */}
             <div
               onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.14.26 PM.mp4')}
-              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-[calc(50%-6px)]"
+              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
             >
               <video
                 src="/attached_assets/WhatsApp Video 2026-01-19 at 7.14.26 PM.mp4"
@@ -247,7 +247,7 @@ export default function HomePage() {
             {/* Video 3 */}
             <div
               onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.14.55 PM.mp4')}
-              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-[calc(50%-6px)]"
+              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
             >
               <video
                 src="/attached_assets/WhatsApp Video 2026-01-19 at 7.14.55 PM.mp4"
@@ -262,7 +262,7 @@ export default function HomePage() {
             {/* Video 4 */}
             <div
               onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.16.29 PM.mp4')}
-              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-[calc(50%-6px)]"
+              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
             >
               <video
                 src="/attached_assets/WhatsApp Video 2026-01-19 at 7.16.29 PM.mp4"

@@ -9,13 +9,6 @@ import type { Event } from "@shared/schema";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import bankUrl from "@assets/bank_new.png";
 
 export default function EventDetailPage() {
@@ -23,7 +16,6 @@ export default function EventDetailPage() {
   const eventId = params?.id;
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [showTermsDropdown, setShowTermsDropdown] = useState(false);
 
   const { data: event, isLoading } = useQuery<Event>({
@@ -58,7 +50,6 @@ export default function EventDetailPage() {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/user/transactions"] });
-      setShowPurchaseDialog(false);
 
       // If payment URL is available, redirect to payment page
       if (data.paymentUrl) {
@@ -66,7 +57,7 @@ export default function EventDetailPage() {
           title: "Mengarahkan ke Pembayaran",
           description: "Anda akan diarahkan ke halaman pembayaran...",
         });
-        // Redirect to iPaymu payment page
+        // Redirect to iPaymu payment page directly
         window.location.href = data.paymentUrl;
       } else if (data.paymentError) {
         // Payment gateway error but transaction created
@@ -95,11 +86,7 @@ export default function EventDetailPage() {
   });
 
   const handlePurchaseClick = () => {
-    // Guest checkout enabled - no login required
-    setShowPurchaseDialog(true);
-  };
-
-  const handleConfirmPurchase = () => {
+    // Guest checkout enabled - direct redirect to iPaymu without confirmation dialog
     purchaseMutation.mutate();
   };
 
@@ -232,55 +219,12 @@ export default function EventDetailPage() {
           {/* Purchase Button */}
           <button
             onClick={handlePurchaseClick}
+            disabled={purchaseMutation.isPending}
             data-testid="button-purchase"
-            className="holographic-btn w-full h-14 rounded-lg text-xl font-bold mt-6"
+            className="holographic-btn w-full h-14 rounded-lg text-xl font-bold mt-6 disabled:opacity-50"
           >
-            Beli Tiket (Rp {event.price.toLocaleString()})
+            {purchaseMutation.isPending ? "Memproses..." : `Beli Tiket (Rp ${event.price.toLocaleString()})`}
           </button>
-
-          {/* Purchase Confirmation Dialog */}
-          <Dialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
-            <DialogContent className="bg-[#16202a] text-white border-[#8B2FC9]">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold">Konfirmasi Pembelian</DialogTitle>
-                <DialogDescription className="text-gray-400">
-                  Pastikan detail pembelian Anda sudah benar
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div>
-                  <p className="text-sm text-gray-400">Event</p>
-                  <p className="text-lg font-bold">{event?.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400">Harga</p>
-                  <p className="text-2xl font-bold text-[#00D4FF]">Rp {event?.price.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400">Hadiah</p>
-                  <p className="text-base">{event?.prize}</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowPurchaseDialog(false)}
-                  disabled={purchaseMutation.isPending}
-                  data-testid="button-cancel-purchase"
-                  className="flex-1 h-12 rounded-lg border-2 border-[#8B2FC9] text-[#8B2FC9] font-bold hover:bg-[#8B2FC9]/10"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleConfirmPurchase}
-                  disabled={purchaseMutation.isPending}
-                  data-testid="button-confirm-purchase"
-                  className="flex-1 h-12 rounded-lg holographic-btn font-bold"
-                >
-                  {purchaseMutation.isPending ? "Memproses..." : "Konfirmasi"}
-                </button>
-              </div>
-            </DialogContent>
-          </Dialog>
 
           {/* Payment Methods */}
           <div className="pt-6">
