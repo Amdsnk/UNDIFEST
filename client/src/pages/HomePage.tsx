@@ -166,7 +166,7 @@ export default function HomePage() {
                     <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
                         {isTemplateCard ? (
                           // Template card: display complete template image with button overlay
-                          (<div className="relative">
+                          <div className="relative">
                             <img
                               src={cardImageUrl}
                               alt={event.name}
@@ -179,10 +179,10 @@ export default function HomePage() {
                             >
                               <img src={tombolBeliUrl} alt="Beli" className="h-10 mt-[13px] mb-[13px]" />
                             </button>
-                          </div>)
+                          </div>
                         ) : (
                           // Dynamic event: render with full image only
-                          (<div className="relative min-h-[180px] overflow-hidden">
+                          <div className="relative min-h-[180px] overflow-hidden">
                             <img
                               src={cardImageUrl}
                               alt={event.name}
@@ -196,7 +196,7 @@ export default function HomePage() {
                                 <img src={tombolBeliUrl} alt="Beli" className="h-10 mt-[0px] mb-[0px]" />
                               </button>
                             </div>
-                          </div>)
+                          </div>
                         )}
                       </div>
                     </div>
