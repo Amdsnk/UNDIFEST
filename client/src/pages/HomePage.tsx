@@ -161,47 +161,51 @@ export default function HomePage() {
                 const cardImageUrl = getEventCardImage(event);
                 const isTemplateCard = event.cardTemplate === "burgerKing" || event.cardTemplate === "yamahaNmax";
 
-                return (
-                  <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
-                    <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
-                        {isTemplateCard ? (
-                          // Template card: display complete template image with button overlay
-                          <div className="relative">
-                            <img
-                              src={cardImageUrl}
-                              alt={event.name}
-                              className="w-full h-auto pb-5"
-                            />
+                if (isTemplateCard) {
+                  return (
+                    <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
+                      <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
+                        <div className="relative">
+                          <img
+                            src={cardImageUrl}
+                            alt={event.name}
+                            className="w-full h-auto pb-5"
+                          />
+                          <button
+                            onClick={() => handlePurchase(event)}
+                            data-testid={`button-buy-${event.id}`}
+                            className="absolute bottom-4 right-4"
+                          >
+                            <img src={tombolBeliUrl} alt="Beli" className="h-10 mt-[13px] mb-[13px]" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
+                      <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
+                        <div className="relative min-h-[180px] overflow-hidden">
+                          <img
+                            src={cardImageUrl}
+                            alt={event.name}
+                            className="w-full h-full min-h-[180px] object-cover"
+                            style={{ paddingBottom: '15px' }}
+                          />
+                          <div className="absolute bottom-4 right-4 z-20">
                             <button
                               onClick={() => handlePurchase(event)}
                               data-testid={`button-buy-${event.id}`}
-                              className="absolute bottom-4 right-4"
                             >
-                              <img src={tombolBeliUrl} alt="Beli" className="h-10 mt-[13px] mb-[13px]" />
+                              <img src={tombolBeliUrl} alt="Beli" className="h-10 mt-[0px] mb-[0px]" />
                             </button>
                           </div>
-                        ) : (
-                          // Dynamic event: render with full image only
-                          <div className="relative min-h-[180px] overflow-hidden">
-                            <img
-                              src={cardImageUrl}
-                              alt={event.name}
-                              className="w-full h-full min-h-[180px] object-cover pb-[15px]"
-                            />
-                            <div className="absolute bottom-4 right-4 z-20">
-                              <button
-                                onClick={() => handlePurchase(event)}
-                                data-testid={`button-buy-${event.id}`}
-                              >
-                                <img src={tombolBeliUrl} alt="Beli" className="h-10 mt-[0px] mb-[0px]" />
-                              </button>
-                            </div>
-                          </div>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
+                  );
+                }
               })
             ) : (
               <div className="text-center text-gray-400 py-8">
@@ -278,29 +282,29 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Video Modal - fits in content area */}
+        {/* Video Modal - fits in content area with proper sizing */}
         {selectedVideo && (
-          <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-            <div className="relative w-full max-w-4xl">
-              {/* Header dengan tombol back */}
-              <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/80 to-transparent p-4 rounded-t-xl">
-                <div className="flex items-center gap-3">
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+            <div className="relative w-full max-w-undifest mx-auto px-4">
+              {/* Header dengan tombol back - transparansi hitam sedikit */}
+              <div className="absolute top-0 left-4 right-4 z-10 bg-black/30 backdrop-blur-sm rounded-t-xl">
+                <div className="flex items-center gap-3 p-3">
                   <button
                     onClick={() => setSelectedVideo(null)}
-                    className="text-white p-2 hover:bg-white/10 rounded-full transition-all"
+                    className="text-white p-1.5 hover:bg-white/10 rounded-full transition-all"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <h3 className="text-white text-lg font-semibold">Pengundian 10.13.25</h3>
+                  <h3 className="text-white text-base font-semibold">Pengundian 10.13.25</h3>
                 </div>
               </div>
 
-              {/* Video Player */}
+              {/* Video Player - memanjang tapi tidak fullscreen */}
               <video
                 src={selectedVideo}
-                className="w-full h-auto max-h-[70vh] object-contain rounded-xl bg-black"
+                className="w-full h-auto max-h-[75vh] object-contain rounded-xl bg-black"
                 controls
                 autoPlay
                 playsInline
