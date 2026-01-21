@@ -4,7 +4,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Footer } from "@/components/Footer";
 import { useRoute, useLocation } from "wouter";
 import { FaFacebook, FaXTwitter, FaInstagram, FaYoutube, FaTiktok, FaTelegram } from "react-icons/fa6";
-import { Ticket } from "lucide-react";
+import { Ticket, ChevronDown, ChevronUp } from "lucide-react";
 import type { Event } from "@shared/schema";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -24,6 +24,7 @@ export default function EventDetailPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  const [showTermsDropdown, setShowTermsDropdown] = useState(false);
 
   const { data: event, isLoading } = useQuery<Event>({
     queryKey: ["/api/events", eventId],
@@ -35,14 +36,18 @@ export default function EventDetailPage() {
       if (!event) throw new Error("Event not found");
 
       const userToken = localStorage.getItem("user_token");
-      if (!userToken) throw new Error("Please login first");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      // Only add authorization if user is logged in
+      if (userToken) {
+        headers["Authorization"] = `Bearer ${userToken}`;
+      }
 
       const response = await apiRequest("/api/transactions", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${userToken}`
-        },
+        headers,
         body: JSON.stringify({
           eventId: event.id,
           amount: event.price,
@@ -90,15 +95,7 @@ export default function EventDetailPage() {
   });
 
   const handlePurchaseClick = () => {
-    const userToken = localStorage.getItem("user_token");
-    if (!userToken) {
-      toast({
-        title: "Login Required",
-        description: "Silakan login terlebih dahulu untuk membeli tiket",
-      });
-      navigate("/account");
-      return;
-    }
+    // Guest checkout enabled - no login required
     setShowPurchaseDialog(true);
   };
 
@@ -159,38 +156,49 @@ export default function EventDetailPage() {
             <h1 className="text-2xl font-bold mb-2">{event.name}</h1>
           </div>
 
-          <div>
-            <h2 className="text-lg font-bold mb-2">Syarat & Ketentuan</h2>
-            <p className="text-gray-300 text-sm">
-              Beli e-book senilai Rp {event.price.toLocaleString()} untuk mendapatkan 1 tiket undian.
-            </p>
-          </div>
-
-          <div>
-            <p className="text-gray-300 text-sm">
-              Jaminan uang kembali Rp {event.price.toLocaleString()}.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-bold mb-2">Hadiah :</h2>
-            <p className="text-gray-300 text-sm">{event.prize}</p>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-bold mb-2">Periode :</h2>
-            <p className="text-gray-300 text-sm">
-              {new Date(event.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} -{" "}
-              {new Date(event.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-bold mb-2">Pengumuman Pemenang:</h2>
-            <p className="text-gray-300 text-sm">
-              {new Date(event.announcementDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}{" "}
-              pukul 19.00 WIB melalui seluruh channel resmi kami.
-            </p>
+          {/* Syarat & Ketentuan Dropdown */}
+          <div className="border border-gray-700 rounded-xl overflow-hidden">
+            <button
+              onClick={() => setShowTermsDropdown(!showTermsDropdown)}
+              className="w-full flex items-center justify-between p-4 bg-[#1a2332] hover:bg-[#1a2332]/80 transition-colors"
+            >
+              <span className="text-lg font-bold">Syarat & Ketentuan</span>
+              {showTermsDropdown ? (
+                <ChevronUp className="w-5 h-5 text-[#00D4FF]" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-[#00D4FF]" />
+              )}
+            </button>
+            {showTermsDropdown && (
+              <div className="p-4 bg-[#1a2332]/50 space-y-4">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Harga Tiket</p>
+                  <p className="text-white">Beli e-book senilai Rp {event.price.toLocaleString()} untuk mendapatkan 1 tiket undian.</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Jaminan</p>
+                  <p className="text-white">Jaminan uang kembali Rp {event.price.toLocaleString()}.</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Hadiah</p>
+                  <p className="text-white">{event.prize}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Periode</p>
+                  <p className="text-white">
+                    {new Date(event.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} -{" "}
+                    {new Date(event.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Pengumuman Pemenang</p>
+                  <p className="text-white">
+                    {new Date(event.announcementDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}{" "}
+                    pukul 19.00 WIB melalui seluruh channel resmi kami.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>

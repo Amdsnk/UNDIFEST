@@ -243,13 +243,6 @@ export default function AccountPage() {
               >
                 Keluar
               </button>
-              <button
-                onClick={() => navigate("/history")}
-                data-testid="button-view-history"
-                className="w-full mt-4 h-14 rounded-2xl text-xl font-semibold border-2 border-[#00D4FF] text-[#00D4FF] hover:bg-[#00D4FF]/10"
-              >
-                Lihat Riwayat Transaksi
-              </button>
 
               {/* Delete Account Button */}
               <button

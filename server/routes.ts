@@ -1,10 +1,10 @@
 import type { Express } from "express";
-import express from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema } from "@shared/schema";
-import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite } from "./auth";
+import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite, verifyUserToken } from "./auth";
 import { createPayment, isIPaymuConfigured, getIPaymuConfig } from "./ipaymu";
 import multer from "multer";
 import path from "path";
@@ -379,10 +379,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create transaction (purchase event ticket) - with iPaymu payment
-  app.post("/api/transactions", requireUser, async (req, res) => {
+  // Optional auth middleware for guest checkout
+  const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      const payload = verifyUserToken(token);
+      if (payload) {
+        (req as any).user = payload;
+      }
+    }
+    next();
+  };
+
+  app.post("/api/transactions", optionalAuth, async (req, res) => {
     try {
-      const userId = (req as any).user.userId;
-      const phoneNumber = (req as any).user.phoneNumber;
+      // Get user info if authenticated, otherwise use guest info
+      let userId: number | null = null;
+      let phoneNumber = "Guest";
+      let userName = "Guest Customer";
+      let userEmail = "guest@undifest.com";
+
+      if ((req as any).user) {
+        userId = (req as any).user.userId;
+        phoneNumber = (req as any).user.phoneNumber;
+
+        // Get user info for payment
+        const user = await storage.getUser(userId);
+        if (user) {
+          userName = user.name || "Customer";
+          userEmail = user.email || `${phoneNumber}@undifest.com`;
+        }
+      }
 
       const { eventId, amount, eventName } = req.body;
 
@@ -399,15 +427,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Event is not active" });
       }
 
-      // Get user info for payment
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      // Create transaction with pending status
+      // Create transaction with pending status (userId can be null for guests)
       const transaction = await storage.createTransaction({
-        userId,
+        userId: userId || undefined,
         eventId,
         amount,
         phoneNumber,
@@ -429,9 +451,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         const paymentResult = await createPayment({
-          name: user.name || "Customer",
+          name: userName,
           phone: phoneNumber,
-          email: user.email || `${phoneNumber}@undifest.com`,
+          email: userEmail,
           amount: amount,
           notifyUrl: `${baseUrl}/api/payments/callback`,
           returnUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,

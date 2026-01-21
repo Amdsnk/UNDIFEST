@@ -52,12 +52,11 @@ export default function HistoryPage() {
           <div className="bg-[#0f1a26] rounded-xl overflow-hidden border-2 border-gray-800 mt-[30px] mb-[150px] pt-[0px] pb-[0px]">
             {/* Header */}
             <div className="bg-[#FFB800] p-3">
-              <div className="grid grid-cols-5 gap-2 text-black font-bold text-sm">
+              <div className="grid grid-cols-4 gap-2 text-black font-bold text-sm">
                 <div>Tanggal</div>
                 <div>Pemenang</div>
                 <div>Nominal (Rp)</div>
                 <div>Event</div>
-                <div>Status</div>
               </div>
             </div>
 
@@ -81,7 +80,7 @@ export default function HistoryPage() {
                   <div
                     key={transaction.id}
                     data-testid={`transaction-${transaction.id}`}
-                    className="grid grid-cols-5 gap-2 p-3 text-white text-sm bg-[#1a2332]/50 hover:bg-[#1a2332] transition-colors"
+                    className="grid grid-cols-4 gap-2 p-3 text-white text-sm bg-[#1a2332]/50 hover:bg-[#1a2332] transition-colors"
                   >
                     <div className="font-medium">
                       {new Date(transaction.createdAt).toLocaleDateString("en-GB", {
@@ -93,30 +92,6 @@ export default function HistoryPage() {
                     <div className="font-mono text-xs">{maskPhoneNumber(transaction.phoneNumber)}</div>
                     <div className="font-bold">{transaction.amount.toLocaleString('id-ID')}</div>
                     <div className="truncate">{transaction.eventName || 'Event'}</div>
-                    <div>
-                      {transaction.paymentStatus === 'paid' ? (
-                        <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">Lunas</span>
-                      ) : transaction.paymentStatus === 'pending' ? (
-                        transaction.paymentUrl ? (
-                          <a
-                            href={transaction.paymentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs hover:bg-yellow-500/30"
-                          >
-                            Bayar
-                          </a>
-                        ) : (
-                          <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">Pending</span>
-                        )
-                      ) : transaction.paymentStatus === 'expired' ? (
-                        <span className="px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-xs">Expired</span>
-                      ) : transaction.paymentStatus === 'failed' ? (
-                        <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">Gagal</span>
-                      ) : (
-                        <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">Lunas</span>
-                      )}
-                    </div>
                   </div>
                 ))
               ) : (
