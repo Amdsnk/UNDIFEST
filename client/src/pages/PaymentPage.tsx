@@ -4,7 +4,7 @@ import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import type { Event } from "@shared/schema";
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Check, ThumbsUp, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import undian01Url from "@assets/undian01_1763489504866.png";
 import undian02Url from "@assets/undian02_1763489504867.png";
@@ -357,54 +357,163 @@ export default function PaymentPage() {
             </button>
           </div>
         ) : (
-          /* Payment Method Selection */
+          /* Payment Method Selection - New Design */
           <>
-            {/* Payment Method Selection */}
+            {/* Payment Method Header */}
             <div className="px-4 py-4">
-              <p className="text-white text-sm font-bold mb-3">Pilih Metode Pembayaran</p>
-              <div className="grid grid-cols-2 gap-3">
-                {paymentMethods.map((method) => (
-                  <button
-                    key={method.value}
-                    onClick={() => {
-                      setPaymentMethod(method.value as any);
-                      // Auto-select first channel when method changes
-                      const channels = getChannelOptions();
-                      if (channels.length > 0) {
-                        setPaymentChannel(channels[0].value);
-                      }
-                    }}
-                    className={`p-3 rounded-lg border-2 transition-all ${
-                      paymentMethod === method.value
-                        ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-white'
-                        : 'border-gray-700 bg-[#1a2332] text-gray-400 hover:border-gray-600'
-                    }`}
-                  >
-                    <span className="text-sm font-bold">{method.label}</span>
-                  </button>
-                ))}
+              <div className="bg-[#4169E1] rounded-t-2xl p-4">
+                <h2 className="text-white text-xl font-bold text-center">Payment Method</h2>
+              </div>
+
+              {/* Favorite in Indonesia Label */}
+              <div className="bg-[#3454C5] px-4 py-3 flex items-center gap-2">
+                <ThumbsUp className="w-5 h-5 text-white" fill="white" />
+                <span className="text-white text-sm font-semibold">Favorite in Indonesia</span>
+              </div>
+
+              {/* Payment Method Options */}
+              <div className="bg-[#3454C5] px-4 pb-4 rounded-b-2xl space-y-3">
+                {/* Virtual Account (VA) */}
+                <button
+                  onClick={() => {
+                    setPaymentMethod('va');
+                    setPaymentChannel('bca');
+                  }}
+                  className={`w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg ${
+                    paymentMethod === 'va' ? 'ring-2 ring-[#00D4FF]' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-[#4169E1] rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">VA</span>
+                    </div>
+                    <span className="text-gray-800 font-semibold">Virtual Account (VA)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      <div className="w-8 h-5 bg-blue-600 rounded"></div>
+                      <div className="w-8 h-5 bg-blue-800 rounded"></div>
+                      <div className="w-8 h-5 bg-red-600 rounded"></div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  </div>
+                </button>
+
+                {/* QRIS */}
+                <button
+                  onClick={() => {
+                    setPaymentMethod('qris');
+                    setPaymentChannel('qris');
+                  }}
+                  className={`w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg ${
+                    paymentMethod === 'qris' ? 'ring-2 ring-[#00D4FF]' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">QR</span>
+                    </div>
+                    <span className="text-gray-800 font-semibold">QRIS</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-red-600">QRIS</span>
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  </div>
+                </button>
+
+                {/* e-Wallet */}
+                <button
+                  onClick={() => {
+                    setPaymentMethod('cstore');
+                    setPaymentChannel('indomaret');
+                  }}
+                  className={`w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg ${
+                    paymentMethod === 'cstore' ? 'ring-2 ring-[#00D4FF]' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">CS</span>
+                    </div>
+                    <span className="text-gray-800 font-semibold">Convenience Store</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-orange-600">Pay</span>
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  </div>
+                </button>
+
+                {/* Direct Debit */}
+                <button
+                  onClick={() => {
+                    setPaymentMethod('cod');
+                    setPaymentChannel('rpx');
+                  }}
+                  className={`w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg ${
+                    paymentMethod === 'cod' ? 'ring-2 ring-[#00D4FF]' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">COD</span>
+                    </div>
+                    <span className="text-gray-800 font-semibold">Cash on Delivery</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      <div className="w-8 h-5 bg-red-600 rounded"></div>
+                      <div className="w-8 h-5 bg-orange-500 rounded"></div>
+                      <div className="w-8 h-5 bg-blue-700 rounded"></div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  </div>
+                </button>
               </div>
             </div>
 
-            {/* Payment Channel Selection */}
-            <div className="px-4 py-2">
-              <p className="text-white text-sm font-bold mb-3">Pilih Bank/Channel</p>
-              <div className="grid grid-cols-2 gap-3">
-                {getChannelOptions().map((channel) => (
-                  <button
-                    key={channel.value}
-                    onClick={() => setPaymentChannel(channel.value)}
-                    className={`p-3 rounded-lg border-2 transition-all ${
-                      paymentChannel === channel.value
-                        ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-white'
-                        : 'border-gray-700 bg-[#1a2332] text-gray-400 hover:border-gray-600'
-                    }`}
-                  >
-                    <span className="text-sm font-bold">{channel.label}</span>
-                  </button>
-                ))}
+            {/* Bank/Channel Selection (shown when VA is selected) */}
+            {paymentMethod === 'va' && (
+              <div className="px-4 py-2">
+                <p className="text-white text-sm font-bold mb-3">Pilih Bank</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {getChannelOptions().map((channel) => (
+                    <button
+                      key={channel.value}
+                      onClick={() => setPaymentChannel(channel.value)}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        paymentChannel === channel.value
+                          ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-white'
+                          : 'border-gray-700 bg-[#1a2332] text-gray-400 hover:border-gray-600'
+                      }`}
+                    >
+                      <span className="text-sm font-bold">{channel.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Convenience Store Selection */}
+            {paymentMethod === 'cstore' && (
+              <div className="px-4 py-2">
+                <p className="text-white text-sm font-bold mb-3">Pilih Toko</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {getChannelOptions().map((channel) => (
+                    <button
+                      key={channel.value}
+                      onClick={() => setPaymentChannel(channel.value)}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        paymentChannel === channel.value
+                          ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-white'
+                          : 'border-gray-700 bg-[#1a2332] text-gray-400 hover:border-gray-600'
+                      }`}
+                    >
+                      <span className="text-sm font-bold">{channel.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Bayar & Konfir Button */}
             <div className="px-4 py-6">
