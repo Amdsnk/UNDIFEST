@@ -5,7 +5,6 @@ import { Footer } from "@/components/Footer";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { Event, Banner, Video, Partner, PaymentMethod } from "@shared/schema";
-import { Link } from "wouter";
 import logoUrl from "@assets/logo undifest_1763476451738.png";
 import banner01Url from "@assets/banner01_1763489481905.jpg";
 import undian01Url from "@assets/undian01_1763489504866.png";
@@ -29,10 +28,8 @@ export default function HomePage() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
-  const handlePurchase = (event: Event, e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigation to event detail page
-    e.stopPropagation();
-    // Navigate to payment page instead of direct purchase
+  const handlePurchase = (event: Event) => {
+    // Navigate directly to payment page
     window.location.href = `/payment/${event.id}`;
   };
 
@@ -165,12 +162,8 @@ export default function HomePage() {
                 const isTemplateCard = event.cardTemplate === "burgerKing" || event.cardTemplate === "yamahaNmax";
 
                 return (
-                  <Link key={event.id} href={`/event/${event.id}`}>
-                    <div
-                      data-testid={`event-card-${event.id}`}
-                      className="cursor-pointer group relative"
-                    >
-                      <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
+                  <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
+                    <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
                         {isTemplateCard ? (
                           // Template card: display complete template image with button overlay
                           (<div className="relative">
@@ -180,7 +173,7 @@ export default function HomePage() {
                               className="w-full h-auto pb-5"
                             />
                             <button
-                              onClick={(e) => handlePurchase(event, e)}
+                              onClick={() => handlePurchase(event)}
                               data-testid={`button-buy-${event.id}`}
                               className="absolute bottom-4 right-4"
                             >
@@ -197,7 +190,7 @@ export default function HomePage() {
                             />
                             <div className="absolute bottom-4 right-4 z-20">
                               <button
-                                onClick={(e) => handlePurchase(event, e)}
+                                onClick={() => handlePurchase(event)}
                                 data-testid={`button-buy-${event.id}`}
                               >
                                 <img src={tombolBeliUrl} alt="Beli" className="h-10 mt-[0px] mb-[0px]" />
@@ -207,7 +200,7 @@ export default function HomePage() {
                         )}
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 );
               })
             ) : (

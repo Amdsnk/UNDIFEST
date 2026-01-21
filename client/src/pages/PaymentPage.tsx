@@ -1,18 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { MobileHeader } from "@/components/MobileHeader";
 import { useRoute, useLocation } from "wouter";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import type { Event } from "@shared/schema";
 import { useState, useEffect } from "react";
+import bankUrl from "@assets/bank_new.png";
 
 export default function PaymentPage() {
   const [, params] = useRoute("/payment/:eventId");
   const eventId = params?.eventId;
   const [, navigate] = useLocation();
-  const [showTermsDropdown, setShowTermsDropdown] = useState(false);
   const [ipaymuUrl, setIpaymuUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { data: event, isLoading } = useQuery<Event>({
+  const { data: event, isLoading: eventLoading } = useQuery<Event>({
     queryKey: ["/api/events", eventId],
     enabled: !!eventId,
   });
@@ -46,98 +46,74 @@ export default function PaymentPage() {
 
         if (data.paymentUrl) {
           setIpaymuUrl(data.paymentUrl);
-          // Auto redirect to iPaymu
-          window.location.href = data.paymentUrl;
-        } else if (data.paymentError) {
-          console.error("Payment error:", data.paymentError);
+          setLoading(false);
+        } else {
+          setError("Gagal membuat pembayaran. Silakan coba lagi.");
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("Transaction creation error:", error);
+      } catch (err: any) {
+        console.error("Transaction creation error:", err);
+        setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
+        setLoading(false);
       }
     };
 
     createTransaction();
   }, [event]);
 
-  if (isLoading || !event) {
+  // Auto redirect to iPaymu when URL is ready
+  useEffect(() => {
+    if (ipaymuUrl) {
+      window.location.href = ipaymuUrl;
+    }
+  }, [ipaymuUrl]);
+
+  if (eventLoading || loading) {
     return (
       <div className="min-h-screen bg-[#16202a]">
         <div className="max-w-undifest mx-auto">
-          <MobileHeader />
           <div className="p-8 text-center text-white">
-            {isLoading ? "Loading..." : "Event tidak ditemukan"}
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#00D4FF] mx-auto mb-4"></div>
+            <p>Memproses pembayaran...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Show loading while redirecting to iPaymu
-  return (
-    <div className="min-h-screen bg-[#16202a]">
-      <div className="max-w-undifest mx-auto pb-20 bg-[#16202a]">
-        {/* Header */}
-        <div className="bg-[#D32F2F] p-4">
-          <div className="flex items-center gap-3">
+  if (error || !event) {
+    return (
+      <div className="min-h-screen bg-[#16202a]">
+        <div className="max-w-undifest mx-auto">
+          <div className="p-8 text-center text-white">
+            <p className="text-red-400 mb-4">{error || "Event tidak ditemukan"}</p>
             <button
               onClick={() => navigate("/")}
-              className="text-white p-2 hover:bg-white/10 rounded-full transition-all"
+              className="bg-[#00D4FF] text-white px-6 py-2 rounded-lg"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              Kembali ke Beranda
             </button>
-            <h1 className="text-xl font-bold text-white">Halaman pembayaran</h1>
-          </div>
-        </div>
-
-        <div className="px-4 py-6">
-          {/* Product Info */}
-          <div className="bg-[#212121] rounded-xl p-4 mb-4">
-            <h2 className="text-lg font-bold text-white mb-2">{event.name}</h2>
-            <div className="flex items-center gap-2">
-              <span className="text-[#FFD700] font-bold text-xl">Rp {event.price.toLocaleString()}</span>
-            </div>
-          </div>
-
-          {/* Syarat & Ketentuan Dropdown */}
-          <div className="bg-[#212121] rounded-xl overflow-hidden mb-4">
-            <button
-              onClick={() => setShowTermsDropdown(!showTermsDropdown)}
-              className="w-full flex items-center justify-between p-4 text-white"
-            >
-              <span className="text-sm">Syarat & Ketentuan</span>
-              {showTermsDropdown ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </button>
-            {showTermsDropdown && (
-              <div className="p-4 border-t border-gray-600 space-y-2">
-                <p className="text-xs text-gray-300">Harga: Rp {event.price.toLocaleString()}</p>
-                <p className="text-xs text-gray-300">Hadiah: {event.prize}</p>
-                <p className="text-xs text-gray-300">
-                  Periode: {new Date(event.startDate).toLocaleDateString("id-ID")} - {new Date(event.endDate).toLocaleDateString("id-ID")}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Loading message while preparing payment */}
-          <div className="text-center py-8">
-            {ipaymuUrl ? (
-              <p className="text-white">Mengarahkan ke pembayaran...</p>
-            ) : (
-              <>
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00D4FF] mx-auto mb-4"></div>
-                <p className="text-white">Menyiapkan pembayaran...</p>
-                <p className="text-gray-400 text-sm mt-2">Mohon tunggu sebentar</p>
-              </>
-            )}
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // If we have iPaymu URL, show loading while redirecting
+  if (ipaymuUrl) {
+    return (
+      <div className="min-h-screen bg-[#16202a]">
+        <div className="max-w-undifest mx-auto">
+          <div className="p-8 text-center text-white">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#00D4FF] mx-auto mb-4"></div>
+            <p className="text-xl font-bold mb-2">Mengarahkan ke pembayaran...</p>
+            <p className="text-gray-400 text-sm">Mohon tunggu sebentar</p>
+            <p className="text-gray-500 text-xs mt-4">Jika tidak terarah otomatis, <a href={ipaymuUrl} className="text-[#00D4FF] underline">klik di sini</a></p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null; // This should not be reached
 }

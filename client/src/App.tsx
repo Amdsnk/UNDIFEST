@@ -10,7 +10,6 @@ import LivePage from "@/pages/LivePage";
 import AccountPage from "@/pages/AccountPage";
 import ProfileCompletionPage from "@/pages/ProfileCompletionPage";
 import HistoryPage from "@/pages/HistoryPage";
-import EventDetailPage from "@/pages/EventDetailPage";
 import PaymentPage from "@/pages/PaymentPage";
 import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 import PaymentCancelPage from "@/pages/PaymentCancelPage";
@@ -61,9 +60,6 @@ function Router() {
       <Route path="/complete-profile" component={ProfileCompletionPage} />
       <Route path="/history">
         <RequireProfile><HistoryPage /></RequireProfile>
-      </Route>
-      <Route path="/event/:id">
-        {(params) => <RequireProfile><EventDetailPage /></RequireProfile>}
       </Route>
       <Route path="/payment/:eventId" component={PaymentPage} />
       <Route path="/terms" component={TermsPage} />
