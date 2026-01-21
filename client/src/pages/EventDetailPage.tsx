@@ -86,8 +86,9 @@ export default function EventDetailPage() {
   });
 
   const handlePurchaseClick = () => {
-    // Guest checkout enabled - direct redirect to iPaymu without confirmation dialog
-    purchaseMutation.mutate();
+    // Navigate to payment page instead of direct purchase
+    if (!event) return;
+    window.location.href = `/payment/${event.id}`;
   };
 
   if (isLoading) {
@@ -219,11 +220,10 @@ export default function EventDetailPage() {
           {/* Purchase Button */}
           <button
             onClick={handlePurchaseClick}
-            disabled={purchaseMutation.isPending}
             data-testid="button-purchase"
-            className="holographic-btn w-full h-14 rounded-lg text-xl font-bold mt-6 disabled:opacity-50"
+            className="holographic-btn w-full h-14 rounded-lg text-xl font-bold mt-6"
           >
-            {purchaseMutation.isPending ? "Memproses..." : `Beli Tiket (Rp ${event.price.toLocaleString()})`}
+            Beli Tiket (Rp {event.price.toLocaleString()})
           </button>
 
           {/* Payment Methods */}

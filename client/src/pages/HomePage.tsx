@@ -29,6 +29,13 @@ export default function HomePage() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
+  const handlePurchase = (event: Event, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation to event detail page
+    e.stopPropagation();
+    // Navigate to payment page instead of direct purchase
+    window.location.href = `/payment/${event.id}`;
+  };
+
   const { data: banners, isLoading: bannersLoading } = useQuery<Banner[]>({
     queryKey: ["/api/banners"],
   });
@@ -172,7 +179,8 @@ export default function HomePage() {
                               alt={event.name}
                               className="w-full h-auto pb-5"
                             />
-                            <button 
+                            <button
+                              onClick={(e) => handlePurchase(event, e)}
                               data-testid={`button-buy-${event.id}`}
                               className="absolute bottom-4 right-4"
                             >
@@ -188,7 +196,8 @@ export default function HomePage() {
                               className="w-full h-full min-h-[180px] object-cover pb-[15px]"
                             />
                             <div className="absolute bottom-4 right-4 z-20">
-                              <button 
+                              <button
+                                onClick={(e) => handlePurchase(event, e)}
                                 data-testid={`button-buy-${event.id}`}
                               >
                                 <img src={tombolBeliUrl} alt="Beli" className="h-10 mt-[0px] mb-[0px]" />

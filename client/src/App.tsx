@@ -11,6 +11,7 @@ import AccountPage from "@/pages/AccountPage";
 import ProfileCompletionPage from "@/pages/ProfileCompletionPage";
 import HistoryPage from "@/pages/HistoryPage";
 import EventDetailPage from "@/pages/EventDetailPage";
+import PaymentPage from "@/pages/PaymentPage";
 import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 import PaymentCancelPage from "@/pages/PaymentCancelPage";
 import TermsPage from "@/pages/TermsPage";
@@ -64,6 +65,7 @@ function Router() {
       <Route path="/event/:id">
         {(params) => <RequireProfile><EventDetailPage /></RequireProfile>}
       </Route>
+      <Route path="/payment/:eventId" component={PaymentPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/how-it-works" component={HowItWorksUserPage} />
