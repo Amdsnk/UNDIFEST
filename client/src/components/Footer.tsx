@@ -24,46 +24,47 @@ export function Footer() {
   };
 
   return (
-    <footer className="px-4 py-8 space-y-8 bg-[#090a26] pt-[0px] pb-[0px] mt-[0px] mb-[0px]">
-      {/* Company Info - Logo and Title */}
-      <div className="space-y-4 mt-[0px] mb-[0px] pt-[20px] pb-[0px]">
-        <img src={logoUrl} alt="Undifest" className="h-12" />
-        <div>
+    <footer className="px-4 py-8 bg-[#090a26] pt-[20px] pb-[0px]">
+      {/* Two Column Layout: Company Info (Left) and Information Menu (Right) */}
+      <div className="grid grid-cols-[60%_40%] gap-6">
+        {/* Left Column - Logo, Company Name, Address, Phone, WhatsApp */}
+        <div className="space-y-4">
+          {/* Logo */}
+          <img src={logoUrl} alt="Undifest" className="h-12" />
+
           {/* Company name: smaller on mobile (text-sm), original on desktop (text-lg) */}
-          <h3 className="text-white font-bold text-sm md:text-lg mb-2">
+          <h3 className="text-white font-bold text-sm md:text-lg">
             {getSetting("company_name", "PT. Undian Festival Indonesia")}
           </h3>
-        </div>
-      </div>
-      {/* Contact Info and Information Menu - Side by Side */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Left Column - Address, Phone, WhatsApp */}
-        <div className="space-y-3">
-          {/* Address: smaller text on mobile (text-xs), original on desktop (text-sm) */}
-          <div className="flex items-start gap-3 text-gray-400 text-xs md:text-sm">
-            <img src={iconAlamatUrl} alt="" className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <span className="text-[#ffffff] font-medium">
-              {getSetting("address", "Perkantoran Prominence No. 08-99 Jalan Jalur Sutera 900, Alam Sutera RT. 003/ 009. Kab. Tangerang, Banten 15325 Indonesia")}
-            </span>
-          </div>
-          {/* Phone: smaller text on mobile (text-xs), original on desktop (text-sm) */}
-          <div className="flex items-center gap-3 text-gray-400 text-xs md:text-sm">
-            <img src={iconTeleponUrl} alt="" className="w-5 h-5" />
-            <span className="text-[#ffffff] font-medium">
-              {getSetting("phone", "021 252515")}
-            </span>
-          </div>
-          {/* WhatsApp: smaller text on mobile (text-xs), original on desktop (text-sm) */}
-          <div className="flex items-center gap-3 text-gray-400 text-xs md:text-sm">
-            <img src={iconWAUrl} alt="" className="w-5 h-5" />
-            <span className="text-[#ffffff] font-medium">
-              {getSetting("whatsapp", "0818-1111-818")}
-            </span>
+
+          {/* Contact Info */}
+          <div className="space-y-3 pt-2">
+            {/* Address: smaller text on mobile (text-xs), original on desktop (text-sm) */}
+            <div className="flex items-start gap-3 text-gray-400 text-xs md:text-sm">
+              <img src={iconAlamatUrl} alt="" className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <span className="text-[#ffffff] font-medium">
+                {getSetting("address", "Perkantoran Prominence No. 08-99 Jalan Jalur Sutera 900, Alam Sutera RT. 003/ 009. Kab. Tangerang, Banten 15325 Indonesia")}
+              </span>
+            </div>
+            {/* Phone: smaller text on mobile (text-xs), original on desktop (text-sm) */}
+            <div className="flex items-center gap-3 text-gray-400 text-xs md:text-sm">
+              <img src={iconTeleponUrl} alt="" className="w-5 h-5" />
+              <span className="text-[#ffffff] font-medium">
+                {getSetting("phone", "021 252515")}
+              </span>
+            </div>
+            {/* WhatsApp: smaller text on mobile (text-xs), original on desktop (text-sm) */}
+            <div className="flex items-center gap-3 text-gray-400 text-xs md:text-sm">
+              <img src={iconWAUrl} alt="" className="w-5 h-5" />
+              <span className="text-[#ffffff] font-medium">
+                {getSetting("whatsapp", "0818-1111-818")}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Right Column - Information Menu */}
-        <div className="mt-[-62px] mb-[-62px]">
+        {/* Right Column - Information Menu (aligned with company name) */}
+        <div className="pt-[60px]">
           {/* Information title: smaller on mobile (text-sm), original on desktop (text-lg) */}
           <h3 className="text-white font-bold text-sm md:text-lg mb-4">Information</h3>
           <div className="flex flex-col gap-3">
