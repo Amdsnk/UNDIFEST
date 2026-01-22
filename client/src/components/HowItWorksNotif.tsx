@@ -8,7 +8,7 @@ export function HowItWorksNotif() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-[80px] left-1/2 -translate-x-1/2 max-w-undifest w-full px-4 z-40">
+    <div className="fixed bottom-[80px] left-0 right-0 w-screen md:max-w-undifest md:left-1/2 md:-translate-x-1/2 px-4 z-40">
       <Link href="/how-it-works">
         {/* How it works button: smaller height on mobile (py-2.5), original on desktop (py-4) */}
         <div className="bg-gradient-to-r from-[#00D4FF] to-[#7FFF00] rounded-2xl px-6 py-2.5 md:py-4 flex items-center justify-between shadow-lg cursor-pointer hover-elevate">

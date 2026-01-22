@@ -171,7 +171,7 @@ export default function HomePage() {
                           <img
                             src={cardImageUrl}
                             alt={event.name}
-                            className="w-full h-auto pb-5"
+                            className="w-full h-auto"
                           />
                           <button
                             onClick={() => handlePurchase(event)}
