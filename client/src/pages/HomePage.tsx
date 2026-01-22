@@ -105,7 +105,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
-      <div className="max-w-undifest mx-auto pb-20">
+      <div className="w-screen md:max-w-undifest mx-auto pb-20">
         <MobileHeader />
 
         {/* Hero Banner Carousel */}
@@ -166,7 +166,7 @@ export default function HomePage() {
                 if (isTemplateCard) {
                   return (
                     <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
-                      <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
+                      <div className="bg-transparent rounded-2xl overflow-hidden transition-all">
                         <div className="relative">
                           <img
                             src={cardImageUrl}
@@ -188,7 +188,7 @@ export default function HomePage() {
                 } else {
                   return (
                     <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
-                      <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
+                      <div className="bg-transparent rounded-2xl overflow-hidden transition-all">
                         <div className="relative">
                           <img
                             src={cardImageUrl}
