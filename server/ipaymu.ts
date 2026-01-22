@@ -119,6 +119,9 @@ export async function createPayment(params: IPaymuPaymentRequest): Promise<IPaym
  * Create direct payment request to iPaymu (Direct Payment API)
  */
 export async function createDirectPayment(params: IPaymuDirectPaymentRequest): Promise<IPaymuDirectPaymentResponse> {
+  console.log('[iPaymu] Creating direct payment with method:', params.paymentMethod, 'channel:', params.paymentChannel);
+  console.log('[iPaymu] Config check - VA:', IPAYMU_VA ? 'SET' : 'NOT SET', 'API_KEY:', IPAYMU_API_KEY ? 'SET' : 'NOT SET', 'URL:', IPAYMU_URL);
+
   const body = JSON.stringify({
     name: params.name,
     phone: params.phone,
@@ -142,6 +145,14 @@ export async function createDirectPayment(params: IPaymuDirectPaymentRequest): P
   const signature = generateSignature(body);
   const timestamp = Math.floor(Date.now() / 1000).toString();
 
+  console.log('[iPaymu] Request URL:', `${IPAYMU_URL}/payment/direct`);
+  console.log('[iPaymu] Request headers:', {
+    'Content-Type': 'application/json',
+    'va': IPAYMU_VA,
+    'signature': signature.substring(0, 10) + '...',
+    'timestamp': timestamp,
+  });
+
   const response = await fetch(`${IPAYMU_URL}/payment/direct`, {
     method: 'POST',
     headers: {
@@ -154,6 +165,8 @@ export async function createDirectPayment(params: IPaymuDirectPaymentRequest): P
   });
 
   const result = await response.json() as IPaymuDirectPaymentResponse;
+  console.log('[iPaymu] Response status:', response.status, 'Result:', result);
+
   return result;
 }
 
