@@ -29,7 +29,8 @@ export function Footer() {
       <div className="space-y-4 mt-[0px] mb-[0px] pt-[20px] pb-[0px]">
         <img src={logoUrl} alt="Undifest" className="h-12" />
         <div>
-          <h3 className="text-white font-bold text-lg mb-2">
+          {/* Company name: smaller on mobile (text-sm), original on desktop (text-lg) */}
+          <h3 className="text-white font-bold text-sm md:text-lg mb-2">
             {getSetting("company_name", "PT. Undian Festival Indonesia")}
           </h3>
         </div>
@@ -38,19 +39,22 @@ export function Footer() {
       <div className="grid grid-cols-2 gap-6">
         {/* Left Column - Address, Phone, WhatsApp */}
         <div className="space-y-3">
-          <div className="flex items-start gap-3 text-gray-400 text-sm">
+          {/* Address: smaller text on mobile (text-xs), original on desktop (text-sm) */}
+          <div className="flex items-start gap-3 text-gray-400 text-xs md:text-sm">
             <img src={iconAlamatUrl} alt="" className="w-5 h-5 mt-0.5 flex-shrink-0" />
             <span className="text-[#ffffff] font-medium">
               {getSetting("address", "Perkantoran Prominence No. 08-99 Jalan Jalur Sutera 900, Alam Sutera RT. 003/ 009. Kab. Tangerang, Banten 15325 Indonesia")}
             </span>
           </div>
-          <div className="flex items-center gap-3 text-gray-400 text-sm">
+          {/* Phone: smaller text on mobile (text-xs), original on desktop (text-sm) */}
+          <div className="flex items-center gap-3 text-gray-400 text-xs md:text-sm">
             <img src={iconTeleponUrl} alt="" className="w-5 h-5" />
             <span className="text-[#ffffff] font-medium">
               {getSetting("phone", "021 252515")}
             </span>
           </div>
-          <div className="flex items-center gap-3 text-gray-400 text-sm">
+          {/* WhatsApp: smaller text on mobile (text-xs), original on desktop (text-sm) */}
+          <div className="flex items-center gap-3 text-gray-400 text-xs md:text-sm">
             <img src={iconWAUrl} alt="" className="w-5 h-5" />
             <span className="text-[#ffffff] font-medium">
               {getSetting("whatsapp", "0818-1111-818")}
@@ -60,21 +64,23 @@ export function Footer() {
 
         {/* Right Column - Information Menu */}
         <div className="mt-[-62px] mb-[-62px]">
-          <h3 className="text-white font-bold text-lg mb-4">Information</h3>
+          {/* Information title: smaller on mobile (text-sm), original on desktop (text-lg) */}
+          <h3 className="text-white font-bold text-sm md:text-lg mb-4">Information</h3>
           <div className="flex flex-col gap-3">
-            <a href="#" className="text-[#ffffff] text-sm hover:text-gray-300 transition-colors">
+            {/* Links: smaller on mobile (text-xs), original on desktop (text-sm) */}
+            <a href="#" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
               Tentang Kami
             </a>
-            <a href="#" className="text-[#ffffff] text-sm hover:text-gray-300 transition-colors">
+            <a href="#" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
               Identitas Brand
             </a>
-            <a href="#" className="text-[#ffffff] text-sm hover:text-gray-300 transition-colors">
+            <a href="#" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
               Pusat Bantuan
             </a>
-            <a href="/terms" className="text-[#ffffff] text-sm hover:text-gray-300 transition-colors">
+            <a href="/terms" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
               Syarat dan Ketentuan
             </a>
-            <a href="/privacy" className="text-[#ffffff] text-sm hover:text-gray-300 transition-colors">
+            <a href="/privacy" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
               Kebijakan Privasi
             </a>
           </div>

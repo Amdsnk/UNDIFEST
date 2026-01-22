@@ -8,7 +8,8 @@ export function MobileHeader() {
       <div className="max-w-undifest mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo_undifest} alt="Undifest" className="w-28 h-28 object-contain p-0 m-0 pt-[0px] pb-[0px] mt-[-30px] mb-[-30px]" />
+            {/* Logo: 15% smaller on mobile (w-24 h-24), original size on desktop (w-28 h-28) */}
+            <img src={logo_undifest} alt="Undifest" className="w-24 h-24 md:w-28 md:h-28 object-contain p-0 m-0 pt-[0px] pb-[0px] mt-[-30px] mb-[-30px]" />
           </div>
           <div className="text-right">
             <div className="text-sm font-semibold text-white">PT. Undian Festival Indonesia</div>

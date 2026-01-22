@@ -178,7 +178,8 @@ export default function HomePage() {
                             data-testid={`button-buy-${event.id}`}
                             className="absolute bottom-4 right-4"
                           >
-                            <img src={tombolBeliUrl} alt="Beli" className="h-8 mt-[13px] mb-[13px]" />
+                            {/* Buy button: smaller on mobile (h-6), original on desktop (h-8) */}
+                            <img src={tombolBeliUrl} alt="Beli" className="h-6 md:h-8 mt-[13px] mb-[13px]" />
                           </button>
                         </div>
                       </div>
@@ -200,7 +201,8 @@ export default function HomePage() {
                               onClick={() => handlePurchase(event)}
                               data-testid={`button-buy-${event.id}`}
                             >
-                              <img src={tombolBeliUrl} alt="Beli" className="h-8" />
+                              {/* Buy button: smaller on mobile (h-6), original on desktop (h-8) */}
+                              <img src={tombolBeliUrl} alt="Beli" className="h-6 md:h-8" />
                             </button>
                           </div>
                         </div>
