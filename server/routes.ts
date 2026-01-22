@@ -507,8 +507,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Direct Payment API endpoint
   app.post("/api/transactions/direct", optionalAuth, async (req, res) => {
     try {
-      // Get user info if authenticated, otherwise use guest info
-      let userId: number | null = null;
+      // Get user info if authenticated, otherwise create guest user
+      let userId: string;
       let phoneNumber = "Guest";
       let userName = "Guest Customer";
       let userEmail = "guest@undifest.com";
@@ -523,6 +523,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userName = user.name || "Customer";
           userEmail = user.email || `${phoneNumber}@undifest.com`;
         }
+      } else {
+        // Create or get guest user for this transaction
+        let guestUser = await storage.getUserByPhoneNumber("Guest");
+        if (!guestUser) {
+          guestUser = await storage.createUser({
+            phoneNumber: "Guest",
+            name: "Guest Customer",
+            email: "guest@undifest.com"
+          });
+        }
+        userId = guestUser.id;
       }
 
       const { eventId, amount, eventName, paymentMethod, paymentChannel } = req.body;
@@ -545,9 +556,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Event is not active" });
       }
 
-      // Create transaction with pending status (userId can be null for guests)
+      // Create transaction with pending status
       const transaction = await storage.createTransaction({
-        userId: userId || undefined,
+        userId,
         eventId,
         amount,
         phoneNumber,
