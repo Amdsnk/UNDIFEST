@@ -539,7 +539,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phoneNumber = guestPhoneNumber;
       }
 
-      const { eventId, amount, eventName, paymentMethod, paymentChannel } = req.body;
+      const { eventId, amount, eventName, paymentMethod, paymentChannel, buyerName, buyerPhone, buyerEmail } = req.body;
+
+      // Use buyer data if provided (for lottery purposes)
+      if (buyerName) {
+        userName = buyerName;
+      }
+      if (buyerPhone) {
+        phoneNumber = buyerPhone;
+      }
+      if (buyerEmail) {
+        userEmail = buyerEmail;
+      }
 
       if (!eventId || !amount || !eventName || !paymentMethod || !paymentChannel) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -559,13 +570,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Event is not active" });
       }
 
-      // Create transaction with pending status
+      // Create transaction with pending status and buyer data
       const transaction = await storage.createTransaction({
         userId,
         eventId,
         amount,
         phoneNumber,
         eventName,
+        buyerName: buyerName || null,
+        buyerEmail: buyerEmail || null,
         paymentStatus: "pending",
         paymentMethod,
         paymentChannel,

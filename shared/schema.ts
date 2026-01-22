@@ -70,6 +70,9 @@ export const transactions = pgTable("transactions", {
   ticketCount: integer("ticket_count").notNull().default(1),
   phoneNumber: varchar("phone_number", { length: 20 }).notNull(),
   eventName: text("event_name").notNull(),
+  // Buyer information for lottery
+  buyerName: varchar("buyer_name", { length: 255 }),
+  buyerEmail: varchar("buyer_email", { length: 255 }),
   // Payment fields
   paymentStatus: varchar("payment_status", { length: 20 }).notNull().default("pending"), // pending, paid, failed, expired
   paymentId: varchar("payment_id", { length: 100 }), // iPaymu transaction ID

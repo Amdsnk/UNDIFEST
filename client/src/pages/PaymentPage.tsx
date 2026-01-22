@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import BuyerDataForm from "@/components/BuyerDataForm";
 import type { Event } from "@shared/schema";
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Copy, Check, ThumbsUp, ChevronRight } from "lucide-react";
@@ -24,6 +25,12 @@ interface PaymentDetails {
   channel: string;
 }
 
+interface BuyerData {
+  name: string;
+  phone: string;
+  email: string;
+}
+
 export default function PaymentPage() {
   const [, params] = useRoute("/payment/:eventId");
   const eventId = params?.eventId;
@@ -35,6 +42,8 @@ export default function PaymentPage() {
   const [paymentChannel, setPaymentChannel] = useState<string>('');
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showBuyerForm, setShowBuyerForm] = useState(false);
+  const [buyerData, setBuyerData] = useState<BuyerData | null>(null);
 
   const { data: event, isLoading: eventLoading } = useQuery<Event>({
     queryKey: ["/api/events", eventId],
@@ -51,12 +60,20 @@ export default function PaymentPage() {
     return event.imageUrl;
   };
 
-  const handlePaymentMethodSelect = async (method: 'va' | 'qris' | 'directdebit' | 'cstore', channel: string) => {
+  const handlePaymentMethodSelect = (method: 'va' | 'qris' | 'directdebit' | 'cstore', channel: string) => {
+    if (!event || isProcessing) return;
+
+    // Set payment method and channel, then show buyer form
+    setPaymentMethod(method);
+    setPaymentChannel(channel);
+    setShowBuyerForm(true);
+  };
+
+  const handleBuyerDataSubmit = async (data: BuyerData) => {
     if (!event || isProcessing) return;
 
     setIsProcessing(true);
-    setPaymentMethod(method);
-    setPaymentChannel(channel);
+    setBuyerData(data);
 
     const userToken = localStorage.getItem("user_token");
     const headers: Record<string, string> = {
@@ -72,8 +89,11 @@ export default function PaymentPage() {
         eventId: event.id,
         amount: event.price,
         eventName: event.name,
-        paymentMethod: method,
-        paymentChannel: channel,
+        paymentMethod,
+        paymentChannel,
+        buyerName: data.name,
+        buyerPhone: data.phone,
+        buyerEmail: data.email,
       });
 
       const response = await fetch("/api/transactions/direct", {
@@ -83,47 +103,50 @@ export default function PaymentPage() {
           eventId: event.id,
           amount: event.price,
           eventName: event.name,
-          paymentMethod: method,
-          paymentChannel: channel,
+          paymentMethod,
+          paymentChannel,
+          buyerName: data.name,
+          buyerPhone: data.phone,
+          buyerEmail: data.email,
         }),
       });
 
       console.log("Response status:", response.status);
-      const data = await response.json();
-      console.log("Response data:", data);
+      const responseData = await response.json();
+      console.log("Response data:", responseData);
 
       if (!response.ok) {
         toast({
           variant: "destructive",
           title: "Pembayaran Gagal",
-          description: data.message || data.paymentError || "Gagal membuat pembayaran. Silakan coba lagi.",
+          description: responseData.message || responseData.paymentError || "Gagal membuat pembayaran. Silakan coba lagi.",
         });
         setIsProcessing(false);
         return;
       }
 
-      if (data.paymentNo) {
+      if (responseData.paymentNo) {
         // Payment successful - show payment details
         setPaymentDetails({
-          paymentNo: data.paymentNo,
-          paymentName: data.paymentName,
-          total: data.total,
-          fee: data.fee,
-          expired: data.expired,
-          qrImage: data.qrImage,
-          via: data.via,
-          channel: data.channel,
+          paymentNo: responseData.paymentNo,
+          paymentName: responseData.paymentName,
+          total: responseData.total,
+          fee: responseData.fee,
+          expired: responseData.expired,
+          qrImage: responseData.qrImage,
+          via: responseData.via,
+          channel: responseData.channel,
         });
         toast({
           title: "Pembayaran Dibuat",
           description: "Silakan selesaikan pembayaran Anda.",
         });
         setIsProcessing(false);
-      } else if (data.paymentError) {
+      } else if (responseData.paymentError) {
         toast({
           variant: "destructive",
           title: "Pembayaran Gagal",
-          description: data.paymentError,
+          description: responseData.paymentError,
         });
         setIsProcessing(false);
       } else {
@@ -143,6 +166,12 @@ export default function PaymentPage() {
       });
       setIsProcessing(false);
     }
+  };
+
+  const handleBackFromBuyerForm = () => {
+    setShowBuyerForm(false);
+    setPaymentMethod(null);
+    setPaymentChannel('');
   };
 
   const copyToClipboard = (text: string) => {
@@ -390,6 +419,16 @@ export default function PaymentPage() {
                 </div>
               </button>
             </div>
+          </div>
+        ) : showBuyerForm ? (
+          /* Buyer Data Form */
+          <div className="px-4 py-4">
+            <BuyerDataForm
+              onSubmit={handleBuyerDataSubmit}
+              onBack={handleBackFromBuyerForm}
+              isProcessing={isProcessing}
+              eventPrice={event.price}
+            />
           </div>
         ) : (
           /* Bank/Channel Selection */
