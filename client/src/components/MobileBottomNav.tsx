@@ -18,16 +18,18 @@ export function MobileBottomNav() {
   return (
     <>
       <HowItWorksNotif />
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 max-w-undifest w-full bg-gradient-to-b from-[#1a2332] to-[#0a1621] border-t border-[#8B2FC9]/30 z-50 mt-[-5px] mb-[-5px]">
+      {/* Mobile-only fix: Remove left-1/2 -translate-x-1/2 to prevent overflow, use left-0 right-0 instead */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-undifest mx-auto bg-gradient-to-b from-[#1a2332] to-[#0a1621] border-t border-[#8B2FC9]/30 z-50 mt-[-5px] mb-[-5px]">
+        {/* Mobile-only fix: Reduce px-4 to px-2 on mobile to prevent overflow */}
         <div className="flex items-center justify-around mt-[0px] mb-[0px] pt-[8px] pb-[8px]" style={{ marginTop: '-7px', paddingBottom: '7.8px' }}>
         <Link href="/">
           <div
             data-testid="nav-home"
-            className="flex flex-col items-center px-4 py-2 transition-all cursor-pointer"
+            className="flex flex-col items-center px-2 md:px-4 py-2 transition-all cursor-pointer"
           >
-            <img 
-              src={isActive("/") ? homeActiveUrl : homeNormalUrl} 
-              alt="Home" 
+            <img
+              src={isActive("/") ? homeActiveUrl : homeNormalUrl}
+              alt="Home"
               className="object-contain"
               style={{ width: '44px', height: '44px' }}
             />
@@ -37,11 +39,11 @@ export function MobileBottomNav() {
         <Link href="/live">
           <div
             data-testid="nav-live"
-            className="flex flex-col items-center px-4 py-2 transition-all cursor-pointer"
+            className="flex flex-col items-center px-2 md:px-4 py-2 transition-all cursor-pointer"
           >
-            <img 
-              src={isActive("/live") ? liveActiveUrl : liveNormalUrl} 
-              alt="Live" 
+            <img
+              src={isActive("/live") ? liveActiveUrl : liveNormalUrl}
+              alt="Live"
               className="object-contain"
               style={{ width: '46px', height: '46px' }}
             />
@@ -60,11 +62,11 @@ export function MobileBottomNav() {
         <Link href="/history">
           <div
             data-testid="nav-history"
-            className="flex flex-col items-center px-4 py-2 transition-all cursor-pointer"
+            className="flex flex-col items-center px-2 md:px-4 py-2 transition-all cursor-pointer"
           >
-            <img 
-              src={isActive("/history") ? historyActiveUrl : historyNormalUrl} 
-              alt="History" 
+            <img
+              src={isActive("/history") ? historyActiveUrl : historyNormalUrl}
+              alt="History"
               className="object-contain"
               style={{ width: '44px', height: '44px' }}
             />
@@ -74,11 +76,11 @@ export function MobileBottomNav() {
         <Link href="/account">
           <div
             data-testid="nav-account"
-            className="flex flex-col items-center px-4 py-2 transition-all cursor-pointer"
+            className="flex flex-col items-center px-2 md:px-4 py-2 transition-all cursor-pointer"
           >
-            <img 
-              src={isActive("/account") ? accountActiveUrl : accountNormalUrl} 
-              alt="Account" 
+            <img
+              src={isActive("/account") ? accountActiveUrl : accountNormalUrl}
+              alt="Account"
               className="object-contain"
               style={{ width: '44px', height: '44px' }}
             />
