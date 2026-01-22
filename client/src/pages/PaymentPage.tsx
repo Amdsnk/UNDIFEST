@@ -248,6 +248,15 @@ export default function PaymentPage() {
               </button>
               {showTermsDropdown && (
                 <div className="p-4 bg-[#1a2332]/50 space-y-4 text-white">
+                  {/* Banner Kupon */}
+                  <div className="mb-4">
+                    <img
+                      src={cardImageUrl}
+                      alt={event.name}
+                      className="w-full h-auto object-contain rounded-lg border-2 border-blue-500/30"
+                    />
+                  </div>
+
                   <div>
                     <p className="text-sm text-gray-400 mb-1">Harga Tiket</p>
                     <p className="text-sm">Beli e-book senilai Rp {event.price.toLocaleString()} untuk mendapatkan 1 tiket undian.</p>

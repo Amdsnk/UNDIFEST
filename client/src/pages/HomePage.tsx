@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Footer } from "@/components/Footer";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import type { Event, Banner, Video, Partner, PaymentMethod } from "@shared/schema";
 import logoUrl from "@assets/logo undifest_1763476451738.png";
 import banner01Url from "@assets/banner01_1763489481905.jpg";
@@ -27,6 +27,8 @@ import iconWAUrl from "@assets/icon_WA_1763489481911.png";
 export default function HomePage() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const handlePurchase = (event: Event) => {
     // Navigate directly to payment page
@@ -176,7 +178,7 @@ export default function HomePage() {
                             data-testid={`button-buy-${event.id}`}
                             className="absolute bottom-4 right-4"
                           >
-                            <img src={tombolBeliUrl} alt="Beli" className="h-10 mt-[13px] mb-[13px]" />
+                            <img src={tombolBeliUrl} alt="Beli" className="h-8 mt-[13px] mb-[13px]" />
                           </button>
                         </div>
                       </div>
@@ -185,22 +187,26 @@ export default function HomePage() {
                 } else {
                   return (
                     <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
-                      <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
-                        <div className="relative min-h-[180px]">
+                      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl overflow-hidden hover-elevate transition-all border border-gray-700">
+                        <div className="relative">
                           <img
                             src={cardImageUrl}
                             alt={event.name}
                             className="w-full h-auto object-contain"
-                            style={{ paddingBottom: '15px' }}
                           />
-                          <div className="absolute bottom-4 right-4 z-20">
-                            <button
-                              onClick={() => handlePurchase(event)}
-                              data-testid={`button-buy-${event.id}`}
-                            >
-                              <img src={tombolBeliUrl} alt="Beli" className="h-10 mt-[0px] mb-[0px]" />
-                            </button>
+                        </div>
+                        {/* Info box at bottom */}
+                        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-3 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-bold text-lg">Rp {event.price.toLocaleString('id-ID')}</span>
                           </div>
+                          <button
+                            onClick={() => handlePurchase(event)}
+                            data-testid={`button-buy-${event.id}`}
+                            className="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold px-4 py-2 rounded-lg text-sm transition-colors"
+                          >
+                            Beli
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -282,18 +288,21 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Video Modal - fits in content area with proper sizing */}
+        {/* Video Modal - Shopee Live style (no controls) */}
         {selectedVideo && (
-          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-            <div className="relative w-full max-w-undifest mx-auto px-4">
-              {/* Header dengan tombol back - transparansi hitam sedikit */}
-              <div className="absolute top-0 left-4 right-4 z-10 bg-black/30 backdrop-blur-sm rounded-t-xl">
-                <div className="flex items-center gap-3 p-3">
+          <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+            <div className="relative w-full max-w-undifest mx-auto">
+              {/* Header dengan tombol back */}
+              <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent">
+                <div className="flex items-center gap-3 p-4">
                   <button
-                    onClick={() => setSelectedVideo(null)}
+                    onClick={() => {
+                      setSelectedVideo(null);
+                      setIsPlaying(false);
+                    }}
                     className="text-white p-1.5 hover:bg-white/10 rounded-full transition-all"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
@@ -301,14 +310,41 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Video Player - memanjang tapi tidak fullscreen */}
-              <video
-                src={selectedVideo}
-                className="w-full h-auto max-h-[75vh] object-contain rounded-xl bg-black"
-                controls
-                autoPlay
-                playsInline
-              />
+              {/* Video Player - no controls, clean like Shopee Live */}
+              <div
+                className="relative"
+                onClick={() => {
+                  if (videoRef.current) {
+                    if (isPlaying) {
+                      videoRef.current.pause();
+                      setIsPlaying(false);
+                    } else {
+                      videoRef.current.play();
+                      setIsPlaying(true);
+                    }
+                  }
+                }}
+              >
+                <video
+                  ref={videoRef}
+                  src={selectedVideo}
+                  className="w-full h-screen object-contain bg-black"
+                  autoPlay
+                  playsInline
+                  loop
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                />
+
+                {/* Play button overlay - only show when paused */}
+                {!isPlaying && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center">
+                      <Play className="w-10 h-10 text-black ml-2" fill="currentColor" />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
