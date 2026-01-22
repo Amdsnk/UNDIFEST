@@ -1,0 +1,258 @@
+import { useQuery } from "@tanstack/react-query";
+import { MobileHeader } from "@/components/MobileHeader";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { Footer } from "@/components/Footer";
+import { Play, Video as VideoIcon } from "lucide-react";
+import { useState, useRef } from "react";
+import type { Video } from "@shared/schema";
+
+export default function LivePage() {
+  const [activeTab, setActiveTab] = useState<"live" | "video">("live");
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const { data: videos, isLoading } = useQuery<Video[]>({
+    queryKey: ["/api/videos"],
+  });
+
+  const liveVideos = videos?.filter(v => v.isLive === true) || [];
+  const recordedVideos = videos?.filter(v => v.isLive === false) || [];
+
+  // Hardcoded videos from homepage
+  const hardcodedVideos = [
+    { id: 'hc1', src: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.06 PM.mp4', title: 'Testimoni Undifest' },
+    { id: 'hc2', src: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.26 PM.mp4', title: 'Rec Tue 28 Jan 25' },
+    { id: 'hc3', src: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.55 PM.mp4', title: 'Rec Tue 28 Jan 25' },
+    { id: 'hc4', src: '/attached_assets/WhatsApp Video 2026-01-19 at 7.16.29 PM.mp4', title: 'Rec Tue 27 Jan 25' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#ffffff]">
+      <div className="max-w-undifest mx-auto pb-20">
+        <MobileHeader />
+
+        {/* Tabs */}
+        <div className="px-4 pt-6 pb-2 bg-[#16202a]">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setActiveTab("live")}
+              data-testid="tab-live"
+              className={`py-4 rounded-xl font-bold text-lg transition-all ${
+                activeTab === "live"
+                  ? "bg-gradient-to-r from-[#FF1493] to-[#FF1493] text-white shadow-lg shadow-pink-500/30"
+                  : "bg-gradient-to-r from-purple-900/40 to-purple-800/40 text-gray-400"
+              }`}
+            >
+              Live
+            </button>
+            <button
+              onClick={() => setActiveTab("video")}
+              data-testid="tab-video"
+              className={`py-4 rounded-xl font-bold text-lg transition-all ${
+                activeTab === "video"
+                  ? "bg-gradient-to-r from-[#FF1493] to-[#FF1493] text-white shadow-lg shadow-pink-500/30"
+                  : "bg-gradient-to-r from-purple-900/40 to-purple-800/40 text-gray-400"
+              }`}
+            >
+              Video
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-4 bg-[#16202a]">
+          {activeTab === "live" ? (
+            <div className="space-y-4">
+              {isLoading ? (
+                <div className="h-48 bg-gray-800 rounded-lg animate-pulse" />
+              ) : liveVideos.length > 0 ? (
+                liveVideos.map((video) => (
+                  <div key={video.id} data-testid={`live-video-${video.id}`} className="gradient-border-purple">
+                    <div className="bg-[#1a2332] rounded-lg overflow-hidden">
+                      <div className="relative">
+                        <img
+                          src={video.thumbnailUrl}
+                          alt={video.title}
+                          className="w-full h-64 object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
+                            <Play className="w-8 h-8 text-black ml-1" fill="currentColor" />
+                          </div>
+                        </div>
+                        <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded text-xs font-bold animate-pulse">
+                          LIVE
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <span className="text-xs text-gray-400">Live</span>
+                        <h3 className="text-white font-semibold">{video.title}</h3>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-24">
+                  <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-purple-900/30 to-purple-800/30 border border-purple-700/50 flex items-center justify-center mb-6">
+                    <Play className="w-16 h-16 text-purple-400/60" />
+                  </div>
+                  <p className="text-gray-400 text-center text-sm">
+                    Belum ada siaran Live saat ini
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {isLoading ? (
+                <>
+                  <div className="h-32 bg-gray-800 rounded-lg animate-pulse" />
+                  <div className="h-32 bg-gray-800 rounded-lg animate-pulse" />
+                  <div className="h-32 bg-gray-800 rounded-lg animate-pulse" />
+                  <div className="h-32 bg-gray-800 rounded-lg animate-pulse" />
+                </>
+              ) : (
+                <>
+                  {/* Hardcoded videos from homepage */}
+                  {hardcodedVideos.map((video) => (
+                    <div
+                      key={video.id}
+                      data-testid={`video-${video.id}`}
+                      className="gradient-border-cyan cursor-pointer"
+                      onClick={() => setSelectedVideo(video.src)}
+                    >
+                      <div className="bg-[#1a2332] rounded-lg overflow-hidden">
+                        <div className="relative">
+                          <video
+                            src={video.src}
+                            className="w-full h-32 object-cover"
+                            muted
+                            playsInline
+                          />
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                              <Play className="w-6 h-6 text-black ml-1" fill="currentColor" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-3">
+                          <span className="text-xs text-gray-400">Video</span>
+                          <h3 className="text-white text-sm font-semibold line-clamp-2">
+                            {video.title}
+                          </h3>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Database videos */}
+                  {recordedVideos.map((video) => (
+                    <div key={video.id} data-testid={`video-${video.id}`} className="gradient-border-cyan">
+                      <div className="bg-[#1a2332] rounded-lg overflow-hidden">
+                        <div className="relative">
+                          <img
+                            src={video.thumbnailUrl}
+                            alt={video.title}
+                            className="w-full h-32 object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                              <Play className="w-6 h-6 text-black ml-1" fill="currentColor" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-3">
+                          <span className="text-xs text-gray-400">Video</span>
+                          <h3 className="text-white text-sm font-semibold line-clamp-2">
+                            {video.title}
+                          </h3>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Show empty state only if no videos at all */}
+                  {recordedVideos.length === 0 && hardcodedVideos.length === 0 && (
+                    <div className="col-span-2 flex flex-col items-center justify-center py-24">
+                      <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-purple-900/30 to-purple-800/30 border border-purple-700/50 flex items-center justify-center mb-6">
+                        <Play className="w-16 h-16 text-purple-400/60" />
+                      </div>
+                      <p className="text-gray-400 text-center text-sm">
+                        Belum ada video tersedia
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        <Footer />
+        <MobileBottomNav />
+      </div>
+
+      {/* Video Modal - Shopee Live style (no controls) */}
+      {selectedVideo && (
+        <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+          <div className="relative w-full max-w-undifest mx-auto">
+            {/* Header dengan tombol back */}
+            <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent">
+              <div className="flex items-center gap-3 p-4">
+                <button
+                  onClick={() => {
+                    setSelectedVideo(null);
+                    setIsPlaying(false);
+                  }}
+                  className="text-white p-1.5 hover:bg-white/10 rounded-full transition-all"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <h3 className="text-white text-base font-semibold">Pengundian</h3>
+              </div>
+            </div>
+
+            {/* Video Player - no controls, clean like Shopee Live */}
+            <div
+              className="relative"
+              onClick={() => {
+                if (videoRef.current) {
+                  if (isPlaying) {
+                    videoRef.current.pause();
+                    setIsPlaying(false);
+                  } else {
+                    videoRef.current.play();
+                    setIsPlaying(true);
+                  }
+                }
+              }}
+            >
+              <video
+                ref={videoRef}
+                src={selectedVideo}
+                className="w-full h-screen object-contain bg-black"
+                autoPlay
+                playsInline
+                loop
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+              />
+
+              {/* Play button overlay - only show when paused */}
+              {!isPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center">
+                    <Play className="w-10 h-10 text-black ml-2" fill="currentColor" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
