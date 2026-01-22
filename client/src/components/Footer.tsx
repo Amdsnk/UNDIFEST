@@ -24,7 +24,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="px-4 py-8 bg-[#090a26] pt-[20px] pb-[0px]">
+    <footer className="px-2 md:px-4 py-8 bg-[#090a26] pt-[20px] pb-[0px]">
       {/* Two Column Layout: Company Info (Left) and Information Menu (Right) */}
       <div className="grid grid-cols-[60%_40%] gap-6">
         {/* Left Column - Logo, Company Name, Address, Phone, WhatsApp */}

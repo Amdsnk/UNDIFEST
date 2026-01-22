@@ -150,7 +150,7 @@ export default function HomePage() {
         </div>
 
         {/* Events Section - Dynamic rendering with cardTemplate support */}
-        <div className="px-4 py-6 bg-[#16202a]">
+        <div className="px-2 md:px-4 py-6 bg-[#16202a]">
           <h2 className="text-xl font-bold text-white mb-4">Pilih & Beli Undian</h2>
           <div className="space-y-4">
             {eventsLoading ? (

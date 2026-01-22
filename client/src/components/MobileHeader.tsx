@@ -5,7 +5,7 @@ import logo_undifest from "@assets/logo undifest.png";
 export function MobileHeader() {
   return (
     <div className="bg-gradient-to-b from-[#0a1621] to-[#1a2332] border-b border-[#8B2FC9]/30">
-      <div className="max-w-undifest mx-auto px-4 py-3">
+      <div className="max-w-undifest mx-auto px-2 md:px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Logo: 15% smaller on mobile (w-24 h-24), original size on desktop (w-28 h-28) */}
