@@ -108,21 +108,21 @@ export default function HomePage() {
 
         {/* Hero Banner Carousel */}
         <div className="bg-[#16202a]">
-          <div className="relative overflow-hidden" data-testid="hero-banner-carousel">
-            <div className="relative bg-gray-900">
+          <div className="relative" data-testid="hero-banner-carousel">
+            <div className="relative bg-gray-900 flex items-center justify-center">
               {bannersLoading ? (
                 <div className="w-full h-48 bg-gray-800/50 animate-pulse" />
               ) : banners && banners.length > 0 ? (
                 <img
                   src={banners[currentHeroSlide]?.imageUrl || banner01Url}
                   alt={banners[currentHeroSlide]?.title || `Hero Banner ${currentHeroSlide + 1}`}
-                  className="w-full h-auto object-contain"
+                  className="w-full h-auto object-contain max-h-[400px]"
                 />
               ) : (
                 <img
                   src={banner01Url}
                   alt="Default Hero Banner"
-                  className="w-full h-auto object-contain"
+                  className="w-full h-auto object-contain max-h-[400px]"
                 />
               )}
             </div>
@@ -186,11 +186,11 @@ export default function HomePage() {
                   return (
                     <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
                       <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
-                        <div className="relative min-h-[180px] overflow-hidden">
+                        <div className="relative min-h-[180px]">
                           <img
                             src={cardImageUrl}
                             alt={event.name}
-                            className="w-full h-full min-h-[180px] object-cover"
+                            className="w-full h-auto object-contain"
                             style={{ paddingBottom: '15px' }}
                           />
                           <div className="absolute bottom-4 right-4 z-20">
