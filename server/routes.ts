@@ -509,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get user info if authenticated, otherwise create guest user
       let userId: string;
-      let phoneNumber = "Guest";
+      let phoneNumber = "081234567890"; // Default guest phone number (valid format for iPaymu)
       let userName = "Guest Customer";
       let userEmail = "guest@undifest.com";
 
@@ -525,15 +525,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         // Create or get guest user for this transaction
-        let guestUser = await storage.getUserByPhoneNumber("Guest");
+        // Use a valid phone number format for iPaymu API
+        const guestPhoneNumber = "081234567890";
+        let guestUser = await storage.getUserByPhoneNumber(guestPhoneNumber);
         if (!guestUser) {
           guestUser = await storage.createUser({
-            phoneNumber: "Guest",
+            phoneNumber: guestPhoneNumber,
             name: "Guest Customer",
             email: "guest@undifest.com"
           });
         }
         userId = guestUser.id;
+        phoneNumber = guestPhoneNumber;
       }
 
       const { eventId, amount, eventName, paymentMethod, paymentChannel } = req.body;
