@@ -253,7 +253,7 @@ export default function PaymentPage() {
                     <img
                       src={cardImageUrl}
                       alt={event.name}
-                      className="w-full h-auto object-contain rounded-lg border-2 border-blue-500/30"
+                      className="w-full h-auto object-contain rounded-lg"
                     />
                   </div>
 

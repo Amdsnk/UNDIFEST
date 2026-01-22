@@ -187,26 +187,22 @@ export default function HomePage() {
                 } else {
                   return (
                     <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
-                      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl overflow-hidden hover-elevate transition-all border border-gray-700">
+                      <div className="bg-transparent rounded-2xl overflow-hidden hover-elevate transition-all">
                         <div className="relative">
                           <img
                             src={cardImageUrl}
                             alt={event.name}
                             className="w-full h-auto object-contain"
+                            style={{ paddingBottom: '15px' }}
                           />
-                        </div>
-                        {/* Info box at bottom */}
-                        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-3 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-white font-bold text-lg">Rp {event.price.toLocaleString('id-ID')}</span>
+                          <div className="absolute bottom-4 right-4 z-20">
+                            <button
+                              onClick={() => handlePurchase(event)}
+                              data-testid={`button-buy-${event.id}`}
+                            >
+                              <img src={tombolBeliUrl} alt="Beli" className="h-8" />
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handlePurchase(event)}
-                            data-testid={`button-buy-${event.id}`}
-                            className="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold px-4 py-2 rounded-lg text-sm transition-colors"
-                          >
-                            Beli
-                          </button>
                         </div>
                       </div>
                     </div>
