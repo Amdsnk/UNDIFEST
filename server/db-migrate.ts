@@ -91,9 +91,13 @@ export async function runMigrations() {
           ticket_count INTEGER NOT NULL DEFAULT 1,
           phone_number VARCHAR(20) NOT NULL,
           event_name TEXT NOT NULL,
+          buyer_name VARCHAR(255),
+          buyer_email VARCHAR(255),
           payment_status VARCHAR(20) NOT NULL DEFAULT 'pending',
           payment_id VARCHAR(100),
           payment_method VARCHAR(50),
+          payment_channel VARCHAR(50),
+          payment_number VARCHAR(100),
           payment_url TEXT,
           paid_at TIMESTAMP,
           created_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -144,10 +148,24 @@ export async function runMigrations() {
           ALTER TABLE transactions ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50);
         `);
         await db.execute(sql`
+          ALTER TABLE transactions ADD COLUMN IF NOT EXISTS payment_channel VARCHAR(50);
+        `);
+        await db.execute(sql`
+          ALTER TABLE transactions ADD COLUMN IF NOT EXISTS payment_number VARCHAR(100);
+        `);
+        await db.execute(sql`
           ALTER TABLE transactions ADD COLUMN IF NOT EXISTS payment_url TEXT;
         `);
         await db.execute(sql`
           ALTER TABLE transactions ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP;
+        `);
+
+        // Add buyer information columns for lottery
+        await db.execute(sql`
+          ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_name VARCHAR(255);
+        `);
+        await db.execute(sql`
+          ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_email VARCHAR(255);
         `);
 
         console.log('✅ Missing columns added successfully');

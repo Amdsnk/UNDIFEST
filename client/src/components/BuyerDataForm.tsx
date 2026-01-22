@@ -222,14 +222,14 @@ export default function BuyerDataForm({
             variant="outline"
             onClick={onBack}
             disabled={isProcessing}
-            className="flex-1"
+            className="flex-1 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold"
           >
             Kembali
           </Button>
           <Button
             type="submit"
             disabled={isProcessing || !agreeTerms}
-            className="flex-1 bg-[#4169E1] hover:bg-[#3557C1]"
+            className="flex-1 bg-[#4169E1] hover:bg-[#3557C1] text-white font-semibold"
           >
             {isProcessing ? "Memproses..." : "Bayar Sekarang"}
           </Button>
