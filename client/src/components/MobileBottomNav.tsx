@@ -18,14 +18,14 @@ export function MobileBottomNav() {
   return (
     <>
       <HowItWorksNotif />
-      {/* Mobile-only fix: Remove left-1/2 -translate-x-1/2 to prevent overflow, use left-0 right-0 instead */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-undifest mx-auto bg-gradient-to-b from-[#1a2332] to-[#0a1621] border-t border-[#8B2FC9]/30 z-50 mt-[-5px] mb-[-5px]">
-        {/* Mobile-only fix: Reduce px-4 to px-2 on mobile to prevent overflow */}
+      {/* Mobile-only fix: Use w-screen on mobile to match viewport, max-w-undifest on desktop */}
+      <div className="fixed bottom-0 left-0 right-0 w-screen md:max-w-undifest md:left-1/2 md:-translate-x-1/2 bg-gradient-to-b from-[#1a2332] to-[#0a1621] border-t border-[#8B2FC9]/30 z-50 mt-[-5px] mb-[-5px]">
+        {/* Mobile-only fix: Reduce px-4 to px-1 on mobile to prevent overflow */}
         <div className="flex items-center justify-around mt-[0px] mb-[0px] pt-[8px] pb-[8px]" style={{ marginTop: '-7px', paddingBottom: '7.8px' }}>
         <Link href="/">
           <div
             data-testid="nav-home"
-            className="flex flex-col items-center px-2 md:px-4 py-2 transition-all cursor-pointer"
+            className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
           >
             <img
               src={isActive("/") ? homeActiveUrl : homeNormalUrl}
@@ -39,7 +39,7 @@ export function MobileBottomNav() {
         <Link href="/live">
           <div
             data-testid="nav-live"
-            className="flex flex-col items-center px-2 md:px-4 py-2 transition-all cursor-pointer"
+            className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
           >
             <img
               src={isActive("/live") ? liveActiveUrl : liveNormalUrl}
@@ -62,7 +62,7 @@ export function MobileBottomNav() {
         <Link href="/history">
           <div
             data-testid="nav-history"
-            className="flex flex-col items-center px-2 md:px-4 py-2 transition-all cursor-pointer"
+            className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
           >
             <img
               src={isActive("/history") ? historyActiveUrl : historyNormalUrl}
@@ -76,7 +76,7 @@ export function MobileBottomNav() {
         <Link href="/account">
           <div
             data-testid="nav-account"
-            className="flex flex-col items-center px-2 md:px-4 py-2 transition-all cursor-pointer"
+            className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
           >
             <img
               src={isActive("/account") ? accountActiveUrl : accountNormalUrl}
