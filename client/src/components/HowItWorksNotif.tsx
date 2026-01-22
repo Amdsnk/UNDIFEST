@@ -10,8 +10,8 @@ export function HowItWorksNotif() {
   return (
     <div className="fixed bottom-[80px] left-0 right-0 w-screen md:max-w-undifest md:left-1/2 md:-translate-x-1/2 px-4 z-40">
       <Link href="/how-it-works">
-        {/* How it works button: longer width (px-8), smaller height on mobile (py-2.5), original on desktop (py-4) */}
-        <div className="bg-gradient-to-r from-[#00D4FF] to-[#7FFF00] rounded-2xl px-8 py-2.5 md:py-4 flex items-center justify-between shadow-lg cursor-pointer hover-elevate">
+        {/* How it works button: longer width (px-12), smaller height on mobile (py-2.5), original on desktop (py-4) */}
+        <div className="bg-gradient-to-r from-[#00D4FF] to-[#7FFF00] rounded-2xl px-12 py-2.5 md:py-4 flex items-center justify-between shadow-lg cursor-pointer hover-elevate">
           <div className="flex items-center gap-3">
             <ArrowRight className="w-6 h-6 text-black" />
             <span className="text-black text-lg font-bold">How it works</span>
