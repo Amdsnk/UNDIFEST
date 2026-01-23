@@ -195,7 +195,16 @@ export default function LivePage() {
 
       {/* Video Modal - Shopee Live style (no controls) */}
       {selectedVideo && (
-        <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+        <div
+          className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+          onClick={(e) => {
+            // Close video when clicking outside video area
+            if (e.target === e.currentTarget) {
+              setSelectedVideo(null);
+              setIsPlaying(false);
+            }
+          }}
+        >
           <div className="relative w-full max-w-undifest mx-auto">
             {/* Header dengan tombol back */}
             <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent">
@@ -216,20 +225,7 @@ export default function LivePage() {
             </div>
 
             {/* Video Player - no controls, clean like Shopee Live */}
-            <div
-              className="relative"
-              onClick={() => {
-                if (videoRef.current) {
-                  if (isPlaying) {
-                    videoRef.current.pause();
-                    setIsPlaying(false);
-                  } else {
-                    videoRef.current.play();
-                    setIsPlaying(true);
-                  }
-                }
-              }}
-            >
+            <div className="relative">
               <video
                 ref={videoRef}
                 src={selectedVideo}
@@ -241,14 +237,24 @@ export default function LivePage() {
                 onPause={() => setIsPlaying(false)}
               />
 
-              {/* Play button overlay - only show when paused */}
-              {!isPlaying && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                  <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center">
-                    <Play className="w-10 h-10 text-black ml-2" fill="currentColor" />
-                  </div>
-                </div>
-              )}
+              {/* Play button overlay - HIDDEN (never show) */}
+            </div>
+
+            {/* Bottom back button - same function as top back button */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/60 to-transparent">
+              <div className="flex items-center justify-center p-4">
+                <button
+                  onClick={() => {
+                    setSelectedVideo(null);
+                    setIsPlaying(false);
+                  }}
+                  className="text-white p-2 hover:bg-white/10 rounded-full transition-all"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>

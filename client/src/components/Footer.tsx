@@ -99,7 +99,7 @@ export function Footer() {
         </p>
       </div>
       {/* Social Media */}
-      <div>
+      <div className="mb-4 md:mb-0">
         <h3 className="text-white font-bold text-lg mb-4">Follow Us</h3>
         <div className="flex items-center gap-4">
           <a href={getSetting("facebook", "https://facebook.com/undifest")} className="hover-elevate" data-testid="social-facebook" target="_blank" rel="noopener noreferrer">
@@ -123,7 +123,7 @@ export function Footer() {
         </div>
       </div>
       {/* Copyright */}
-      <div className="-mx-4 px-4 border-t border-gray-700/50 bg-[#1b1d36] pt-[20px] pb-[20px]">
+      <div className="-mx-4 px-4 border-t border-gray-700/50 bg-[#1b1d36] pt-[20px] pb-[20px] mt-6 md:mt-0">
         <p className="text-left text-[14px] text-[#ffffff]">
           {getSetting("copyright", "Copyright ©2025\nPT. Undian Festival Indonesia - Undifest. All Right Reserved").split('\n').map((line, i) => (
             <span key={i}>
