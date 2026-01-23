@@ -6,6 +6,7 @@ interface VideoContextType {
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
   closeVideo: () => void;
+  closeVideoAndGoHome: () => void;
 }
 
 const VideoContext = createContext<VideoContextType | undefined>(undefined);
@@ -19,6 +20,13 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     setIsPlaying(false);
   };
 
+  const closeVideoAndGoHome = () => {
+    setSelectedVideo(null);
+    setIsPlaying(false);
+    // Navigate to home and scroll to video section
+    window.location.href = '/#video-section';
+  };
+
   return (
     <VideoContext.Provider
       value={{
@@ -27,6 +35,7 @@ export function VideoProvider({ children }: { children: ReactNode }) {
         isPlaying,
         setIsPlaying,
         closeVideo,
+        closeVideoAndGoHome,
       }}
     >
       {children}

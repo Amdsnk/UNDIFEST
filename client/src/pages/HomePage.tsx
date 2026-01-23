@@ -220,7 +220,7 @@ export default function HomePage() {
         </div>
 
         {/* Undifest Video */}
-        <div className="px-4 pt-2 pb-6 bg-[#16202a]">
+        <div id="video-section" className="px-4 pt-2 pb-6 bg-[#16202a]">
           <h2 className="text-xl font-bold text-white mb-4">Undifest Video</h2>
           {/* Single row with 4 videos - 25% width each */}
           <div className="flex gap-3 overflow-x-auto pb-2">

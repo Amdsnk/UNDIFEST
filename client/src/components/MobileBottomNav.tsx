@@ -13,9 +13,17 @@ import { useVideo } from "@/contexts/VideoContext";
 
 export function MobileBottomNav() {
   const [location] = useLocation();
-  const { closeVideo } = useVideo();
+  const { selectedVideo, closeVideoAndGoHome } = useVideo();
 
   const isActive = (path: string) => location === path;
+
+  // When video is open, all nav clicks should close video and go to home video section
+  const handleNavClick = (e: React.MouseEvent) => {
+    if (selectedVideo) {
+      e.preventDefault();
+      closeVideoAndGoHome();
+    }
+  };
 
   return (
     <>
@@ -24,7 +32,7 @@ export function MobileBottomNav() {
       <div className="fixed bottom-0 left-0 right-0 w-screen md:max-w-undifest md:left-1/2 md:-translate-x-1/2 bg-gradient-to-b from-[#1a2332] to-[#0a1621] border-t border-[#8B2FC9]/30 z-50 mt-[-5px] mb-[-5px]">
         {/* Mobile-only fix: Reduce px-4 to px-1 on mobile to prevent overflow */}
         <div className="flex items-center justify-around mt-[0px] mb-[0px] pt-[8px] pb-[8px]" style={{ marginTop: '-7px', paddingBottom: '7.8px' }}>
-        <Link href="/" onClick={closeVideo}>
+        <Link href="/" onClick={handleNavClick}>
           <div
             data-testid="nav-home"
             className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
@@ -38,7 +46,7 @@ export function MobileBottomNav() {
           </div>
         </Link>
 
-        <Link href="/live" onClick={closeVideo}>
+        <Link href="/live" onClick={handleNavClick}>
           <div
             data-testid="nav-live"
             className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
@@ -52,7 +60,7 @@ export function MobileBottomNav() {
           </div>
         </Link>
 
-        <Link href="/" onClick={closeVideo}>
+        <Link href="/" onClick={handleNavClick}>
           <div
             data-testid="nav-logo"
             className="flex flex-col items-center cursor-pointer"
@@ -61,7 +69,7 @@ export function MobileBottomNav() {
           </div>
         </Link>
 
-        <Link href="/history" onClick={closeVideo}>
+        <Link href="/history" onClick={handleNavClick}>
           <div
             data-testid="nav-history"
             className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
@@ -75,7 +83,7 @@ export function MobileBottomNav() {
           </div>
         </Link>
 
-        <Link href="/account" onClick={closeVideo}>
+        <Link href="/account" onClick={handleNavClick}>
           <div
             data-testid="nav-account"
             className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
