@@ -82,7 +82,7 @@ export default function LivePage() {
         </div>
 
         {/* Content */}
-        <div className="px-4 bg-[#16202a]">
+        <div className="px-4 pb-8 bg-[#16202a]">
           {activeTab === "live" ? (
             <div className="space-y-4">
               {isLoading ? (
@@ -115,9 +115,11 @@ export default function LivePage() {
                 ))
               ) : (
                 <div className="flex flex-col items-center justify-center py-24">
-                  <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-purple-900/30 to-purple-800/30 border border-purple-700/50 flex items-center justify-center mb-6">
-                    <Play className="w-16 h-16 text-purple-400/60" />
-                  </div>
+                  <img
+                    src="/attached_assets/0live.png"
+                    alt="No Live"
+                    className="w-32 h-32 mb-6 object-contain"
+                  />
                   <p className="text-gray-400 text-center text-sm">
                     Belum ada siaran Live saat ini
                   </p>
