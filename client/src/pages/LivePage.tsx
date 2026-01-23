@@ -235,6 +235,17 @@ export default function LivePage() {
                 loop
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
+                onClick={() => {
+                  if (videoRef.current) {
+                    if (isPlaying) {
+                      videoRef.current.pause();
+                      setIsPlaying(false);
+                    } else {
+                      videoRef.current.play();
+                      setIsPlaying(true);
+                    }
+                  }
+                }}
               />
 
               {/* Play button overlay - HIDDEN (never show) */}

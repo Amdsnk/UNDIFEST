@@ -152,7 +152,7 @@ export default function HomePage() {
         {/* Events Section - Dynamic rendering with cardTemplate support */}
         <div className="px-2 md:px-4 py-6 bg-[#16202a]">
           <h2 className="text-xl font-bold text-white mb-4">Pilih & Beli Undian</h2>
-          <div className="space-y-2">
+          <div className="space-y-1">
             {eventsLoading ? (
               <>
                 <div className="h-44 bg-gray-800/50 rounded-xl animate-pulse" />
@@ -328,6 +328,17 @@ export default function HomePage() {
                   loop
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
+                  onClick={() => {
+                    if (videoRef.current) {
+                      if (isPlaying) {
+                        videoRef.current.pause();
+                        setIsPlaying(false);
+                      } else {
+                        videoRef.current.play();
+                        setIsPlaying(true);
+                      }
+                    }
+                  }}
                 />
 
                 {/* Play button overlay - HIDDEN (never show) */}
