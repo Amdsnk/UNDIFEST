@@ -9,9 +9,11 @@ import historyNormalUrl from "@assets/iconbar_History-normal_1763505897763.png";
 import accountActiveUrl from "@assets/iconbar_Account-active_1763506111500.png";
 import accountNormalUrl from "@assets/iconbar_Account-normal_1763506111501.png";
 import { HowItWorksNotif } from "./HowItWorksNotif";
+import { useVideo } from "@/contexts/VideoContext";
 
 export function MobileBottomNav() {
   const [location] = useLocation();
+  const { closeVideo } = useVideo();
 
   const isActive = (path: string) => location === path;
 
@@ -50,7 +52,7 @@ export function MobileBottomNav() {
           </div>
         </Link>
 
-        <Link href="/">
+        <Link href="/" onClick={closeVideo}>
           <div
             data-testid="nav-logo"
             className="flex flex-col items-center cursor-pointer"

@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import type { Event, Banner, Video, Partner, PaymentMethod } from "@shared/schema";
+import { useVideo } from "@/contexts/VideoContext";
 import logoUrl from "@assets/logo undifest_1763476451738.png";
 import banner01Url from "@assets/banner01_1763489481905.jpg";
 import undian01Url from "@assets/undian01_1763489504866.png";
@@ -26,8 +27,7 @@ import iconWAUrl from "@assets/icon_WA_1763489481911.png";
 
 export default function HomePage() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying } = useVideo();
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handlePurchase = (event: Event) => {

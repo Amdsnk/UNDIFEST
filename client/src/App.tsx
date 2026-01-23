@@ -43,6 +43,7 @@ import AdminManagementPage from "@/pages/admin/AdminManagementPage";
 import DaftarTransferPage from "@/pages/admin/DaftarTransferPage";
 import { AdminRoute } from "@/components/AdminRoute";
 import { RequireProfile } from "@/components/RequireProfile";
+import { VideoProvider } from "@/contexts/VideoContext";
 
 function Router() {
   return (
@@ -159,10 +160,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <VideoProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </VideoProvider>
     </QueryClientProvider>
   );
 }

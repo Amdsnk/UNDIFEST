@@ -5,11 +5,11 @@ import { Footer } from "@/components/Footer";
 import { Play, Video as VideoIcon } from "lucide-react";
 import { useState, useRef } from "react";
 import type { Video } from "@shared/schema";
+import { useVideo } from "@/contexts/VideoContext";
 
 export default function LivePage() {
   const [activeTab, setActiveTab] = useState<"live" | "video">("live");
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying } = useVideo();
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const { data: videos, isLoading } = useQuery<Video[]>({
