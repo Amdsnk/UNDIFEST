@@ -250,23 +250,6 @@ export default function LivePage() {
 
               {/* Play button overlay - HIDDEN (never show) */}
             </div>
-
-            {/* Bottom back button - same function as top back button */}
-            <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/60 to-transparent">
-              <div className="flex items-center justify-center p-4">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    closeVideo();
-                  }}
-                  className="text-white p-2 hover:bg-white/10 rounded-full transition-all"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
