@@ -115,11 +115,35 @@ export default function LivePage() {
                 ))
               ) : (
                 <div className="flex flex-col items-center justify-center py-24">
-                  <img
-                    src="/attached_assets/0live.png"
-                    alt="No Live"
-                    className="w-32 h-32 mb-6 object-contain"
-                  />
+                  <div className="w-32 h-32 mb-6 relative">
+                    {/* Custom Video Camera Icon - Gradient Style */}
+                    <svg viewBox="0 0 128 128" className="w-full h-full">
+                      <defs>
+                        <linearGradient id="videoGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style={{ stopColor: '#4F46E5', stopOpacity: 0.8 }} />
+                          <stop offset="100%" style={{ stopColor: '#7C3AED', stopOpacity: 0.6 }} />
+                        </linearGradient>
+                        <linearGradient id="videoGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style={{ stopColor: '#06B6D4', stopOpacity: 0.8 }} />
+                          <stop offset="100%" style={{ stopColor: '#3B82F6', stopOpacity: 0.6 }} />
+                        </linearGradient>
+                      </defs>
+
+                      {/* Rounded Square Background */}
+                      <rect x="20" y="32" width="64" height="64" rx="16"
+                            fill="url(#videoGradient1)"
+                            stroke="#6366F1" strokeWidth="2" opacity="0.9"/>
+
+                      {/* Play Triangle */}
+                      <path d="M 45 50 L 45 78 L 70 64 Z"
+                            fill="#E0E7FF" opacity="0.95"/>
+
+                      {/* Camera Triangle (right side) */}
+                      <path d="M 84 52 L 108 42 L 108 86 L 84 76 Z"
+                            fill="url(#videoGradient2)"
+                            stroke="#3B82F6" strokeWidth="2" opacity="0.9"/>
+                    </svg>
+                  </div>
                   <p className="text-gray-400 text-center text-sm">
                     Belum ada siaran Live saat ini
                   </p>
