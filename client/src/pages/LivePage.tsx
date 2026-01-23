@@ -3,14 +3,35 @@ import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Footer } from "@/components/Footer";
 import { Play, Video as VideoIcon } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Video } from "@shared/schema";
 import { useVideo } from "@/contexts/VideoContext";
 
 export default function LivePage() {
   const [activeTab, setActiveTab] = useState<"live" | "video">("live");
-  const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying, closeVideo } = useVideo();
+  const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying, closeVideo, closeVideoAndGoHome } = useVideo();
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Handle browser back button when video is open
+  useEffect(() => {
+    if (selectedVideo) {
+      // Push a new history state when video opens
+      window.history.pushState({ videoOpen: true }, '');
+
+      const handlePopState = (e: PopStateEvent) => {
+        if (selectedVideo) {
+          e.preventDefault();
+          closeVideoAndGoHome();
+        }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [selectedVideo, closeVideoAndGoHome]);
 
   const { data: videos, isLoading } = useQuery<Video[]>({
     queryKey: ["/api/videos"],

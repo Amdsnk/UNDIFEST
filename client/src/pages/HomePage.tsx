@@ -27,8 +27,29 @@ import iconWAUrl from "@assets/icon_WA_1763489481911.png";
 
 export default function HomePage() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
-  const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying, closeVideo } = useVideo();
+  const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying, closeVideo, closeVideoAndGoHome } = useVideo();
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Handle browser back button when video is open
+  useEffect(() => {
+    if (selectedVideo) {
+      // Push a new history state when video opens
+      window.history.pushState({ videoOpen: true }, '');
+
+      const handlePopState = (e: PopStateEvent) => {
+        if (selectedVideo) {
+          e.preventDefault();
+          closeVideoAndGoHome();
+        }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [selectedVideo, closeVideoAndGoHome]);
 
   const handlePurchase = (event: Event) => {
     // Navigate directly to payment page
