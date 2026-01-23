@@ -27,7 +27,7 @@ import iconWAUrl from "@assets/icon_WA_1763489481911.png";
 
 export default function HomePage() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
-  const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying } = useVideo();
+  const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying, closeVideo } = useVideo();
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handlePurchase = (event: Event) => {
@@ -293,8 +293,7 @@ export default function HomePage() {
             onClick={(e) => {
               // Close video when clicking outside video area
               if (e.target === e.currentTarget) {
-                setSelectedVideo(null);
-                setIsPlaying(false);
+                closeVideo();
               }
             }}
           >
@@ -303,9 +302,9 @@ export default function HomePage() {
               <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent">
                 <div className="flex items-center gap-3 p-4">
                   <button
-                    onClick={() => {
-                      setSelectedVideo(null);
-                      setIsPlaying(false);
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeVideo();
                     }}
                     className="text-white p-1.5 hover:bg-white/10 rounded-full transition-all"
                   >
@@ -328,7 +327,8 @@ export default function HomePage() {
                   loop
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     if (videoRef.current) {
                       if (isPlaying) {
                         videoRef.current.pause();
@@ -348,9 +348,9 @@ export default function HomePage() {
               <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/60 to-transparent">
                 <div className="flex items-center justify-center p-4">
                   <button
-                    onClick={() => {
-                      setSelectedVideo(null);
-                      setIsPlaying(false);
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeVideo();
                     }}
                     className="text-white p-2 hover:bg-white/10 rounded-full transition-all"
                   >
