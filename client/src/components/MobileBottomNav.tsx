@@ -24,7 +24,7 @@ export function MobileBottomNav() {
       <div className="fixed bottom-0 left-0 right-0 w-screen md:max-w-undifest md:left-1/2 md:-translate-x-1/2 bg-gradient-to-b from-[#1a2332] to-[#0a1621] border-t border-[#8B2FC9]/30 z-50 mt-[-5px] mb-[-5px]">
         {/* Mobile-only fix: Reduce px-4 to px-1 on mobile to prevent overflow */}
         <div className="flex items-center justify-around mt-[0px] mb-[0px] pt-[8px] pb-[8px]" style={{ marginTop: '-7px', paddingBottom: '7.8px' }}>
-        <Link href="/">
+        <Link href="/" onClick={closeVideo}>
           <div
             data-testid="nav-home"
             className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
@@ -38,7 +38,7 @@ export function MobileBottomNav() {
           </div>
         </Link>
 
-        <Link href="/live">
+        <Link href="/live" onClick={closeVideo}>
           <div
             data-testid="nav-live"
             className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
@@ -61,7 +61,7 @@ export function MobileBottomNav() {
           </div>
         </Link>
 
-        <Link href="/history">
+        <Link href="/history" onClick={closeVideo}>
           <div
             data-testid="nav-history"
             className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
@@ -75,7 +75,7 @@ export function MobileBottomNav() {
           </div>
         </Link>
 
-        <Link href="/account">
+        <Link href="/account" onClick={closeVideo}>
           <div
             data-testid="nav-account"
             className="flex flex-col items-center px-1 md:px-4 py-2 transition-all cursor-pointer"
