@@ -114,37 +114,45 @@ export default function LivePage() {
                   </div>
                 ))
               ) : (
-                <div className="flex flex-col items-center justify-center py-24">
-                  <div className="w-32 h-32 mb-6 relative">
-                    {/* Custom Video Camera Icon - Gradient Style */}
-                    <svg viewBox="0 0 128 128" className="w-full h-full">
+                <div className="flex flex-col items-center pt-16 pb-24">
+                  <div className="w-24 h-24 mb-3 relative">
+                    {/* Custom Video Camera Icon - Exact Match */}
+                    <svg viewBox="0 0 100 100" className="w-full h-full">
                       <defs>
-                        <linearGradient id="videoGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style={{ stopColor: '#4F46E5', stopOpacity: 0.8 }} />
-                          <stop offset="100%" style={{ stopColor: '#7C3AED', stopOpacity: 0.6 }} />
+                        {/* Dark Blue/Purple Gradient for rounded square */}
+                        <linearGradient id="squareGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style={{ stopColor: '#2D3B5F', stopOpacity: 1 }} />
+                          <stop offset="100%" style={{ stopColor: '#1F2937', stopOpacity: 1 }} />
                         </linearGradient>
-                        <linearGradient id="videoGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style={{ stopColor: '#06B6D4', stopOpacity: 0.8 }} />
-                          <stop offset="100%" style={{ stopColor: '#3B82F6', stopOpacity: 0.6 }} />
+
+                        {/* Cyan/Green Gradient for camera triangle */}
+                        <linearGradient id="cameraGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style={{ stopColor: '#06B6D4', stopOpacity: 0.9 }} />
+                          <stop offset="100%" style={{ stopColor: '#10B981', stopOpacity: 0.7 }} />
+                        </linearGradient>
+
+                        {/* Blue/Purple Gradient for play triangle */}
+                        <linearGradient id="playGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style={{ stopColor: '#6366F1', stopOpacity: 0.9 }} />
+                          <stop offset="100%" style={{ stopColor: '#8B5CF6', stopOpacity: 0.8 }} />
                         </linearGradient>
                       </defs>
 
-                      {/* Rounded Square Background */}
-                      <rect x="20" y="32" width="64" height="64" rx="16"
-                            fill="url(#videoGradient1)"
-                            stroke="#6366F1" strokeWidth="2" opacity="0.9"/>
+                      {/* Rounded Square Background with border */}
+                      <rect x="15" y="25" width="50" height="50" rx="12"
+                            fill="url(#squareGradient)"
+                            stroke="#4F46E5" strokeWidth="2.5" opacity="1"/>
 
-                      {/* Play Triangle */}
-                      <path d="M 45 50 L 45 78 L 70 64 Z"
-                            fill="#E0E7FF" opacity="0.95"/>
+                      {/* Play Triangle inside square */}
+                      <path d="M 35 42 L 35 58 L 50 50 Z"
+                            fill="url(#playGradient)"/>
 
                       {/* Camera Triangle (right side) */}
-                      <path d="M 84 52 L 108 42 L 108 86 L 84 76 Z"
-                            fill="url(#videoGradient2)"
-                            stroke="#3B82F6" strokeWidth="2" opacity="0.9"/>
+                      <path d="M 65 42 L 85 32 L 85 68 L 65 58 Z"
+                            fill="url(#cameraGradient)"/>
                     </svg>
                   </div>
-                  <p className="text-gray-400 text-center text-sm">
+                  <p className="text-gray-400 text-center text-sm font-light">
                     Belum ada siaran Live saat ini
                   </p>
                 </div>
