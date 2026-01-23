@@ -29,13 +29,8 @@ export default function HistoryPage() {
         <MobileHeader />
 
         <div className="px-4 py-6 bg-[#16202a]">
-          {/* Red Header */}
-          <div className="bg-red-600 rounded-t-xl p-3 mt-[15px]">
-            <h2 className="text-white text-center font-bold">Perbaikan halaman History</h2>
-          </div>
-
           {/* Banner Section */}
-          <div className="flex items-center justify-between rounded-b-xl p-4 pt-[0px] pb-[0px] bg-[#2e3e59a8] mb-[15px]">
+          <div className="flex items-center justify-between rounded-xl p-4 pt-[0px] pb-[0px] bg-[#2e3e59a8] mb-[15px] mt-[15px]">
             <div>
               <h1 className="text-2xl font-bold text-white">Riwayat Pemenang</h1>
               <p className="text-gray-400 text-sm">Daftar lengkap pemenang Undifest</p>
@@ -54,7 +49,7 @@ export default function HistoryPage() {
           <div className="bg-[#0f1a26] rounded-xl overflow-hidden border-2 border-gray-800 mt-[30px] mb-[150px] pt-[0px] pb-[0px]">
             {/* Header */}
             <div className="bg-[#FFB800] p-3">
-              <div className="grid grid-cols-4 gap-2 text-black font-bold text-sm">
+              <div className="grid grid-cols-4 gap-1 md:gap-2 text-black font-bold text-[10px] md:text-sm">
                 <div>Tanggal</div>
                 <div>Pemenang</div>
                 <div>Nominal (Rp)</div>
@@ -71,7 +66,7 @@ export default function HistoryPage() {
                   <div
                     key={winner.id}
                     data-testid={`winner-${winner.id}`}
-                    className="grid grid-cols-4 gap-2 p-3 text-white text-sm bg-[#1a2332]/50 hover:bg-[#1a2332] transition-colors"
+                    className="grid grid-cols-4 gap-1 md:gap-2 p-2 md:p-3 text-white text-[10px] md:text-sm bg-[#1a2332]/50 hover:bg-[#1a2332] transition-colors"
                   >
                     <div className="font-medium">
                       {new Date(winner.announcedAt).toLocaleDateString("en-GB", {
@@ -80,13 +75,13 @@ export default function HistoryPage() {
                         year: "2-digit"
                       }).replace(/ /g, ' ')}
                     </div>
-                    <div className="font-mono text-xs">
+                    <div className="font-mono text-[9px] md:text-xs break-all">
                       {maskPhoneNumber(winner.user?.phoneNumber || winner.transaction?.phoneNumber || '')}
                     </div>
                     <div className="font-bold">
                       {(winner.transaction?.amount || 0).toLocaleString('id-ID')}
                     </div>
-                    <div className="truncate">
+                    <div className="truncate text-[9px] md:text-sm">
                       {winner.event?.name || winner.transaction?.eventName || 'Event'}
                     </div>
                   </div>
