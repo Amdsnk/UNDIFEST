@@ -76,7 +76,7 @@ export function Footer() {
               Identitas Brand
             </a>
             <a href="#" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
-              Pusat Bantuan
+              FAQ
             </a>
             <a href="/terms" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
               Syarat dan Ketentuan
