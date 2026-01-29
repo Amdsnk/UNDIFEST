@@ -4,19 +4,16 @@ import { Footer } from "@/components/Footer";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-[#0a1621]">
-      <div className="pb-20">
+    <div className="min-h-screen bg-[#ffffff]">
+      <div className="max-w-undifest mx-auto pb-20">
         <MobileHeader />
-        
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Tentang Kami</h1>
-          <p className="text-gray-400 mb-8">
-            Informasi mengenai PT. Undian Festival Indonesia
-          </p>
-          
-          <div className="space-y-6 text-white">
+
+        <div className="px-4 py-8 bg-[#16202a]">
+          <h1 className="text-3xl font-bold text-white mb-6">Tentang Kami</h1>
+
+          <div className="space-y-8 text-white">
             <section>
-              <h3 className="text-xl font-bold mb-3 text-[#00D4FF]">Siapa Kami?</h3>
+              <h3 className="text-xl font-bold mb-3">Siapa Kami?</h3>
               <p className="text-gray-300 text-sm leading-relaxed mb-4">
                 PT. Undian Festival Indonesia adalah perusahaan yang bergerak di bidang penjualan produk digital berupa e-book. Kami hadir untuk memberikan akses mudah terhadap konten edukatif dan informatif melalui platform digital yang aman dan terpercaya.
               </p>
@@ -27,7 +24,7 @@ export default function AboutPage() {
             </section>
 
             <section>
-              <h3 className="text-xl font-bold mb-3 text-[#00D4FF]">Visi Kami</h3>
+              <h3 className="text-xl font-bold mb-3">Visi Kami</h3>
               <p className="text-gray-300 text-sm leading-relaxed">
                 Menjadi platform digital terdepan dalam penyediaan produk e-book berkualitas dengan layanan yang transparan, aman, dan memberikan nilai tambah bagi setiap pembeli.
               </p>
@@ -35,7 +32,7 @@ export default function AboutPage() {
             </section>
 
             <section>
-              <h3 className="text-xl font-bold mb-3 text-[#00D4FF]">Misi Kami</h3>
+              <h3 className="text-xl font-bold mb-3">Misi Kami</h3>
               <ul className="list-disc list-inside text-gray-300 text-sm leading-relaxed space-y-2">
                 <li>Menyediakan produk digital berkualitas yang mudah diakses oleh masyarakat luas</li>
                 <li>Menjalankan program apresiasi yang adil, transparan, dan sesuai regulasi</li>
@@ -46,7 +43,7 @@ export default function AboutPage() {
             </section>
 
             <section>
-              <h3 className="text-xl font-bold mb-3 text-[#00D4FF]">Komitmen Kami</h3>
+              <h3 className="text-xl font-bold mb-3">Komitmen Kami</h3>
               <p className="text-gray-300 text-sm leading-relaxed mb-4">
                 Kami berkomitmen untuk:
               </p>
@@ -61,7 +58,7 @@ export default function AboutPage() {
             </section>
 
             <section>
-              <h3 className="text-xl font-bold mb-3 text-[#00D4FF]">Legalitas</h3>
+              <h3 className="text-xl font-bold mb-3">Legalitas</h3>
               <p className="text-gray-300 text-sm leading-relaxed mb-4">
                 PT. Undian Festival Indonesia telah memperoleh Penyelenggaraan dan Pengawasan dari Kementerian Sosial Republik Indonesia, memastikan bahwa setiap program yang kami jalankan sesuai dengan ketentuan hukum yang berlaku.
               </p>
@@ -69,7 +66,7 @@ export default function AboutPage() {
             </section>
 
             <section>
-              <h3 className="text-xl font-bold mb-3 text-[#00D4FF]">Hubungi Kami</h3>
+              <h3 className="text-xl font-bold mb-3">Hubungi Kami</h3>
               <div className="text-gray-300 text-sm leading-relaxed space-y-2">
                 <p><strong>Alamat:</strong><br />
                 Perkantoran Prominence No. 08 99 Jalin Jalur Sutera Utara, Alam Sutera Rt. 002/004, Kec. Tangerang, Banten 15325 Indonesia</p>
@@ -81,8 +78,8 @@ export default function AboutPage() {
         </div>
 
         <Footer />
-        <MobileBottomNav />
       </div>
+      <MobileBottomNav />
     </div>
   );
 }
