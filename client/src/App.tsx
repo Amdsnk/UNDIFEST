@@ -16,6 +16,9 @@ import PaymentCancelPage from "@/pages/PaymentCancelPage";
 import TermsPage from "@/pages/TermsPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import HowItWorksUserPage from "@/pages/HowItWorksPage";
+import FAQPage from "@/pages/FAQPage";
+import AboutPage from "@/pages/AboutPage";
+import BrandPage from "@/pages/BrandPage";
 import AdminLoginPage from "@/pages/admin/AdminLoginPage";
 import DashboardPage from "@/pages/admin/DashboardPage";
 import EventsListPage from "@/pages/admin/EventsListPage";
@@ -66,6 +69,9 @@ function Router() {
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/how-it-works" component={HowItWorksUserPage} />
+      <Route path="/faq" component={FAQPage} />
+      <Route path="/about" component={AboutPage} />
+      <Route path="/brand" component={BrandPage} />
 
       {/* Payment Routes */}
       <Route path="/payment/success" component={PaymentSuccessPage} />

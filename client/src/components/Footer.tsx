@@ -69,13 +69,13 @@ export function Footer() {
           <h3 className="text-white font-bold text-sm md:text-lg mb-4">Information</h3>
           <div className="flex flex-col gap-3">
             {/* Links: smaller on mobile (text-xs), original on desktop (text-sm) */}
-            <a href="#" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
+            <a href="/about" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
               Tentang Kami
             </a>
-            <a href="#" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
+            <a href="/brand" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
               Identitas Brand
             </a>
-            <a href="#" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
+            <a href="/faq" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
               FAQ
             </a>
             <a href="/terms" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
