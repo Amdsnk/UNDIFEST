@@ -371,29 +371,23 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (url: st
     );
   }
 
-  // Fallback to hardcoded videos if no homepage videos are configured
-  const fallbackVideos = [
-    { videoFile: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.06 PM.mp4', title: 'Video 1' },
-    { videoFile: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.26 PM.mp4', title: 'Video 2' },
-    { videoFile: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.55 PM.mp4', title: 'Video 3' },
-    { videoFile: '/attached_assets/WhatsApp Video 2026-01-19 at 7.16.29 PM.mp4', title: 'Video 4' },
-  ];
-
-  const videosToDisplay = (homepageVideos && homepageVideos.length > 0) ? homepageVideos : fallbackVideos;
+  // Don't show section if no videos
+  if (!homepageVideos || homepageVideos.length === 0) {
+    return null;
+  }
 
   return (
     <div id="video-section" className="px-4 pt-2 pb-6 bg-[#16202a]">
       <h2 className="text-xl font-bold text-white mb-4">Undifest Video</h2>
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {videosToDisplay.map((video, index) => {
+        {homepageVideos.map((video) => {
           const videoSrc = video.videoFile || video.videoUrl || '';
-          const videoKey = video.id || `fallback-${index}`;
 
           if (!videoSrc) return null;
 
           return (
             <div
-              key={videoKey}
+              key={video.id}
               onClick={() => setSelectedVideo(videoSrc)}
               className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
             >
