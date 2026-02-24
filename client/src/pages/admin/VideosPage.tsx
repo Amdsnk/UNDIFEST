@@ -385,14 +385,30 @@ export default function VideosPage() {
                         </div>
 
                         <div className="relative group">
-                          <img
-                            src={video.thumbnailUrl}
-                            alt={video.title}
-                            className="w-48 h-28 object-cover rounded-xl shadow-md border-2 border-gray-200"
-                          />
-                          {video.videoUrl && (
-                            <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Play className="w-12 h-12 text-white" />
+                          {video.videoFile ? (
+                            <video
+                              src={video.videoFile}
+                              className="w-48 h-28 object-cover rounded-xl shadow-md border-2 border-gray-200"
+                              muted
+                              loop
+                              playsInline
+                            />
+                          ) : video.thumbnailUrl ? (
+                            <>
+                              <img
+                                src={video.thumbnailUrl}
+                                alt={video.title}
+                                className="w-48 h-28 object-cover rounded-xl shadow-md border-2 border-gray-200"
+                              />
+                              {video.videoUrl && (
+                                <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <Play className="w-12 h-12 text-white" />
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="w-48 h-28 bg-gray-200 rounded-xl shadow-md border-2 border-gray-300 flex items-center justify-center">
+                              <VideoIcon className="w-12 h-12 text-gray-400" />
                             </div>
                           )}
                         </div>
