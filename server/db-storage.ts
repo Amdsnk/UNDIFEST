@@ -241,7 +241,11 @@ export class DatabaseStorage implements IStorage {
       ...insertVideo,
       type: insertVideo.type || "video",
       videoUrl: insertVideo.videoUrl || null,
+      videoFile: insertVideo.videoFile || null,
+      thumbnailUrl: insertVideo.thumbnailUrl || null,
       isLive: insertVideo.isLive || false,
+      showOnHomepage: insertVideo.showOnHomepage || false,
+      displayOrder: insertVideo.displayOrder || 0,
     }).returning();
     return video;
   }

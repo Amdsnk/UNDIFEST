@@ -243,15 +243,15 @@ export default function VideosPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="thumbnailUrl" className="text-base font-semibold text-gray-700">URL Thumbnail</Label>
+                      <Label htmlFor="thumbnailUrl" className="text-base font-semibold text-gray-700">URL Thumbnail (Opsional)</Label>
                       <Input
                         id="thumbnailUrl"
                         value={formData.thumbnailUrl}
                         onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                        placeholder="https://example.com/thumbnail.jpg"
-                        required
+                        placeholder="https://example.com/thumbnail.jpg (opsional - video akan auto-play)"
                         className="h-12 border-2 border-gray-200 focus:border-purple-400"
                       />
+                      <p className="text-sm text-gray-500">Kosongkan jika ingin video auto-play seperti Shopee</p>
                     </div>
                   </div>
 

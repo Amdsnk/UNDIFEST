@@ -97,7 +97,7 @@ export const winners = pgTable("winners", {
 export const videos = pgTable("videos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
-  thumbnailUrl: text("thumbnail_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"), // Optional - auto-generated from video
   videoUrl: text("video_url"),
   videoFile: text("video_file"), // Path to uploaded video file
   type: varchar("type", { length: 20 }).notNull().default("video"),

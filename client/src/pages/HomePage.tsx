@@ -394,7 +394,7 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (url: st
               onClick={() => setSelectedVideo(videoSrc)}
               className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
             >
-              {video.videoFile ? (
+              {videoSrc ? (
                 <video
                   src={videoSrc}
                   className="w-full h-40 object-cover"
@@ -403,17 +403,6 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (url: st
                   muted
                   playsInline
                 />
-              ) : video.thumbnailUrl ? (
-                <div className="relative w-full h-40">
-                  <img
-                    src={video.thumbnailUrl}
-                    alt={video.title || 'Video'}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                    <Play className="w-8 h-8 text-white" />
-                  </div>
-                </div>
               ) : null}
             </div>
           );
