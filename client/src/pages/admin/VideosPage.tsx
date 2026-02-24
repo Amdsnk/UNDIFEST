@@ -11,16 +11,21 @@ import { useState } from "react";
 import type { Video } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Video as VideoIcon, Plus, Play } from "lucide-react";
+import { Trash2, Video as VideoIcon, Plus, Play, Upload, Home } from "lucide-react";
 
 export default function VideosPage() {
   const [formData, setFormData] = useState({
     title: "",
     thumbnailUrl: "",
     videoUrl: "",
+    videoFile: "",
     type: "video",
     isLive: false,
+    showOnHomepage: false,
+    displayOrder: 0,
   });
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const { toast } = useToast();
 
   const { data: videos, isLoading } = useQuery<Video[]>({
@@ -55,14 +60,52 @@ export default function VideosPage() {
         title: "",
         thumbnailUrl: "",
         videoUrl: "",
+        videoFile: "",
         type: "video",
         isLive: false,
+        showOnHomepage: false,
+        displayOrder: 0,
       });
+      setVideoFile(null);
     },
     onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: "Gagal Menambahkan Video",
+        description: error.message,
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
+      const response = await fetch(`/api/videos/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Gagal mengupdate video");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
+      toast({
+        title: "Video Berhasil Diupdate",
+        description: "Perubahan telah disimpan",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Gagal Mengupdate Video",
         description: error.message,
       });
     },
@@ -99,7 +142,49 @@ export default function VideosPage() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleVideoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setVideoFile(file);
+    setUploadingVideo(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('video', file);
+
+      const response = await fetch('/api/videos/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Gagal mengupload video');
+      }
+
+      const data = await response.json();
+      setFormData(prev => ({ ...prev, videoFile: data.videoFile }));
+
+      toast({
+        title: "Video Berhasil Diupload",
+        description: "File video telah diupload ke server",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Gagal Upload Video",
+        description: error instanceof Error ? error.message : "Terjadi kesalahan",
+      });
+      setVideoFile(null);
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate(formData);
   };
@@ -108,6 +193,13 @@ export default function VideosPage() {
     if (window.confirm("Apakah Anda yakin ingin menghapus video ini?")) {
       deleteMutation.mutate(videoId);
     }
+  };
+
+  const handleToggleHomepage = (videoId: string, currentValue: boolean) => {
+    updateMutation.mutate({
+      id: videoId,
+      data: { showOnHomepage: !currentValue },
+    });
   };
 
   return (
@@ -172,18 +264,73 @@ export default function VideosPage() {
                       placeholder="https://youtube.com/watch?v=..."
                       className="h-12 border-2 border-gray-200 focus:border-purple-400"
                     />
+                    <p className="text-sm text-gray-500">Atau upload file video lokal di bawah</p>
                   </div>
 
-                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border-2 border-red-200">
-                    <Switch
-                      checked={formData.isLive}
-                      onCheckedChange={(checked) => setFormData({ ...formData, isLive: checked })}
-                      className="data-[state=checked]:bg-red-500"
-                    />
-                    <Label className="text-base font-semibold cursor-pointer">
-                      {formData.isLive ? "Live Streaming Aktif" : "Video Biasa"}
-                    </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="videoFile" className="text-base font-semibold text-gray-700">Upload Video Lokal</Label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id="videoFile"
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoFileChange}
+                        className="h-12 border-2 border-gray-200 focus:border-purple-400"
+                        disabled={uploadingVideo}
+                      />
+                      {uploadingVideo && (
+                        <div className="flex items-center gap-2 text-purple-600">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                          <span className="text-sm font-medium">Uploading...</span>
+                        </div>
+                      )}
+                    </div>
+                    {formData.videoFile && (
+                      <p className="text-sm text-green-600 font-medium">✓ Video uploaded: {formData.videoFile}</p>
+                    )}
                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border-2 border-red-200">
+                      <Switch
+                        checked={formData.isLive}
+                        onCheckedChange={(checked) => setFormData({ ...formData, isLive: checked })}
+                        className="data-[state=checked]:bg-red-500"
+                      />
+                      <Label className="text-base font-semibold cursor-pointer">
+                        {formData.isLive ? "Live Streaming Aktif" : "Video Biasa"}
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200">
+                      <Switch
+                        checked={formData.showOnHomepage}
+                        onCheckedChange={(checked) => setFormData({ ...formData, showOnHomepage: checked })}
+                        className="data-[state=checked]:bg-blue-500"
+                      />
+                      <Label className="text-base font-semibold cursor-pointer flex items-center gap-2">
+                        <Home className="w-4 h-4" />
+                        {formData.showOnHomepage ? "Tampil di Homepage" : "Tidak di Homepage"}
+                      </Label>
+                    </div>
+                  </div>
+
+                  {formData.showOnHomepage && (
+                    <div className="space-y-2">
+                      <Label htmlFor="displayOrder" className="text-base font-semibold text-gray-700">Urutan Tampilan (0-3)</Label>
+                      <Input
+                        id="displayOrder"
+                        type="number"
+                        min="0"
+                        max="3"
+                        value={formData.displayOrder}
+                        onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                        placeholder="0"
+                        className="h-12 border-2 border-gray-200 focus:border-purple-400"
+                      />
+                      <p className="text-sm text-gray-500">Urutan 0 = pertama, 1 = kedua, dst. Maksimal 4 video di homepage.</p>
+                    </div>
+                  )}
 
                   <Button
                     type="submit"
@@ -252,10 +399,16 @@ export default function VideosPage() {
 
                         <div className="flex-1">
                           <h3 className="font-bold text-gray-900 text-lg">{video.title}</h3>
-                          <div className="flex items-center gap-3 mt-2">
+                          <div className="flex items-center gap-3 mt-2 flex-wrap">
                             {video.isLive && (
                               <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-red-500 to-pink-600 text-white text-xs font-bold rounded-full shadow-md animate-pulse">
                                 LIVE
+                              </span>
+                            )}
+                            {video.showOnHomepage && (
+                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white text-xs font-bold rounded-full shadow-md">
+                                <Home className="w-3 h-3" />
+                                HOMEPAGE #{video.displayOrder}
                               </span>
                             )}
                             <span className="text-sm text-gray-500 font-medium">
@@ -266,36 +419,56 @@ export default function VideosPage() {
                               })}
                             </span>
                           </div>
-                          {video.videoUrl && (
-                            <a
-                              href={video.videoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 hover:underline mt-2 font-semibold"
-                            >
-                              <Play className="w-4 h-4" />
-                              Lihat Video
-                            </a>
-                          )}
+                          <div className="flex items-center gap-4 mt-2">
+                            {video.videoUrl && (
+                              <a
+                                href={video.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 hover:underline font-semibold"
+                              >
+                                <Play className="w-4 h-4" />
+                                Lihat Video
+                              </a>
+                            )}
+                            {video.videoFile && (
+                              <span className="inline-flex items-center gap-1 text-sm text-green-600 font-semibold">
+                                <Upload className="w-4 h-4" />
+                                Video Lokal
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        <Button
-                          size="sm"
-                          onClick={() => handleDelete(video.id)}
-                          disabled={deleteMutation.isPending}
-                          className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md"
-                        >
-                          {deleteMutation.isPending ? (
-                            <div className="flex items-center gap-2">
-                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                            </div>
-                          ) : (
-                            <>
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              Hapus
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col items-center gap-2">
+                            <Switch
+                              checked={video.showOnHomepage || false}
+                              onCheckedChange={() => handleToggleHomepage(video.id, video.showOnHomepage || false)}
+                              disabled={updateMutation.isPending}
+                              className="data-[state=checked]:bg-blue-500"
+                            />
+                            <span className="text-xs text-gray-500 font-medium">Homepage</span>
+                          </div>
+
+                          <Button
+                            size="sm"
+                            onClick={() => handleDelete(video.id)}
+                            disabled={deleteMutation.isPending}
+                            className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md"
+                          >
+                            {deleteMutation.isPending ? (
+                              <div className="flex items-center gap-2">
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                              </div>
+                            ) : (
+                              <>
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Hapus
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>

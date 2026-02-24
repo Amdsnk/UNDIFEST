@@ -3,7 +3,7 @@ import express, { type Request, type Response, type NextFunction } from "express
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema } from "@shared/schema";
+import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, updateVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema } from "@shared/schema";
 import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite, verifyUserToken } from "./auth";
 import { createPayment, createDirectPayment, isIPaymuConfigured, getIPaymuConfig } from "./ipaymu";
 import multer from "multer";
@@ -783,6 +783,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete video" });
+    }
+  });
+
+  // Get homepage videos (public)
+  app.get("/api/videos/homepage", async (req, res) => {
+    try {
+      const videos = await storage.getHomepageVideos();
+      res.json(videos);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch homepage videos" });
+    }
+  });
+
+  // Update video
+  app.put("/api/videos/:id", requireAdmin, async (req, res) => {
+    try {
+      const data = {
+        ...req.body,
+        isLive: req.body.isLive === "true" || req.body.isLive === true,
+        showOnHomepage: req.body.showOnHomepage === "true" || req.body.showOnHomepage === true,
+      };
+
+      const validated = updateVideoSchema.parse(data);
+      const video = await storage.updateVideo(req.params.id, validated);
+
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+
+      res.json(video);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update video" });
+    }
+  });
+
+  // Upload video file
+  app.post("/api/videos/upload", requireAdmin, upload.single('video'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No video file uploaded" });
+      }
+
+      const videoPath = `/uploads/${req.file.filename}`;
+      res.json({ videoFile: videoPath });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload video" });
     }
   });
 

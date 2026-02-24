@@ -99,8 +99,11 @@ export const videos = pgTable("videos", {
   title: text("title").notNull(),
   thumbnailUrl: text("thumbnail_url").notNull(),
   videoUrl: text("video_url"),
+  videoFile: text("video_file"), // Path to uploaded video file
   type: varchar("type", { length: 20 }).notNull().default("video"),
   isLive: boolean("is_live").notNull().default(false),
+  showOnHomepage: boolean("show_on_homepage").notNull().default(false), // Show on homepage
+  displayOrder: integer("display_order").default(0), // Order for homepage display
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -266,6 +269,11 @@ export const insertVideoSchema = createInsertSchema(videos).omit({
   id: true,
   createdAt: true,
 });
+
+export const updateVideoSchema = createInsertSchema(videos).omit({
+  id: true,
+  createdAt: true,
+}).partial();
 
 export const insertPartnerSchema = createInsertSchema(partners).omit({
   id: true,

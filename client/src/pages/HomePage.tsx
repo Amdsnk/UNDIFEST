@@ -241,71 +241,7 @@ export default function HomePage() {
         </div>
 
         {/* Undifest Video */}
-        <div id="video-section" className="px-4 pt-2 pb-6 bg-[#16202a]">
-          <h2 className="text-xl font-bold text-white mb-4">Undifest Video</h2>
-          {/* Single row with 4 videos - 25% width each */}
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {/* Video 1 */}
-            <div
-              onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.14.06 PM.mp4')}
-              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
-            >
-              <video
-                src="/attached_assets/WhatsApp Video 2026-01-19 at 7.14.06 PM.mp4"
-                className="w-full h-40 object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
-            </div>
-
-            {/* Video 2 */}
-            <div
-              onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.14.26 PM.mp4')}
-              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
-            >
-              <video
-                src="/attached_assets/WhatsApp Video 2026-01-19 at 7.14.26 PM.mp4"
-                className="w-full h-40 object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
-            </div>
-
-            {/* Video 3 */}
-            <div
-              onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.14.55 PM.mp4')}
-              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
-            >
-              <video
-                src="/attached_assets/WhatsApp Video 2026-01-19 at 7.14.55 PM.mp4"
-                className="w-full h-40 object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
-            </div>
-
-            {/* Video 4 */}
-            <div
-              onClick={() => setSelectedVideo('/attached_assets/WhatsApp Video 2026-01-19 at 7.16.29 PM.mp4')}
-              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
-            >
-              <video
-                src="/attached_assets/WhatsApp Video 2026-01-19 at 7.16.29 PM.mp4"
-                className="w-full h-40 object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
-            </div>
-          </div>
-        </div>
+        <UndifestVideoSection setSelectedVideo={setSelectedVideo} />
 
         {/* Video Modal - Shopee Live style (no controls) */}
         {selectedVideo && (
@@ -412,6 +348,77 @@ export default function HomePage() {
       <MobileBottomNav />
 
 
+    </div>
+  );
+}
+
+// Undifest Video Section Component
+function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (url: string) => void }) {
+  const { data: homepageVideos, isLoading } = useQuery<Video[]>({
+    queryKey: ["/api/videos/homepage"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="px-4 pt-2 pb-6 bg-[#16202a]">
+        <h2 className="text-xl font-bold text-white mb-4">Undifest Video</h2>
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="relative rounded-xl overflow-hidden bg-gray-700 flex-shrink-0 w-24 h-40 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback to hardcoded videos if no homepage videos are configured
+  const fallbackVideos = [
+    { videoFile: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.06 PM.mp4' },
+    { videoFile: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.26 PM.mp4' },
+    { videoFile: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.55 PM.mp4' },
+    { videoFile: '/attached_assets/WhatsApp Video 2026-01-19 at 7.16.29 PM.mp4' },
+  ];
+
+  const videosToDisplay = homepageVideos && homepageVideos.length > 0 ? homepageVideos : fallbackVideos;
+
+  return (
+    <div id="video-section" className="px-4 pt-2 pb-6 bg-[#16202a]">
+      <h2 className="text-xl font-bold text-white mb-4">Undifest Video</h2>
+      <div className="flex gap-3 overflow-x-auto pb-2">
+        {videosToDisplay.map((video, index) => {
+          const videoSrc = video.videoFile || video.videoUrl || '';
+
+          return (
+            <div
+              key={index}
+              onClick={() => setSelectedVideo(videoSrc)}
+              className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
+            >
+              {video.videoFile ? (
+                <video
+                  src={videoSrc}
+                  className="w-full h-40 object-cover"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              ) : video.thumbnailUrl ? (
+                <div className="relative w-full h-40">
+                  <img
+                    src={video.thumbnailUrl}
+                    alt={video.title || 'Video'}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <Play className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

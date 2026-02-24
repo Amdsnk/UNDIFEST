@@ -77,7 +77,9 @@ export interface IStorage {
 
   // Videos
   getAllVideos(): Promise<Video[]>;
+  getHomepageVideos(): Promise<Video[]>;
   createVideo(video: InsertVideo): Promise<Video>;
+  updateVideo(id: string, video: Partial<InsertVideo>): Promise<Video | null>;
   deleteVideo(id: string): Promise<boolean>;
 
   // Partners
@@ -357,6 +359,13 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getHomepageVideos(): Promise<Video[]> {
+    return Array.from(this.videos.values())
+      .filter(video => video.showOnHomepage)
+      .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+      .slice(0, 4); // Limit to 4 videos
+  }
+
   async createVideo(insertVideo: InsertVideo): Promise<Video> {
     const id = randomUUID();
     const video: Video = {
@@ -364,11 +373,29 @@ export class MemStorage implements IStorage {
       id,
       type: insertVideo.type || "video",
       videoUrl: insertVideo.videoUrl || null,
+      videoFile: insertVideo.videoFile || null,
       isLive: insertVideo.isLive || false,
+      showOnHomepage: insertVideo.showOnHomepage || false,
+      displayOrder: insertVideo.displayOrder || 0,
       createdAt: new Date(),
     };
     this.videos.set(id, video);
     return video;
+  }
+
+  async updateVideo(id: string, updateData: Partial<InsertVideo>): Promise<Video | null> {
+    const video = this.videos.get(id);
+    if (!video) {
+      return null;
+    }
+
+    const updatedVideo: Video = {
+      ...video,
+      ...updateData,
+    };
+
+    this.videos.set(id, updatedVideo);
+    return updatedVideo;
   }
 
   async deleteVideo(id: string): Promise<boolean> {
