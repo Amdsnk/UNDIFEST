@@ -246,9 +246,27 @@ export class DatabaseStorage implements IStorage {
     return video;
   }
 
+  async updateVideo(id: string, updateData: Partial<InsertVideo>): Promise<Video | null> {
+    const [video] = await db
+      .update(videos)
+      .set(updateData)
+      .where(eq(videos.id, id))
+      .returning();
+    return video || null;
+  }
+
   async deleteVideo(id: string): Promise<boolean> {
     const result = await db.delete(videos).where(eq(videos.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getHomepageVideos(): Promise<Video[]> {
+    return await db
+      .select()
+      .from(videos)
+      .where(eq(videos.showOnHomepage, true))
+      .orderBy(videos.displayOrder)
+      .limit(4);
   }
 
   // Partners
