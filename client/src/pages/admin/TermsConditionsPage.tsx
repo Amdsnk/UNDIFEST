@@ -1,28 +1,36 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, GripVertical } from "lucide-react";
 import type { Event, TermsCondition } from "@shared/schema";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
+// Fixed terms structure
+const FIXED_TERMS = [
+  { key: "hargaTiket", title: "Harga Tiket", order: 1 },
+  { key: "jaminan", title: "Jaminan", order: 2 },
+  { key: "hadiah", title: "Hadiah", order: 3 },
+  { key: "periode", title: "Periode", order: 4 },
+  { key: "pengumumanPemenang", title: "Pengumuman Pemenang", order: 5 },
+  { key: "informasiTambahan", title: "Informasi Tambahan", order: 6 },
+] as const;
+
 export default function TermsConditionsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedEventId, setSelectedEventId] = useState<string>("");
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    order: 0,
-    isActive: true,
+    hargaTiket: "",
+    jaminan: "",
+    hadiah: "",
+    periode: "",
+    pengumumanPemenang: "",
+    informasiTambahan: "",
   });
 
   // Fetch all events
@@ -36,79 +44,100 @@ export default function TermsConditionsPage() {
     enabled: !!selectedEventId,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const res = await fetch(`/api/events/${selectedEventId}/terms`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
-        },
-        body: JSON.stringify(data),
-        credentials: "include",
+  // Load existing terms into form when event is selected
+  useEffect(() => {
+    if (terms.length > 0) {
+      const termsMap: any = {
+        hargaTiket: "",
+        jaminan: "",
+        hadiah: "",
+        periode: "",
+        pengumumanPemenang: "",
+        informasiTambahan: "",
+      };
+
+      terms.forEach((term) => {
+        const fixedTerm = FIXED_TERMS.find((ft) => ft.title === term.title);
+        if (fixedTerm) {
+          termsMap[fixedTerm.key] = term.description;
+        }
       });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
+
+      setFormData(termsMap);
+    } else {
+      // Reset form if no terms
+      setFormData({
+        hargaTiket: "",
+        jaminan: "",
+        hadiah: "",
+        periode: "",
+        pengumumanPemenang: "",
+        informasiTambahan: "",
+      });
+    }
+  }, [terms]);
+
+  // Mutation to save all terms at once
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const promises = FIXED_TERMS.map(async (fixedTerm) => {
+        const description = formData[fixedTerm.key];
+
+        // Skip empty descriptions
+        if (!description.trim()) return null;
+
+        // Find existing term with this title
+        const existingTerm = terms.find((t) => t.title === fixedTerm.title);
+
+        if (existingTerm) {
+          // Update existing term
+          const res = await fetch(`/api/terms/${existingTerm.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+            },
+            body: JSON.stringify({
+              title: fixedTerm.title,
+              description,
+              order: fixedTerm.order,
+              isActive: true,
+            }),
+            credentials: "include",
+          });
+          if (!res.ok) throw new Error(await res.text());
+          return res.json();
+        } else {
+          // Create new term
+          const res = await fetch(`/api/events/${selectedEventId}/terms`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+            },
+            body: JSON.stringify({
+              title: fixedTerm.title,
+              description,
+              order: fixedTerm.order,
+              isActive: true,
+            }),
+            credentials: "include",
+          });
+          if (!res.ok) throw new Error(await res.text());
+          return res.json();
+        }
+      });
+
+      return Promise.all(promises);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/admin/events/${selectedEventId}/terms`] });
-      resetForm();
-      toast({ title: "Berhasil menambahkan S&K" });
+      toast({ title: "Berhasil menyimpan S&K" });
     },
     onError: () => {
-      toast({ title: "Gagal menambahkan S&K", variant: "destructive" });
+      toast({ title: "Gagal menyimpan S&K", variant: "destructive" });
     },
   });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
-      const res = await fetch(`/api/terms/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
-        },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/admin/events/${selectedEventId}/terms`] });
-      resetForm();
-      toast({ title: "Berhasil mengupdate S&K" });
-    },
-    onError: () => {
-      toast({ title: "Gagal mengupdate S&K", variant: "destructive" });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/terms/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
-        },
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/admin/events/${selectedEventId}/terms`] });
-      toast({ title: "Berhasil menghapus S&K" });
-    },
-    onError: () => {
-      toast({ title: "Gagal menghapus S&K", variant: "destructive" });
-    },
-  });
-
-  const resetForm = () => {
-    setFormData({ title: "", description: "", order: 0, isActive: true });
-    setEditingId(null);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,27 +146,7 @@ export default function TermsConditionsPage() {
       return;
     }
 
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData });
-    } else {
-      createMutation.mutate(formData);
-    }
-  };
-
-  const handleEdit = (term: TermsCondition) => {
-    setFormData({
-      title: term.title,
-      description: term.description,
-      order: term.order,
-      isActive: term.isActive,
-    });
-    setEditingId(term.id);
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Yakin ingin menghapus S&K ini?")) {
-      deleteMutation.mutate(id);
-    }
+    saveMutation.mutate();
   };
 
   return (
@@ -178,117 +187,112 @@ export default function TermsConditionsPage() {
 
       {selectedEventId && (
         <>
-          {/* Form Add/Edit */}
+          {/* Fixed Form for S&K */}
           <Card>
             <CardHeader>
-              <CardTitle>{editingId ? "Edit S&K" : "Tambah S&K Baru"}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Judul S&K</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Contoh: Harga Tiket"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="description">Deskripsi</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Tulis deskripsi S&K..."
-                    rows={4}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="order">Urutan</Label>
-                  <Input
-                    id="order"
-                    type="number"
-                    value={formData.order}
-                    onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
-                    min={0}
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                  />
-                  <Label htmlFor="isActive">Aktif</Label>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    {editingId ? "Update" : "Tambah"}
-                  </Button>
-                  {editingId && (
-                    <Button type="button" variant="outline" onClick={resetForm}>
-                      Batal
-                    </Button>
-                  )}
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* List of Terms */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Daftar S&K</CardTitle>
+              <CardTitle>Syarat & Ketentuan Event</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <p>Loading...</p>
-              ) : terms.length === 0 ? (
-                <p className="text-muted-foreground">Belum ada S&K untuk event ini.</p>
+                <p className="text-gray-500">Memuat data...</p>
               ) : (
-                <div className="space-y-3">
-                  {terms.map((term) => (
-                    <div
-                      key={term.id}
-                      className="flex items-start gap-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                    >
-                      <GripVertical className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{term.title}</h3>
-                          {!term.isActive && (
-                            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
-                              Nonaktif
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{term.description}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Urutan: {term.order}</p>
-                      </div>
-                      <div className="flex gap-2 flex-shrink-0">
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(term)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(term.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Harga Tiket */}
+                  <div>
+                    <Label htmlFor="hargaTiket" className="text-base font-semibold">
+                      Harga Tiket
+                    </Label>
+                    <Textarea
+                      id="hargaTiket"
+                      value={formData.hargaTiket}
+                      onChange={(e) => setFormData({ ...formData, hargaTiket: e.target.value })}
+                      placeholder="Contoh: Beli e-book senilai Rp 10.000 untuk mendapatkan 1 tiket undian."
+                      rows={3}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {/* Jaminan */}
+                  <div>
+                    <Label htmlFor="jaminan" className="text-base font-semibold">
+                      Jaminan
+                    </Label>
+                    <Textarea
+                      id="jaminan"
+                      value={formData.jaminan}
+                      onChange={(e) => setFormData({ ...formData, jaminan: e.target.value })}
+                      placeholder="Contoh: Jaminan uang kembali Rp 10.000."
+                      rows={3}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {/* Hadiah */}
+                  <div>
+                    <Label htmlFor="hadiah" className="text-base font-semibold">
+                      Hadiah
+                    </Label>
+                    <Textarea
+                      id="hadiah"
+                      value={formData.hadiah}
+                      onChange={(e) => setFormData({ ...formData, hadiah: e.target.value })}
+                      placeholder="Contoh: Hadiah utama senilai Rp 1.000.000"
+                      rows={3}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {/* Periode */}
+                  <div>
+                    <Label htmlFor="periode" className="text-base font-semibold">
+                      Periode
+                    </Label>
+                    <Textarea
+                      id="periode"
+                      value={formData.periode}
+                      onChange={(e) => setFormData({ ...formData, periode: e.target.value })}
+                      placeholder="Contoh: 21 Februari 2025 - 11 Maret 2025"
+                      rows={3}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {/* Pengumuman Pemenang */}
+                  <div>
+                    <Label htmlFor="pengumumanPemenang" className="text-base font-semibold">
+                      Pengumuman Pemenang
+                    </Label>
+                    <Textarea
+                      id="pengumumanPemenang"
+                      value={formData.pengumumanPemenang}
+                      onChange={(e) => setFormData({ ...formData, pengumumanPemenang: e.target.value })}
+                      placeholder="Contoh: 11 Maret 2025 pukul 19.00 WIB melalui seluruh channel resmi kami."
+                      rows={3}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {/* Informasi Tambahan */}
+                  <div>
+                    <Label htmlFor="informasiTambahan" className="text-base font-semibold">
+                      Informasi Tambahan
+                    </Label>
+                    <Textarea
+                      id="informasiTambahan"
+                      value={formData.informasiTambahan}
+                      onChange={(e) => setFormData({ ...formData, informasiTambahan: e.target.value })}
+                      placeholder="Informasi tambahan lainnya (opsional)"
+                      rows={3}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button type="submit" disabled={saveMutation.isPending} className="px-8">
+                      {saveMutation.isPending ? "Menyimpan..." : "Simpan S&K"}
+                    </Button>
+                  </div>
+                </form>
               )}
             </CardContent>
           </Card>
