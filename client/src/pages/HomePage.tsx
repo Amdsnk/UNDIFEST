@@ -376,14 +376,23 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (url: st
     return null;
   }
 
+  // Filter out videos without valid source
+  const validVideos = homepageVideos.filter(video => {
+    const videoSrc = video.videoFile || video.videoUrl || '';
+    return videoSrc.trim() !== '';
+  });
+
+  // Don't show section if no valid videos
+  if (validVideos.length === 0) {
+    return null;
+  }
+
   return (
     <div id="video-section" className="px-4 pt-2 pb-6 bg-[#16202a]">
       <h2 className="text-xl font-bold text-white mb-4">Undifest Video</h2>
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {homepageVideos.map((video) => {
+        {validVideos.map((video) => {
           const videoSrc = video.videoFile || video.videoUrl || '';
-
-          if (!videoSrc) return null;
 
           return (
             <div
@@ -391,14 +400,27 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (url: st
               onClick={() => setSelectedVideo(videoSrc)}
               className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
             >
-              <video
-                src={videoSrc}
-                className="w-full h-40 object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
+              {video.thumbnailUrl ? (
+                <div className="relative w-full h-40">
+                  <img
+                    src={video.thumbnailUrl}
+                    alt={video.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <Play className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+              ) : (
+                <video
+                  src={videoSrc}
+                  className="w-full h-40 object-cover"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              )}
             </div>
           );
         })}

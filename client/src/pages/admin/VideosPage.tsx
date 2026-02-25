@@ -186,6 +186,17 @@ export default function VideosPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate that at least one video source is provided
+    if (!formData.videoUrl && !formData.videoFile) {
+      toast({
+        variant: "destructive",
+        title: "Video Diperlukan",
+        description: "Silakan masukkan URL video atau upload file video",
+      });
+      return;
+    }
+
     createMutation.mutate(formData);
   };
 
