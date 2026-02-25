@@ -3,7 +3,7 @@ import { useRoute, useLocation } from "wouter";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import BuyerDataForm from "@/components/BuyerDataForm";
-import type { Event } from "@shared/schema";
+import type { Event, TermsCondition } from "@shared/schema";
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Copy, Check, ThumbsUp, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +58,12 @@ export default function PaymentPage() {
 
   const { data: event, isLoading: eventLoading } = useQuery<Event>({
     queryKey: ["/api/events", eventId],
+    enabled: !!eventId,
+  });
+
+  // Fetch terms & conditions for the event
+  const { data: terms = [] } = useQuery<TermsCondition[]>({
+    queryKey: [`/api/events/${eventId}/terms`],
     enabled: !!eventId,
   });
 
@@ -268,32 +274,47 @@ export default function PaymentPage() {
                     />
                   </div>
 
-                  <div>
-                    <p className="text-sm text-gray-400 mb-1">Harga Tiket</p>
-                    <p className="text-sm">Beli e-book senilai Rp {event.price.toLocaleString()} untuk mendapatkan 1 tiket undian.</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400 mb-1">Jaminan</p>
-                    <p className="text-sm">Jaminan uang kembali Rp {event.price.toLocaleString()}.</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400 mb-1">Hadiah</p>
-                    <p className="text-sm">{event.prize}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400 mb-1">Periode</p>
-                    <p className="text-sm">
-                      {new Date(event.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} -{" "}
-                      {new Date(event.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400 mb-1">Pengumuman Pemenang</p>
-                    <p className="text-sm">
-                      {new Date(event.announcementDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}{" "}
-                      pukul 19.00 WIB melalui seluruh channel resmi kami.
-                    </p>
-                  </div>
+                  {/* Display terms from database if available, otherwise show default */}
+                  {terms.length > 0 ? (
+                    terms
+                      .filter(term => term.isActive)
+                      .sort((a, b) => a.order - b.order)
+                      .map((term) => (
+                        <div key={term.id}>
+                          <p className="text-sm text-gray-400 mb-1">{term.title}</p>
+                          <p className="text-sm whitespace-pre-wrap">{term.description}</p>
+                        </div>
+                      ))
+                  ) : (
+                    <>
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Harga Tiket</p>
+                        <p className="text-sm">Beli e-book senilai Rp {event.price.toLocaleString()} untuk mendapatkan 1 tiket undian.</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Jaminan</p>
+                        <p className="text-sm">Jaminan uang kembali Rp {event.price.toLocaleString()}.</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Hadiah</p>
+                        <p className="text-sm">{event.prize}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Periode</p>
+                        <p className="text-sm">
+                          {new Date(event.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} -{" "}
+                          {new Date(event.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Pengumuman Pemenang</p>
+                        <p className="text-sm">
+                          {new Date(event.announcementDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}{" "}
+                          pukul 19.00 WIB melalui seluruh channel resmi kami.
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
