@@ -34,6 +34,7 @@ import VideosPage from "@/pages/admin/VideosPage";
 import ReportsPage from "@/pages/admin/ReportsPage";
 import PartnersPage from "@/pages/admin/PartnersPage";
 import HowItWorksPage from "@/pages/admin/HowItWorksPage";
+import TermsConditionsPage from "@/pages/admin/TermsConditionsPage";
 import BanksPage from "@/pages/admin/BanksPage";
 import SettingsPage from "@/pages/admin/SettingsPage";
 import FooterPage from "@/pages/admin/FooterPage";
@@ -121,6 +122,9 @@ function Router() {
       </Route>
       <Route path="/admin/how-it-works">
         <AdminRoute><HowItWorksPage /></AdminRoute>
+      </Route>
+      <Route path="/admin/terms-conditions">
+        <AdminRoute><TermsConditionsPage /></AdminRoute>
       </Route>
       <Route path="/admin/banks">
         <AdminRoute><BanksPage /></AdminRoute>

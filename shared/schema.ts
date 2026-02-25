@@ -93,6 +93,17 @@ export const winners = pgTable("winners", {
   announcedAt: timestamp("announced_at").notNull().defaultNow(),
 });
 
+// Terms & Conditions
+export const termsConditions = pgTable("terms_conditions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  order: integer("order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Videos
 export const videos = pgTable("videos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -316,6 +327,11 @@ export const insertPageSchema = createInsertSchema(pages).omit({
   updatedAt: true,
 });
 
+export const insertTermsConditionSchema = createInsertSchema(termsConditions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
@@ -361,3 +377,6 @@ export type InsertPaymentMethod = z.infer<typeof insertPaymentMethodSchema>;
 
 export type Page = typeof pages.$inferSelect;
 export type InsertPage = z.infer<typeof insertPageSchema>;
+
+export type TermsCondition = typeof termsConditions.$inferSelect;
+export type InsertTermsCondition = z.infer<typeof insertTermsConditionSchema>;

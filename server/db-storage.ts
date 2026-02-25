@@ -14,6 +14,7 @@ import {
   ipWhitelist,
   paymentMethods,
   pages,
+  termsConditions,
   type AdminUser,
   type InsertAdminUser,
   type User,
@@ -44,6 +45,8 @@ import {
   type InsertPaymentMethod,
   type Page,
   type InsertPage,
+  type TermsCondition,
+  type InsertTermsCondition,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -451,6 +454,47 @@ export class DatabaseStorage implements IStorage {
 
   async deletePage(id: string): Promise<boolean> {
     const result = await db.delete(pages).where(eq(pages.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Terms & Conditions
+  async getTermsConditionsByEventId(eventId: string): Promise<TermsCondition[]> {
+    return await db
+      .select()
+      .from(termsConditions)
+      .where(eq(termsConditions.eventId, eventId))
+      .orderBy(termsConditions.order);
+  }
+
+  async getActiveTermsConditionsByEventId(eventId: string): Promise<TermsCondition[]> {
+    return await db
+      .select()
+      .from(termsConditions)
+      .where(eq(termsConditions.eventId, eventId))
+      .where(eq(termsConditions.isActive, true))
+      .orderBy(termsConditions.order);
+  }
+
+  async createTermsCondition(insertTermsCondition: InsertTermsCondition): Promise<TermsCondition> {
+    const [termsCondition] = await db.insert(termsConditions).values({
+      ...insertTermsCondition,
+      order: insertTermsCondition.order || 0,
+      isActive: insertTermsCondition.isActive ?? true,
+    }).returning();
+    return termsCondition;
+  }
+
+  async updateTermsCondition(id: string, updateData: Partial<InsertTermsCondition>): Promise<TermsCondition | null> {
+    const [termsCondition] = await db
+      .update(termsConditions)
+      .set(updateData)
+      .where(eq(termsConditions.id, id))
+      .returning();
+    return termsCondition || null;
+  }
+
+  async deleteTermsCondition(id: string): Promise<boolean> {
+    const result = await db.delete(termsConditions).where(eq(termsConditions.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }

@@ -53,6 +53,7 @@ const contentMenuItems = [
   { title: "Videos", url: "/admin/videos", icon: Video, id: "videos" },
   { title: "Partner", url: "/admin/partners", icon: Handshake, id: "partners" },
   { title: "How it Works", url: "/admin/how-it-works", icon: Wrench, id: "how-it-works" },
+  { title: "Syarat & Ketentuan", url: "/admin/terms-conditions", icon: FileText, id: "terms-conditions" },
   { title: "Footer", url: "/admin/footer", icon: Archive, id: "footer" },
 ];
 

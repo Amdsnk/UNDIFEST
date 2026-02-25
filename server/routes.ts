@@ -3,7 +3,7 @@ import express, { type Request, type Response, type NextFunction } from "express
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, updateVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema } from "@shared/schema";
+import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, updateVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema, insertTermsConditionSchema } from "@shared/schema";
 import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite, verifyUserToken } from "./auth";
 import { createPayment, createDirectPayment, isIPaymuConfigured, getIPaymuConfig } from "./ipaymu";
 import multer from "multer";
@@ -930,6 +930,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete partner" });
+    }
+  });
+
+  // Terms & Conditions API
+  app.get("/api/events/:eventId/terms", async (req, res) => {
+    try {
+      const terms = await storage.getActiveTermsConditionsByEventId(req.params.eventId);
+      res.json(terms);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch terms and conditions" });
+    }
+  });
+
+  app.get("/api/admin/events/:eventId/terms", requireAdmin, async (req, res) => {
+    try {
+      const terms = await storage.getTermsConditionsByEventId(req.params.eventId);
+      res.json(terms);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch terms and conditions" });
+    }
+  });
+
+  app.post("/api/events/:eventId/terms", requireAdmin, async (req, res) => {
+    try {
+      const data = {
+        eventId: req.params.eventId,
+        title: req.body.title,
+        description: req.body.description,
+        order: parseInt(req.body.order || "0"),
+        isActive: req.body.isActive === "true" || req.body.isActive === true,
+      };
+
+      const validated = insertTermsConditionSchema.parse(data);
+      const termsCondition = await storage.createTermsCondition(validated);
+      res.status(201).json(termsCondition);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create terms and conditions" });
+    }
+  });
+
+  app.put("/api/terms/:id", requireAdmin, async (req, res) => {
+    try {
+      const updateData: any = {
+        title: req.body.title,
+        description: req.body.description,
+        order: parseInt(req.body.order || "0"),
+        isActive: req.body.isActive === "true" || req.body.isActive === true,
+      };
+
+      const termsCondition = await storage.updateTermsCondition(req.params.id, updateData);
+      if (!termsCondition) {
+        return res.status(404).json({ error: "Terms and conditions not found" });
+      }
+      res.json(termsCondition);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update terms and conditions" });
+    }
+  });
+
+  app.delete("/api/terms/:id", requireAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteTermsCondition(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Terms and conditions not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete terms and conditions" });
     }
   });
 
