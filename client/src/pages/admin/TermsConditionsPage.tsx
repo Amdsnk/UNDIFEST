@@ -83,11 +83,24 @@ export default function TermsConditionsPage() {
       const promises = FIXED_TERMS.map(async (fixedTerm) => {
         const description = formData[fixedTerm.key];
 
-        // Skip empty descriptions
-        if (!description.trim()) return null;
-
         // Find existing term with this title
         const existingTerm = terms.find((t) => t.title === fixedTerm.title);
+
+        // If description is empty
+        if (!description.trim()) {
+          // Delete existing term if it exists
+          if (existingTerm) {
+            const res = await fetch(`/api/terms/${existingTerm.id}`, {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+              },
+              credentials: "include",
+            });
+            if (!res.ok) throw new Error(await res.text());
+          }
+          return null;
+        }
 
         if (existingTerm) {
           // Update existing term

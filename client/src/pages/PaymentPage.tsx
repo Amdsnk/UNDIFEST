@@ -277,7 +277,7 @@ export default function PaymentPage() {
                   {/* Display terms from database if available, otherwise show default */}
                   {terms.length > 0 ? (
                     terms
-                      .filter(term => term.isActive)
+                      .filter(term => term.isActive && term.description.trim() !== '')
                       .sort((a, b) => a.order - b.order)
                       .map((term) => (
                         <div key={term.id}>
