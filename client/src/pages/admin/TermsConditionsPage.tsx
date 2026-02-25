@@ -9,6 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import type { Event, TermsCondition } from "@shared/schema";
+import { AdminSidebar } from "@/components/AdminSidebar";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default function TermsConditionsPage() {
   const { toast } = useToast();
@@ -138,29 +141,40 @@ export default function TermsConditionsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Kelola Syarat & Ketentuan</h1>
+    <SidebarProvider>
+      <AdminSidebar />
+      <div className="flex flex-col flex-1 min-h-screen admin-light bg-gray-50">
+        <AdminPageHeader
+          title="Syarat & Ketentuan"
+          description="Kelola syarat dan ketentuan untuk setiap event"
+          breadcrumbs={[
+            { label: "Home", href: "/admin/dashboard" },
+            { label: "Syarat & Ketentuan" }
+          ]}
+        />
 
-      {/* Event Selector */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Pilih Event</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <select
-            value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value)}
-            className="w-full p-2 border rounded-md bg-background"
-          >
-            <option value="">-- Pilih Event --</option>
-            {events.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.name}
-              </option>
-            ))}
-          </select>
-        </CardContent>
-      </Card>
+        <div className="flex-1 p-8 overflow-y-auto">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {/* Event Selector */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Pilih Event</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <select
+                  value={selectedEventId}
+                  onChange={(e) => setSelectedEventId(e.target.value)}
+                  className="w-full p-2 border rounded-md bg-background"
+                >
+                  <option value="">-- Pilih Event --</option>
+                  {events.map((event) => (
+                    <option key={event.id} value={event.id}>
+                      {event.name}
+                    </option>
+                  ))}
+                </select>
+              </CardContent>
+            </Card>
 
       {selectedEventId && (
         <>
@@ -280,7 +294,10 @@ export default function TermsConditionsPage() {
           </Card>
         </>
       )}
-    </div>
+          </div>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }
 
