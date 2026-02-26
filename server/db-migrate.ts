@@ -85,7 +85,7 @@ export async function runMigrations() {
 
         CREATE TABLE IF NOT EXISTS transactions (
           id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          user_id VARCHAR NOT NULL REFERENCES users(id),
+          user_id VARCHAR REFERENCES users(id),
           event_id VARCHAR NOT NULL REFERENCES events(id),
           amount INTEGER NOT NULL,
           ticket_count INTEGER NOT NULL DEFAULT 1,
@@ -166,6 +166,11 @@ export async function runMigrations() {
         `);
         await db.execute(sql`
           ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_email VARCHAR(255);
+        `);
+
+        // Make user_id nullable for guest checkout
+        await db.execute(sql`
+          ALTER TABLE transactions ALTER COLUMN user_id DROP NOT NULL;
         `);
 
         console.log('✅ Missing columns added successfully');

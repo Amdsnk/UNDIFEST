@@ -64,7 +64,7 @@ export const users = pgTable("users", {
 // Transactions
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").references(() => users.id), // Made optional for guest checkout
   eventId: varchar("event_id").notNull().references(() => events.id),
   amount: integer("amount").notNull(),
   ticketCount: integer("ticket_count").notNull().default(1),
