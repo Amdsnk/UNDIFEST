@@ -6,6 +6,7 @@ import { z } from "zod";
 import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, updateVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema, insertTermsConditionSchema } from "@shared/schema";
 import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite, verifyUserToken } from "./auth";
 import { createPayment, createDirectPayment, isIPaymuConfigured, getIPaymuConfig } from "./ipaymu";
+import { createVirtualAccountPayment, createQRISPayment, isDokuConfigured, getDokuConfig, verifyWebhookSignature } from "./doku";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -744,6 +745,280 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get iPaymu config status (admin only)
   app.get("/api/admin/payment-config", requireAdmin, async (req, res) => {
     res.json(getIPaymuConfig());
+  });
+
+  // Get DOKU config status (admin only)
+  app.get("/api/admin/doku-config", requireAdmin, async (req, res) => {
+    res.json(getDokuConfig());
+  });
+
+  // DOKU Payment Endpoints
+  // Create DOKU Virtual Account payment
+  app.post("/api/transactions/doku/va", optionalAuth, async (req, res) => {
+    try {
+      // Get user info if authenticated
+      let userId: string | undefined;
+      let phoneNumber = "081234567890";
+      let userName = "Guest Customer";
+      let userEmail = "guest@undifest.com";
+
+      if ((req as any).user) {
+        userId = (req as any).user.userId;
+        phoneNumber = (req as any).user.phoneNumber;
+
+        const user = await storage.getUser(userId);
+        if (user) {
+          userName = user.name || "Customer";
+          userEmail = user.email || `${phoneNumber}@undifest.com`;
+        }
+      }
+
+      const { eventId, amount, eventName, paymentChannel, buyerName, buyerPhone, buyerEmail } = req.body;
+
+      // Use buyer data if provided
+      if (buyerName) userName = buyerName;
+      if (buyerPhone) phoneNumber = buyerPhone;
+      if (buyerEmail) userEmail = buyerEmail;
+
+      if (!eventId || !amount || !eventName || !paymentChannel) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Verify event exists and is active
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      if (event.status !== "aktif") {
+        return res.status(400).json({ error: "Event is not active" });
+      }
+
+      // Create transaction
+      const transaction = await storage.createTransaction({
+        userId: userId || undefined,
+        eventId,
+        amount,
+        phoneNumber,
+        eventName,
+        buyerName: buyerName || null,
+        buyerEmail: buyerEmail || null,
+        paymentStatus: "pending",
+        paymentMethod: "va",
+        paymentChannel,
+      });
+
+      // Check if DOKU is configured
+      if (!isDokuConfigured()) {
+        console.log("[DOKU VA] DOKU not configured, transaction created without payment");
+        return res.status(201).json({
+          ...transaction,
+          message: "Transaction created (DOKU not configured)",
+        });
+      }
+
+      try {
+        const paymentResult = await createVirtualAccountPayment({
+          name: userName,
+          phone: phoneNumber,
+          email: userEmail,
+          amount: amount,
+          referenceId: transaction.id,
+          description: `Tiket ${eventName}`,
+          paymentMethod: 'VIRTUAL_ACCOUNT_BANK',
+          paymentChannel: paymentChannel,
+        });
+
+        console.log("[DOKU VA] Response:", paymentResult);
+
+        if (paymentResult.response_code === "2000000" && paymentResult.virtual_account_info) {
+          // Update transaction with payment info
+          await storage.updateTransaction(transaction.id, {
+            paymentNumber: paymentResult.virtual_account_info.virtual_account_number,
+          });
+
+          return res.status(201).json({
+            ...transaction,
+            paymentNo: paymentResult.virtual_account_info.virtual_account_number,
+            paymentName: paymentResult.virtual_account_info.bank_name,
+            total: paymentResult.order.amount,
+            fee: 0,
+            expired: paymentResult.virtual_account_info.expired_date,
+            via: "VIRTUAL_ACCOUNT",
+            channel: paymentResult.virtual_account_info.channel_code,
+          });
+        } else {
+          console.error("[DOKU VA] Error:", paymentResult.response_message);
+          return res.status(201).json({
+            ...transaction,
+            paymentError: paymentResult.response_message || "Payment gateway error",
+          });
+        }
+      } catch (paymentError) {
+        console.error("[DOKU VA] Exception:", paymentError);
+        return res.status(201).json({
+          ...transaction,
+          paymentError: "Failed to connect to DOKU payment gateway",
+        });
+      }
+    } catch (error) {
+      console.error("[DOKU VA] Error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create DOKU VA payment" });
+    }
+  });
+
+  // Create DOKU QRIS payment
+  app.post("/api/transactions/doku/qris", optionalAuth, async (req, res) => {
+    try {
+      // Get user info if authenticated
+      let userId: string | undefined;
+      let phoneNumber = "081234567890";
+      let userName = "Guest Customer";
+      let userEmail = "guest@undifest.com";
+
+      if ((req as any).user) {
+        userId = (req as any).user.userId;
+        phoneNumber = (req as any).user.phoneNumber;
+
+        const user = await storage.getUser(userId);
+        if (user) {
+          userName = user.name || "Customer";
+          userEmail = user.email || `${phoneNumber}@undifest.com`;
+        }
+      }
+
+      const { eventId, amount, eventName, buyerName, buyerPhone, buyerEmail } = req.body;
+
+      // Use buyer data if provided
+      if (buyerName) userName = buyerName;
+      if (buyerPhone) phoneNumber = buyerPhone;
+      if (buyerEmail) userEmail = buyerEmail;
+
+      if (!eventId || !amount || !eventName) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Verify event exists and is active
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      if (event.status !== "aktif") {
+        return res.status(400).json({ error: "Event is not active" });
+      }
+
+      // Create transaction
+      const transaction = await storage.createTransaction({
+        userId: userId || undefined,
+        eventId,
+        amount,
+        phoneNumber,
+        eventName,
+        buyerName: buyerName || null,
+        buyerEmail: buyerEmail || null,
+        paymentStatus: "pending",
+        paymentMethod: "qris",
+        paymentChannel: "QRIS",
+      });
+
+      // Check if DOKU is configured
+      if (!isDokuConfigured()) {
+        console.log("[DOKU QRIS] DOKU not configured, transaction created without payment");
+        return res.status(201).json({
+          ...transaction,
+          message: "Transaction created (DOKU not configured)",
+        });
+      }
+
+      try {
+        const paymentResult = await createQRISPayment({
+          name: userName,
+          phone: phoneNumber,
+          email: userEmail,
+          amount: amount,
+          referenceId: transaction.id,
+          description: `Tiket ${eventName}`,
+        });
+
+        console.log("[DOKU QRIS] Response:", paymentResult);
+
+        if (paymentResult.response_code === "2000000" && paymentResult.qris_info) {
+          return res.status(201).json({
+            ...transaction,
+            qrImage: paymentResult.qris_info.qr_content,
+            total: paymentResult.order.amount,
+            fee: 0,
+            expired: paymentResult.qris_info.expired_date,
+            via: "QRIS",
+            channel: "QRIS",
+          });
+        } else {
+          console.error("[DOKU QRIS] Error:", paymentResult.response_message);
+          return res.status(201).json({
+            ...transaction,
+            paymentError: paymentResult.response_message || "Payment gateway error",
+          });
+        }
+      } catch (paymentError) {
+        console.error("[DOKU QRIS] Exception:", paymentError);
+        return res.status(201).json({
+          ...transaction,
+          paymentError: "Failed to connect to DOKU payment gateway",
+        });
+      }
+    } catch (error) {
+      console.error("[DOKU QRIS] Error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create DOKU QRIS payment" });
+    }
+  });
+
+  // DOKU Webhook callback
+  app.post("/api/payments/doku/callback", async (req, res) => {
+    try {
+      console.log("[DOKU Callback] Received:", req.body);
+      console.log("[DOKU Callback] Headers:", req.headers);
+
+      const { order, transaction } = req.body;
+
+      if (!order || !order.invoice_number) {
+        console.error("[DOKU Callback] Missing invoice_number");
+        return res.status(400).json({ error: "Missing invoice_number" });
+      }
+
+      // Find transaction by invoice_number (our transaction ID)
+      const dbTransaction = await storage.getTransaction(order.invoice_number);
+      if (!dbTransaction) {
+        console.error("[DOKU Callback] Transaction not found:", order.invoice_number);
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+
+      // Update transaction based on payment status
+      let paymentStatus = "pending";
+      if (transaction.status === "SUCCESS") {
+        paymentStatus = "paid";
+      } else if (transaction.status === "FAILED") {
+        paymentStatus = "failed";
+      } else if (transaction.status === "EXPIRED") {
+        paymentStatus = "expired";
+      }
+
+      await storage.updateTransaction(dbTransaction.id, {
+        paymentStatus,
+        paidAt: paymentStatus === "paid" ? new Date() : undefined,
+      });
+
+      console.log("[DOKU Callback] Transaction updated:", dbTransaction.id, "Status:", paymentStatus);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[DOKU Callback] Error:", error);
+      res.status(500).json({ error: "Callback processing failed" });
+    }
   });
 
   // Videos API (public for live page display)
