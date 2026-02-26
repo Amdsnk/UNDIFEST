@@ -102,7 +102,7 @@ export default function PaymentPage() {
     }
 
     try {
-      console.log("Creating payment with:", {
+      console.log("Creating DOKU payment with:", {
         eventId: event.id,
         amount: event.price,
         eventName: event.name,
@@ -113,15 +113,19 @@ export default function PaymentPage() {
         buyerEmail: data.email,
       });
 
-      const response = await fetch("/api/transactions/direct", {
+      // Determine DOKU endpoint based on payment method
+      const dokuEndpoint = paymentMethod === 'qris'
+        ? "/api/transactions/doku/qris"
+        : "/api/transactions/doku/va";
+
+      const response = await fetch(dokuEndpoint, {
         method: "POST",
         headers,
         body: JSON.stringify({
           eventId: event.id,
           amount: event.price,
           eventName: event.name,
-          paymentMethod,
-          paymentChannel,
+          paymentChannel: paymentMethod === 'qris' ? 'QRIS' : paymentChannel,
           buyerName: data.name,
           buyerPhone: data.phone,
           buyerEmail: data.email,
@@ -420,42 +424,16 @@ export default function PaymentPage() {
 
               {/* QRIS */}
               <button
-                onClick={() => handlePaymentMethodSelect('qris', 'qris')}
-                disabled={isProcessing}
-                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
-              >
-                <span className="text-gray-900 font-semibold text-base">QRIS</span>
-                <div className="flex items-center gap-2">
-                  <img src={qrisIconUrl} alt="QRIS" className="h-6" />
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                </div>
-              </button>
-
-              {/* Direct Debit */}
-              <button
-                onClick={() => setPaymentMethod('directdebit')}
+                onClick={() => handlePaymentMethodSelect('qris', 'QRIS')}
                 disabled={isProcessing}
                 className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-900 font-semibold text-base">Direct Debit</span>
+                  <span className="text-gray-900 font-semibold text-base">QRIS</span>
                   <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded">Recommendation</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <img src={debitIconUrl} alt="Direct Debit" className="h-6" />
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                </div>
-              </button>
-
-              {/* Convenience Store */}
-              <button
-                onClick={() => setPaymentMethod('cstore')}
-                disabled={isProcessing}
-                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
-              >
-                <span className="text-gray-900 font-semibold text-base">Convenience Store</span>
-                <div className="flex items-center gap-2">
-                  <img src={cstoreIconUrl} alt="Convenience Store" className="h-6" />
+                  <img src={qrisIconUrl} alt="QRIS" className="h-6" />
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </button>
@@ -480,139 +458,46 @@ export default function PaymentPage() {
                 <h3 className="text-gray-800 text-lg font-bold text-center mb-4">Pilih Bank Virtual Account</h3>
                 <div className="grid grid-cols-3 gap-3">
                   <button
-                    onClick={() => handlePaymentMethodSelect('va', 'bag')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={bagLogoUrl} alt="BAG" className="h-8 w-auto object-contain" />
-                  </button>
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'bca')}
+                    onClick={() => handlePaymentMethodSelect('va', 'BCA')}
                     disabled={isProcessing}
                     className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
                   >
                     <img src={bcaLogoUrl} alt="BCA" className="h-8 w-auto object-contain" />
                   </button>
                   <button
-                    onClick={() => handlePaymentMethodSelect('va', 'bni')}
+                    onClick={() => handlePaymentMethodSelect('va', 'BNI')}
                     disabled={isProcessing}
                     className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
                   >
                     <img src={bniLogoUrl} alt="BNI" className="h-8 w-auto object-contain" />
                   </button>
                   <button
-                    onClick={() => handlePaymentMethodSelect('va', 'bri')}
+                    onClick={() => handlePaymentMethodSelect('va', 'BRI')}
                     disabled={isProcessing}
                     className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
                   >
                     <img src={briLogoUrl} alt="BRI" className="h-8 w-auto object-contain" />
                   </button>
                   <button
-                    onClick={() => handlePaymentMethodSelect('va', 'bsi')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={bsiLogoUrl} alt="BSI" className="h-8 w-auto object-contain" />
-                  </button>
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'cimb')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={cimbLogoUrl} alt="CIMB" className="h-8 w-auto object-contain" />
-                  </button>
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'danamon')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={danamonLogoUrl} alt="Danamon" className="h-8 w-auto object-contain" />
-                  </button>
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'mandiri')}
+                    onClick={() => handlePaymentMethodSelect('va', 'MANDIRI')}
                     disabled={isProcessing}
                     className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
                   >
                     <img src={mandiriLogoUrl} alt="Mandiri" className="h-8 w-auto object-contain" />
                   </button>
                   <button
-                    onClick={() => handlePaymentMethodSelect('va', 'bmi')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={bmiLogoUrl} alt="Muamalat" className="h-8 w-auto object-contain" />
-                  </button>
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'permata')}
+                    onClick={() => handlePaymentMethodSelect('va', 'PERMATA')}
                     disabled={isProcessing}
                     className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
                   >
                     <img src={permataLogoUrl} alt="Permata" className="h-8 w-auto object-contain" />
                   </button>
-                </div>
-                <button
-                  onClick={() => setPaymentMethod(null)}
-                  className="w-full mt-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
-                >
-                  Kembali
-                </button>
-              </div>
-            )}
-
-            {/* Direct Debit Bank Selection */}
-            {paymentMethod === 'directdebit' && (
-              <div className="bg-white rounded-2xl p-6 space-y-4">
-                <h3 className="text-gray-800 text-lg font-bold text-center mb-4">Pilih Bank Direct Debit</h3>
-                <div className="grid grid-cols-3 gap-3">
                   <button
-                    onClick={() => handlePaymentMethodSelect('directdebit', 'bca')}
+                    onClick={() => handlePaymentMethodSelect('va', 'CIMB')}
                     disabled={isProcessing}
                     className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
                   >
-                    <img src={bcaLogoUrl} alt="BCA" className="h-8 w-auto object-contain" />
-                  </button>
-                  <button
-                    onClick={() => handlePaymentMethodSelect('directdebit', 'mandiri')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={mandiriLogoUrl} alt="Mandiri" className="h-8 w-auto object-contain" />
-                  </button>
-                  <button
-                    onClick={() => handlePaymentMethodSelect('directdebit', 'bni')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={bniLogoUrl} alt="BNI" className="h-8 w-auto object-contain" />
-                  </button>
-                </div>
-                <button
-                  onClick={() => setPaymentMethod(null)}
-                  className="w-full mt-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
-                >
-                  Kembali
-                </button>
-              </div>
-            )}
-
-            {/* Convenience Store Selection */}
-            {paymentMethod === 'cstore' && (
-              <div className="bg-white rounded-2xl p-6 space-y-4">
-                <h3 className="text-gray-800 text-lg font-bold text-center mb-4">Pilih Convenience Store</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => handlePaymentMethodSelect('cstore', 'indomaret')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
-                  >
-                    <span className="text-sm font-semibold text-gray-700">Indomaret</span>
-                  </button>
-                  <button
-                    onClick={() => handlePaymentMethodSelect('cstore', 'alfamart')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50"
-                  >
-                    <span className="text-sm font-semibold text-gray-700">Alfamart</span>
+                    <img src={cimbLogoUrl} alt="CIMB" className="h-8 w-auto object-contain" />
                   </button>
                 </div>
                 <button

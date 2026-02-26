@@ -1,9 +1,10 @@
 import crypto from 'crypto';
 
-// DOKU Snap API Configuration
+// DOKU Snap API Configuration (Production)
 const DOKU_CLIENT_ID = process.env.DOKU_CLIENT_ID || '';
 const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY || '';
-const DOKU_BASE_URL = process.env.DOKU_BASE_URL || 'https://api-sandbox.doku.com'; // Use sandbox for testing
+const DOKU_SHARED_KEY = process.env.DOKU_SHARED_KEY || '';
+const DOKU_BASE_URL = process.env.DOKU_BASE_URL || 'https://api.doku.com';
 
 interface DokuPaymentRequest {
   name: string;
