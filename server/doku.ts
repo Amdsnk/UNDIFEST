@@ -88,6 +88,10 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
   const requestTimestamp = generateTimestamp();
   const requestTarget = '/checkout/v1/payment';
 
+  // Get callback URL from environment or use default
+  const baseUrl = process.env.APP_URL || 'https://undifest-production.up.railway.app';
+  const callbackUrl = `${baseUrl}/api/payments/doku/callback`;
+
   const body = JSON.stringify({
     order: {
       invoice_number: params.referenceId,
@@ -113,6 +117,9 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
           quantity: 1,
         },
       ],
+      callback: {
+        url: callbackUrl,
+      },
     },
   });
 
@@ -155,6 +162,10 @@ export async function createQRISPayment(params: DokuPaymentRequest): Promise<Dok
   const requestTimestamp = generateTimestamp();
   const requestTarget = '/checkout/v1/payment';
 
+  // Get callback URL from environment or use default
+  const baseUrl = process.env.APP_URL || 'https://undifest-production.up.railway.app';
+  const callbackUrl = `${baseUrl}/api/payments/doku/callback`;
+
   const body = JSON.stringify({
     order: {
       invoice_number: params.referenceId,
@@ -176,6 +187,9 @@ export async function createQRISPayment(params: DokuPaymentRequest): Promise<Dok
           quantity: 1,
         },
       ],
+      callback: {
+        url: callbackUrl,
+      },
     },
   });
 
