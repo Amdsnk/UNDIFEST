@@ -98,12 +98,9 @@ export default function LivePage() {
                               className="w-full h-64 object-cover"
                             />
                           ) : (
-                            <video
-                              src={videoSrc}
-                              className="w-full h-64 object-cover"
-                              muted
-                              playsInline
-                            />
+                            <div className="w-full h-64 bg-gradient-to-br from-purple-900/50 to-pink-900/50 flex items-center justify-center">
+                              <Play className="w-16 h-16 text-white/40" />
+                            </div>
                           )}
                           <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                             <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
@@ -195,12 +192,9 @@ export default function LivePage() {
                               className="w-full h-32 object-cover"
                             />
                           ) : (
-                            <video
-                              src={videoSrc}
-                              className="w-full h-32 object-cover"
-                              muted
-                              playsInline
-                            />
+                            <div className="w-full h-32 bg-gradient-to-br from-cyan-900/50 to-blue-900/50 flex items-center justify-center">
+                              <Play className="w-12 h-12 text-white/40" />
+                            </div>
                           )}
                           <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                             <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">

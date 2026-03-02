@@ -256,8 +256,8 @@ export default function HomePage() {
           >
             <div className="relative w-full max-w-undifest mx-auto">
               {/* Header dengan tombol back */}
-              <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent pt-safe">
-                <div className="flex items-center gap-3 p-4 pt-2">
+              <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/80 via-black/40 to-transparent pb-8">
+                <div className="flex items-center gap-3 px-4 pt-12 pb-3">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -412,14 +412,9 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (video: 
                   </div>
                 </div>
               ) : (
-                <video
-                  src={videoSrc}
-                  className="w-full h-40 object-cover"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                />
+                <div className="relative w-full h-40 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                  <Play className="w-12 h-12 text-white/60" />
+                </div>
               )}
             </div>
           );
