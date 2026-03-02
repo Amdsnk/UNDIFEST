@@ -94,10 +94,29 @@ function generateSymmetricSignature(
 }
 
 /**
- * Generate timestamp in ISO 8601 format
+ * Generate timestamp in ISO 8601 format with timezone offset
+ * Format: 2020-12-21T14:56:11+07:00
  */
 function generateTimestamp(): string {
-  return new Date().toISOString();
+  const now = new Date();
+
+  // Get timezone offset in minutes
+  const timezoneOffset = -now.getTimezoneOffset();
+  const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
+  const offsetMinutes = Math.abs(timezoneOffset) % 60;
+  const offsetSign = timezoneOffset >= 0 ? '+' : '-';
+
+  // Format: YYYY-MM-DDTHH:mm:ss+HH:MM
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+
+  const offset = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offset}`;
 }
 
 /**
