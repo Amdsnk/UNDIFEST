@@ -215,6 +215,7 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
       'X-SIGNATURE': signature,
       'X-PARTNER-ID': DOKU_CLIENT_ID,
       'X-EXTERNAL-ID': crypto.randomUUID(),
+      'Client-Id': DOKU_CLIENT_ID,
     },
     body,
   });
@@ -279,6 +280,7 @@ export async function createQRISPayment(params: DokuPaymentRequest): Promise<Dok
       'X-SIGNATURE': signature,
       'X-PARTNER-ID': DOKU_CLIENT_ID,
       'X-EXTERNAL-ID': crypto.randomUUID(),
+      'Client-Id': DOKU_CLIENT_ID,
     },
     body,
   });
