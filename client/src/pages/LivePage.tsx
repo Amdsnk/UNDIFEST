@@ -98,8 +98,8 @@ export default function LivePage() {
                               className="w-full h-64 object-cover"
                             />
                           ) : (
-                            <div className="w-full h-64 bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 flex items-center justify-center">
-                              <div className="absolute inset-0 bg-black/10"></div>
+                            <div className="w-full h-64 bg-gray-800 flex items-center justify-center">
+                              <Play className="w-16 h-16 text-white/40" />
                             </div>
                           )}
                           <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
@@ -192,8 +192,8 @@ export default function LivePage() {
                               className="w-full h-32 object-cover"
                             />
                           ) : (
-                            <div className="w-full h-32 bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 flex items-center justify-center">
-                              <div className="absolute inset-0 bg-black/10"></div>
+                            <div className="w-full h-32 bg-gray-800 flex items-center justify-center">
+                              <Play className="w-12 h-12 text-white/40" />
                             </div>
                           )}
                           <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
