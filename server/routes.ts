@@ -1096,16 +1096,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload video file
+  // Upload video file - store as base64 in database for persistence
   app.post("/api/videos/upload", requireAdmin, upload.single('video'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No video file uploaded" });
       }
 
-      const videoPath = `/uploads/${req.file.filename}`;
-      res.json({ videoFile: videoPath });
+      // Read file and convert to base64 for persistent storage
+      const filePath = req.file.path;
+      const fileBuffer = fs.readFileSync(filePath);
+      const base64Video = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+
+      // Delete the temporary file
+      fs.unlinkSync(filePath);
+
+      res.json({ videoFile: base64Video });
     } catch (error) {
+      console.error("Video upload error:", error);
       res.status(500).json({ error: "Failed to upload video" });
     }
   });
