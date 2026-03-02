@@ -38,3 +38,8 @@ vite.config.ts.*
 
 # Uploaded files
 uploads/
+
+# Private keys (IMPORTANT: Never commit!)
+keys/
+*.pem
+*.key

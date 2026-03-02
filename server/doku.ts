@@ -4,7 +4,12 @@ import crypto from 'crypto';
 const DOKU_CLIENT_ID = process.env.DOKU_CLIENT_ID || '';
 const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY || '';
 const DOKU_SHARED_KEY = process.env.DOKU_SHARED_KEY || '';
+const DOKU_PRIVATE_KEY = process.env.DOKU_PRIVATE_KEY || '';
 const DOKU_BASE_URL = process.env.DOKU_BASE_URL || 'https://api.doku.com';
+
+// Cache for B2B access token
+let cachedAccessToken: string | null = null;
+let tokenExpiresAt: number = 0;
 
 interface DokuPaymentRequest {
   name: string;
@@ -39,38 +44,53 @@ interface DokuPaymentResponse {
 }
 
 /**
- * Generate signature for DOKU Snap API
+ * Generate Asymmetric Signature for B2B Access Token (SHA256withRSA)
+ * Formula: SHA256withRSA(Private_Key, stringToSign)
+ * stringToSign = client_ID + "|" + X-TIMESTAMP
  */
-function generateSignature(
-  clientId: string,
-  requestId: string,
-  requestTimestamp: string,
-  requestTarget: string,
-  digest: string,
-  secretKey: string
+function generateAsymmetricSignature(clientId: string, timestamp: string): string {
+  const stringToSign = `${clientId}|${timestamp}`;
+
+  const sign = crypto.createSign('SHA256');
+  sign.update(stringToSign);
+  sign.end();
+
+  const signature = sign.sign(DOKU_PRIVATE_KEY, 'base64');
+  return signature;
+}
+
+/**
+ * Generate Symmetric Signature for Payment Request (HMAC SHA512)
+ * Formula: HMAC_SHA512(clientSecret, stringToSign)
+ * stringToSign = HTTPMethod + ":" + EndpointUrl + ":" + AccessToken + ":" + Lowercase(HexEncode(SHA-256(minify(RequestBody)))) + ":" + TimeStamp
+ */
+function generateSymmetricSignature(
+  httpMethod: string,
+  endpointUrl: string,
+  accessToken: string,
+  requestBody: string,
+  timestamp: string
 ): string {
-  const componentSignature = `Client-Id:${clientId}\nRequest-Id:${requestId}\nRequest-Timestamp:${requestTimestamp}\nRequest-Target:${requestTarget}\nDigest:${digest}`;
+  // Minify request body (remove whitespace)
+  const minifiedBody = JSON.stringify(JSON.parse(requestBody));
+
+  // SHA-256 hash of minified body
+  const bodyHash = crypto
+    .createHash('sha256')
+    .update(minifiedBody, 'utf8')
+    .digest('hex')
+    .toLowerCase();
+
+  // String to sign
+  const stringToSign = `${httpMethod}:${endpointUrl}:${accessToken}:${bodyHash}:${timestamp}`;
+
+  // HMAC SHA512
   const signature = crypto
-    .createHmac('sha256', secretKey)
-    .update(componentSignature)
+    .createHmac('sha512', DOKU_SECRET_KEY)
+    .update(stringToSign)
     .digest('base64');
-  
-  return `HMACSHA256=${signature}`;
-}
 
-/**
- * Generate digest (SHA-256 hash of request body)
- */
-function generateDigest(body: string): string {
-  const hash = crypto.createHash('sha256').update(body, 'utf8').digest('base64');
-  return `SHA-256=${hash}`;
-}
-
-/**
- * Generate request ID (UUID v4)
- */
-function generateRequestId(): string {
-  return crypto.randomUUID();
+  return signature;
 }
 
 /**
@@ -81,12 +101,54 @@ function generateTimestamp(): string {
 }
 
 /**
+ * Get B2B Access Token
+ * Uses Asymmetric Signature (SHA256withRSA)
+ */
+async function getAccessToken(): Promise<string> {
+  // Return cached token if still valid
+  if (cachedAccessToken && Date.now() < tokenExpiresAt) {
+    return cachedAccessToken;
+  }
+
+  const timestamp = generateTimestamp();
+  const signature = generateAsymmetricSignature(DOKU_CLIENT_ID, timestamp);
+
+  const response = await fetch(`${DOKU_BASE_URL}/authorization/v1/access-token/b2b`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CLIENT-KEY': DOKU_CLIENT_ID,
+      'X-TIMESTAMP': timestamp,
+      'X-SIGNATURE': signature,
+    },
+    body: JSON.stringify({
+      grantType: 'client_credentials',
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`DOKU B2B Token Error: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+
+  // Cache token (expires in ~900 seconds = 15 minutes, we cache for 14 minutes)
+  cachedAccessToken = result.accessToken;
+  tokenExpiresAt = Date.now() + (14 * 60 * 1000); // 14 minutes
+
+  return result.accessToken;
+}
+
+/**
  * Create Virtual Account payment via DOKU Snap
  */
 export async function createVirtualAccountPayment(params: DokuPaymentRequest): Promise<DokuPaymentResponse> {
-  const requestId = generateRequestId();
-  const requestTimestamp = generateTimestamp();
-  const requestTarget = '/checkout/v1/payment';
+  // Get B2B access token
+  const accessToken = await getAccessToken();
+
+  const timestamp = generateTimestamp();
+  const endpointUrl = '/checkout/v1/payment';
 
   const body = JSON.stringify({
     order: {
@@ -116,25 +178,24 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
     },
   });
 
-  const digest = generateDigest(body);
-  const signature = generateSignature(
-    DOKU_CLIENT_ID,
-    requestId,
-    requestTimestamp,
-    requestTarget,
-    digest,
-    DOKU_SECRET_KEY
+  // Generate symmetric signature
+  const signature = generateSymmetricSignature(
+    'POST',
+    endpointUrl,
+    accessToken,
+    body,
+    timestamp
   );
 
-  const response = await fetch(`${DOKU_BASE_URL}${requestTarget}`, {
+  const response = await fetch(`${DOKU_BASE_URL}${endpointUrl}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Client-Id': DOKU_CLIENT_ID,
-      'Request-Id': requestId,
-      'Request-Timestamp': requestTimestamp,
-      'Signature': signature,
-      'Digest': digest,
+      'Authorization': `Bearer ${accessToken}`,
+      'X-TIMESTAMP': timestamp,
+      'X-SIGNATURE': signature,
+      'X-PARTNER-ID': DOKU_CLIENT_ID,
+      'X-EXTERNAL-ID': crypto.randomUUID(),
     },
     body,
   });
@@ -151,9 +212,11 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
  * Create QRIS payment via DOKU Snap
  */
 export async function createQRISPayment(params: DokuPaymentRequest): Promise<DokuPaymentResponse> {
-  const requestId = generateRequestId();
-  const requestTimestamp = generateTimestamp();
-  const requestTarget = '/checkout/v1/payment';
+  // Get B2B access token
+  const accessToken = await getAccessToken();
+
+  const timestamp = generateTimestamp();
+  const endpointUrl = '/checkout/v1/payment';
 
   const body = JSON.stringify({
     order: {
@@ -179,25 +242,24 @@ export async function createQRISPayment(params: DokuPaymentRequest): Promise<Dok
     },
   });
 
-  const digest = generateDigest(body);
-  const signature = generateSignature(
-    DOKU_CLIENT_ID,
-    requestId,
-    requestTimestamp,
-    requestTarget,
-    digest,
-    DOKU_SECRET_KEY
+  // Generate symmetric signature
+  const signature = generateSymmetricSignature(
+    'POST',
+    endpointUrl,
+    accessToken,
+    body,
+    timestamp
   );
 
-  const response = await fetch(`${DOKU_BASE_URL}${requestTarget}`, {
+  const response = await fetch(`${DOKU_BASE_URL}${endpointUrl}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Client-Id': DOKU_CLIENT_ID,
-      'Request-Id': requestId,
-      'Request-Timestamp': requestTimestamp,
-      'Signature': signature,
-      'Digest': digest,
+      'Authorization': `Bearer ${accessToken}`,
+      'X-TIMESTAMP': timestamp,
+      'X-SIGNATURE': signature,
+      'X-PARTNER-ID': DOKU_CLIENT_ID,
+      'X-EXTERNAL-ID': crypto.randomUUID(),
     },
     body,
   });
@@ -214,7 +276,7 @@ export async function createQRISPayment(params: DokuPaymentRequest): Promise<Dok
  * Check if DOKU is configured
  */
 export function isDokuConfigured(): boolean {
-  return !!(DOKU_CLIENT_ID && DOKU_SECRET_KEY);
+  return !!(DOKU_CLIENT_ID && DOKU_SECRET_KEY && DOKU_PRIVATE_KEY);
 }
 
 /**
@@ -229,22 +291,22 @@ export function getDokuConfig() {
 }
 
 /**
- * Verify DOKU webhook signature
+ * Verify DOKU webhook signature (Symmetric Signature)
  */
 export function verifyWebhookSignature(
-  requestId: string,
-  requestTimestamp: string,
-  requestTarget: string,
-  digest: string,
+  httpMethod: string,
+  endpointUrl: string,
+  accessToken: string,
+  requestBody: string,
+  timestamp: string,
   receivedSignature: string
 ): boolean {
-  const expectedSignature = generateSignature(
-    DOKU_CLIENT_ID,
-    requestId,
-    requestTimestamp,
-    requestTarget,
-    digest,
-    DOKU_SECRET_KEY
+  const expectedSignature = generateSymmetricSignature(
+    httpMethod,
+    endpointUrl,
+    accessToken,
+    requestBody,
+    timestamp
   );
 
   return receivedSignature === expectedSignature;
