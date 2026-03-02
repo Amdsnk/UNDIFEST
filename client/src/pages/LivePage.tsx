@@ -97,6 +97,15 @@ export default function LivePage() {
                               alt={video.title}
                               className="w-full h-64 object-cover"
                             />
+                          ) : videoSrc ? (
+                            <video
+                              src={videoSrc}
+                              className="w-full h-64 object-cover"
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
+                            />
                           ) : (
                             <div className="w-full h-64 bg-gray-800 flex items-center justify-center">
                               <Play className="w-16 h-16 text-white/40" />
@@ -190,6 +199,15 @@ export default function LivePage() {
                               src={video.thumbnailUrl}
                               alt={video.title}
                               className="w-full h-32 object-cover"
+                            />
+                          ) : videoSrc ? (
+                            <video
+                              src={videoSrc}
+                              className="w-full h-32 object-cover"
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
                             />
                           ) : (
                             <div className="w-full h-32 bg-gray-800 flex items-center justify-center">
