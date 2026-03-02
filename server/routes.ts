@@ -29,7 +29,7 @@ const storage_multer = multer.diskStorage({
 
 const upload = multer({
   storage: storage_multer,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit for videos
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for videos (to fit in database as base64)
   fileFilter: (_req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|mov|avi|mkv|webm/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -1103,6 +1103,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No video file uploaded" });
       }
 
+      // Check file size (max 10MB for base64 storage)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (req.file.size > maxSize) {
+        // Delete the temporary file
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({
+          error: "Video terlalu besar. Maksimal 10MB untuk upload lokal. Gunakan YouTube/Vimeo URL untuk video lebih besar."
+        });
+      }
+
+      console.log(`📹 Uploading video: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
+
       // Read file and convert to base64 for persistent storage
       const filePath = req.file.path;
       const fileBuffer = fs.readFileSync(filePath);
@@ -1111,10 +1123,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete the temporary file
       fs.unlinkSync(filePath);
 
+      console.log(`✅ Video converted to base64 successfully`);
       res.json({ videoFile: base64Video });
     } catch (error) {
-      console.error("Video upload error:", error);
-      res.status(500).json({ error: "Failed to upload video" });
+      console.error("❌ Video upload error:", error);
+
+      // Clean up temp file if exists
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Failed to upload video"
+      });
     }
   });
 
