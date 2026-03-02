@@ -206,6 +206,8 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
     timestamp
   );
 
+  const requestId = crypto.randomUUID();
+
   const response = await fetch(`${DOKU_BASE_URL}${endpointUrl}`, {
     method: 'POST',
     headers: {
@@ -214,8 +216,9 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
       'X-TIMESTAMP': timestamp,
       'X-SIGNATURE': signature,
       'X-PARTNER-ID': DOKU_CLIENT_ID,
-      'X-EXTERNAL-ID': crypto.randomUUID(),
+      'X-EXTERNAL-ID': requestId,
       'Client-Id': DOKU_CLIENT_ID,
+      'Request-Id': requestId,
     },
     body,
   });
@@ -271,6 +274,8 @@ export async function createQRISPayment(params: DokuPaymentRequest): Promise<Dok
     timestamp
   );
 
+  const requestId = crypto.randomUUID();
+
   const response = await fetch(`${DOKU_BASE_URL}${endpointUrl}`, {
     method: 'POST',
     headers: {
@@ -279,8 +284,9 @@ export async function createQRISPayment(params: DokuPaymentRequest): Promise<Dok
       'X-TIMESTAMP': timestamp,
       'X-SIGNATURE': signature,
       'X-PARTNER-ID': DOKU_CLIENT_ID,
-      'X-EXTERNAL-ID': crypto.randomUUID(),
+      'X-EXTERNAL-ID': requestId,
       'Client-Id': DOKU_CLIENT_ID,
+      'Request-Id': requestId,
     },
     body,
   });
