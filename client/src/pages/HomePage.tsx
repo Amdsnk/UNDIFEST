@@ -256,20 +256,20 @@ export default function HomePage() {
           >
             <div className="relative w-full max-w-undifest mx-auto">
               {/* Header dengan tombol back */}
-              <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent">
-                <div className="flex items-center gap-3 p-4">
+              <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent pt-safe">
+                <div className="flex items-center gap-3 p-4 pt-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       closeVideo();
                     }}
-                    className="text-white p-1.5 hover:bg-white/10 rounded-full transition-all"
+                    className="text-white p-1.5 hover:bg-white/10 rounded-full transition-all flex-shrink-0"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <h3 className="text-white text-base font-semibold">Pengundian 10.13.25</h3>
+                  <h3 className="text-white text-base font-semibold truncate">{selectedVideo.title}</h3>
                 </div>
               </div>
 
@@ -277,7 +277,7 @@ export default function HomePage() {
               <div className="relative">
                 <video
                   ref={videoRef}
-                  src={selectedVideo}
+                  src={selectedVideo.url}
                   className="w-full h-screen object-contain bg-black"
                   autoPlay
                   playsInline
@@ -353,7 +353,7 @@ export default function HomePage() {
 }
 
 // Undifest Video Section Component
-function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (url: string) => void }) {
+function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (video: { url: string; title: string } | null) => void }) {
   const { data: homepageVideos, isLoading } = useQuery<Video[]>({
     queryKey: ["/api/videos/homepage"],
   });
@@ -397,7 +397,7 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (url: st
           return (
             <div
               key={video.id}
-              onClick={() => setSelectedVideo(videoSrc)}
+              onClick={() => setSelectedVideo({ url: videoSrc, title: video.title })}
               className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
             >
               {video.thumbnailUrl ? (

@@ -1,8 +1,13 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
+interface VideoData {
+  url: string;
+  title: string;
+}
+
 interface VideoContextType {
-  selectedVideo: string | null;
-  setSelectedVideo: (video: string | null) => void;
+  selectedVideo: VideoData | null;
+  setSelectedVideo: (video: VideoData | null) => void;
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
   closeVideo: () => void;
@@ -12,7 +17,7 @@ interface VideoContextType {
 const VideoContext = createContext<VideoContextType | undefined>(undefined);
 
 export function VideoProvider({ children }: { children: ReactNode }) {
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<VideoData | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const closeVideo = () => {

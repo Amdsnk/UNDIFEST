@@ -40,14 +40,6 @@ export default function LivePage() {
   const liveVideos = videos?.filter(v => v.isLive === true) || [];
   const recordedVideos = videos?.filter(v => v.isLive === false) || [];
 
-  // Hardcoded videos from homepage
-  const hardcodedVideos = [
-    { id: 'hc1', src: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.06 PM.mp4', title: 'Testimoni Undifest' },
-    { id: 'hc2', src: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.26 PM.mp4', title: 'Rec Tue 28 Jan 25' },
-    { id: 'hc3', src: '/attached_assets/WhatsApp Video 2026-01-19 at 7.14.55 PM.mp4', title: 'Rec Tue 28 Jan 25' },
-    { id: 'hc4', src: '/attached_assets/WhatsApp Video 2026-01-19 at 7.16.29 PM.mp4', title: 'Rec Tue 27 Jan 25' },
-  ];
-
   return (
     <div className="min-h-screen bg-[#ffffff]">
       <div className="max-w-undifest mx-auto pb-20">
@@ -88,31 +80,48 @@ export default function LivePage() {
               {isLoading ? (
                 <div className="h-48 bg-gray-800 rounded-lg animate-pulse" />
               ) : liveVideos.length > 0 ? (
-                liveVideos.map((video) => (
-                  <div key={video.id} data-testid={`live-video-${video.id}`} className="gradient-border-purple">
-                    <div className="bg-[#1a2332] rounded-lg overflow-hidden">
-                      <div className="relative">
-                        <img
-                          src={video.thumbnailUrl}
-                          alt={video.title}
-                          className="w-full h-64 object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                          <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
-                            <Play className="w-8 h-8 text-black ml-1" fill="currentColor" />
+                liveVideos.map((video) => {
+                  const videoSrc = video.videoFile || video.videoUrl || '';
+                  return (
+                    <div
+                      key={video.id}
+                      data-testid={`live-video-${video.id}`}
+                      className="gradient-border-purple cursor-pointer"
+                      onClick={() => setSelectedVideo({ url: videoSrc, title: video.title })}
+                    >
+                      <div className="bg-[#1a2332] rounded-lg overflow-hidden">
+                        <div className="relative">
+                          {video.thumbnailUrl ? (
+                            <img
+                              src={video.thumbnailUrl}
+                              alt={video.title}
+                              className="w-full h-64 object-cover"
+                            />
+                          ) : (
+                            <video
+                              src={videoSrc}
+                              className="w-full h-64 object-cover"
+                              muted
+                              playsInline
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                            <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
+                              <Play className="w-8 h-8 text-black ml-1" fill="currentColor" />
+                            </div>
+                          </div>
+                          <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded text-xs font-bold animate-pulse">
+                            LIVE
                           </div>
                         </div>
-                        <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded text-xs font-bold animate-pulse">
-                          LIVE
+                        <div className="p-4">
+                          <span className="text-xs text-gray-400">Live</span>
+                          <h3 className="text-white font-semibold">{video.title}</h3>
                         </div>
                       </div>
-                      <div className="p-4">
-                        <span className="text-xs text-gray-400">Live</span>
-                        <h3 className="text-white font-semibold">{video.title}</h3>
-                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="flex flex-col items-center pt-16 pb-24">
                   <div className="w-24 h-24 mb-3 relative">
@@ -167,24 +176,32 @@ export default function LivePage() {
                   <div className="h-32 bg-gray-800 rounded-lg animate-pulse" />
                   <div className="h-32 bg-gray-800 rounded-lg animate-pulse" />
                 </>
-              ) : (
-                <>
-                  {/* Hardcoded videos from homepage */}
-                  {hardcodedVideos.map((video) => (
+              ) : recordedVideos.length > 0 ? (
+                recordedVideos.map((video) => {
+                  const videoSrc = video.videoFile || video.videoUrl || '';
+                  return (
                     <div
                       key={video.id}
                       data-testid={`video-${video.id}`}
                       className="gradient-border-cyan cursor-pointer"
-                      onClick={() => setSelectedVideo(video.src)}
+                      onClick={() => setSelectedVideo({ url: videoSrc, title: video.title })}
                     >
                       <div className="bg-[#1a2332] rounded-lg overflow-hidden">
                         <div className="relative">
-                          <video
-                            src={video.src}
-                            className="w-full h-32 object-cover"
-                            muted
-                            playsInline
-                          />
+                          {video.thumbnailUrl ? (
+                            <img
+                              src={video.thumbnailUrl}
+                              alt={video.title}
+                              className="w-full h-32 object-cover"
+                            />
+                          ) : (
+                            <video
+                              src={videoSrc}
+                              className="w-full h-32 object-cover"
+                              muted
+                              playsInline
+                            />
+                          )}
                           <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                             <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
                               <Play className="w-6 h-6 text-black ml-1" fill="currentColor" />
@@ -199,46 +216,17 @@ export default function LivePage() {
                         </div>
                       </div>
                     </div>
-                  ))}
-
-                  {/* Database videos */}
-                  {recordedVideos.map((video) => (
-                    <div key={video.id} data-testid={`video-${video.id}`} className="gradient-border-cyan">
-                      <div className="bg-[#1a2332] rounded-lg overflow-hidden">
-                        <div className="relative">
-                          <img
-                            src={video.thumbnailUrl}
-                            alt={video.title}
-                            className="w-full h-32 object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                              <Play className="w-6 h-6 text-black ml-1" fill="currentColor" />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="p-3">
-                          <span className="text-xs text-gray-400">Video</span>
-                          <h3 className="text-white text-sm font-semibold line-clamp-2">
-                            {video.title}
-                          </h3>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Show empty state only if no videos at all */}
-                  {recordedVideos.length === 0 && hardcodedVideos.length === 0 && (
-                    <div className="col-span-2 flex flex-col items-center justify-center py-24">
-                      <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-purple-900/30 to-purple-800/30 border border-purple-700/50 flex items-center justify-center mb-6">
-                        <Play className="w-16 h-16 text-purple-400/60" />
-                      </div>
-                      <p className="text-gray-400 text-center text-sm">
-                        Belum ada video tersedia
-                      </p>
-                    </div>
-                  )}
-                </>
+                  );
+                })
+              ) : (
+                <div className="col-span-2 flex flex-col items-center justify-center py-24">
+                  <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-purple-900/30 to-purple-800/30 border border-purple-700/50 flex items-center justify-center mb-6">
+                    <Play className="w-16 h-16 text-purple-400/60" />
+                  </div>
+                  <p className="text-gray-400 text-center text-sm">
+                    Belum ada video tersedia
+                  </p>
+                </div>
               )}
             </div>
           )}
