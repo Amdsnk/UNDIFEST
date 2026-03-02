@@ -249,20 +249,20 @@ export default function LivePage() {
         >
           <div className="relative w-full max-w-undifest mx-auto">
             {/* Header dengan tombol back */}
-            <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent">
-              <div className="flex items-center gap-3 p-4">
+            <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/80 via-black/40 to-transparent pb-8">
+              <div className="flex items-center gap-3 px-4 pt-12 pb-3">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     closeVideo();
                   }}
-                  className="text-white p-1.5 hover:bg-white/10 rounded-full transition-all"
+                  className="text-white p-1.5 hover:bg-white/10 rounded-full transition-all flex-shrink-0"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <h3 className="text-white text-base font-semibold">{selectedVideo.title}</h3>
+                <h3 className="text-white text-base font-semibold truncate">{selectedVideo.title}</h3>
               </div>
             </div>
 
