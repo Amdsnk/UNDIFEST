@@ -262,7 +262,7 @@ export default function LivePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <h3 className="text-white text-base font-semibold">Pengundian</h3>
+                <h3 className="text-white text-base font-semibold">{selectedVideo.title}</h3>
               </div>
             </div>
 
