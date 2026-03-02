@@ -219,6 +219,7 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
       'X-EXTERNAL-ID': requestId,
       'Client-Id': DOKU_CLIENT_ID,
       'Request-Id': requestId,
+      'Request-Timestamp': timestamp,
     },
     body,
   });
@@ -287,6 +288,7 @@ export async function createQRISPayment(params: DokuPaymentRequest): Promise<Dok
       'X-EXTERNAL-ID': requestId,
       'Client-Id': DOKU_CLIENT_ID,
       'Request-Id': requestId,
+      'Request-Timestamp': timestamp,
     },
     body,
   });
