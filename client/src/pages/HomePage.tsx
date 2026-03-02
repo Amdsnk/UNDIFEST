@@ -412,8 +412,9 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (video: 
                   </div>
                 </div>
               ) : (
-                <div className="relative w-full h-40 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                  <Play className="w-12 h-12 text-white/60" />
+                <div className="relative w-full h-40 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <Play className="w-12 h-12 text-white relative z-10" fill="white" />
                 </div>
               )}
             </div>
