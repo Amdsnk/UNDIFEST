@@ -270,7 +270,7 @@ export default function LivePage() {
             <div className="relative">
               <video
                 ref={videoRef}
-                src={selectedVideo}
+                src={selectedVideo.url}
                 className="w-full h-screen object-contain bg-black"
                 autoPlay
                 playsInline
