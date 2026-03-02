@@ -114,10 +114,13 @@ export async function runMigrations() {
         CREATE TABLE IF NOT EXISTS videos (
           id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
           title TEXT NOT NULL,
-          thumbnail_url TEXT NOT NULL,
+          thumbnail_url TEXT,
           video_url TEXT,
+          video_file TEXT,
           type VARCHAR(20) NOT NULL DEFAULT 'video',
           is_live BOOLEAN NOT NULL DEFAULT false,
+          show_on_homepage BOOLEAN NOT NULL DEFAULT false,
+          display_order INTEGER DEFAULT 0,
           created_at TIMESTAMP NOT NULL DEFAULT NOW()
         );
       `);
@@ -171,6 +174,20 @@ export async function runMigrations() {
         // Make user_id nullable for guest checkout
         await db.execute(sql`
           ALTER TABLE transactions ALTER COLUMN user_id DROP NOT NULL;
+        `);
+
+        // Fix videos table schema
+        await db.execute(sql`
+          ALTER TABLE videos ALTER COLUMN thumbnail_url DROP NOT NULL;
+        `);
+        await db.execute(sql`
+          ALTER TABLE videos ADD COLUMN IF NOT EXISTS video_file TEXT;
+        `);
+        await db.execute(sql`
+          ALTER TABLE videos ADD COLUMN IF NOT EXISTS show_on_homepage BOOLEAN NOT NULL DEFAULT false;
+        `);
+        await db.execute(sql`
+          ALTER TABLE videos ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
         `);
 
         console.log('✅ Missing columns added successfully');
