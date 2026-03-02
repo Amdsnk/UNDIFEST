@@ -60,37 +60,52 @@ function generateAsymmetricSignature(clientId: string, timestamp: string): strin
 }
 
 /**
- * Generate Symmetric Signature for Payment Request (HMAC SHA512)
- * Formula: HMAC_SHA512(clientSecret, stringToSign)
- * stringToSign = HTTPMethod + ":" + EndpointUrl + ":" + AccessToken + ":" + Lowercase(HexEncode(SHA-256(minify(RequestBody)))) + ":" + TimeStamp
+ * Generate Digest (SHA-256 base64 hash of request body)
+ * Based on DOKU documentation: https://dashboard.doku.com/docs/docs/technical-references/generate-signature/
+ */
+function generateDigest(requestBody: string): string {
+  const hash = crypto.createHash('sha256')
+    .update(requestBody, 'utf8')
+    .digest('base64');
+  return hash;
+}
+
+/**
+ * Generate Symmetric Signature for Payment Request (HMAC SHA256)
+ * Based on DOKU documentation: https://dashboard.doku.com/docs/docs/technical-references/generate-signature/
+ *
+ * Component Signature format:
+ * Client-Id:value
+ * Request-Id:value
+ * Request-Timestamp:value
+ * Request-Target:value
+ * Digest:value
  */
 function generateSymmetricSignature(
-  httpMethod: string,
-  endpointUrl: string,
-  accessToken: string,
-  requestBody: string,
-  timestamp: string
+  clientId: string,
+  requestId: string,
+  requestTimestamp: string,
+  requestTarget: string,
+  digest: string,
+  secretKey: string
 ): string {
-  // Minify request body (remove whitespace)
-  const minifiedBody = JSON.stringify(JSON.parse(requestBody));
+  // Prepare Signature Component
+  const componentSignature =
+    `Client-Id:${clientId}\n` +
+    `Request-Id:${requestId}\n` +
+    `Request-Timestamp:${requestTimestamp}\n` +
+    `Request-Target:${requestTarget}\n` +
+    `Digest:${digest}`;
 
-  // SHA-256 hash of minified body
-  const bodyHash = crypto
-    .createHash('sha256')
-    .update(minifiedBody, 'utf8')
-    .digest('hex')
-    .toLowerCase();
+  console.log('[DOKU] Component Signature:\n', componentSignature);
 
-  // String to sign
-  const stringToSign = `${httpMethod}:${endpointUrl}:${accessToken}:${bodyHash}:${timestamp}`;
-
-  // HMAC SHA512
-  const signature = crypto
-    .createHmac('sha512', DOKU_SECRET_KEY)
-    .update(stringToSign)
+  // Calculate HMAC-SHA256 base64
+  const signature = crypto.createHmac('sha256', secretKey)
+    .update(componentSignature)
     .digest('base64');
 
-  return signature;
+  // Prepend with algorithm info
+  return `HMACSHA256=${signature}`;
 }
 
 /**
@@ -197,29 +212,30 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
     },
   });
 
+  const requestId = crypto.randomUUID();
+
+  // Generate Digest
+  const digest = generateDigest(body);
+
   // Generate symmetric signature
   const signature = generateSymmetricSignature(
-    'POST',
+    DOKU_CLIENT_ID,
+    requestId,
+    timestamp,
     endpointUrl,
-    accessToken,
-    body,
-    timestamp
+    digest,
+    DOKU_SECRET_KEY
   );
-
-  const requestId = crypto.randomUUID();
 
   const response = await fetch(`${DOKU_BASE_URL}${endpointUrl}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
-      'X-TIMESTAMP': timestamp,
-      'X-SIGNATURE': signature,
-      'X-PARTNER-ID': DOKU_CLIENT_ID,
-      'X-EXTERNAL-ID': requestId,
       'Client-Id': DOKU_CLIENT_ID,
       'Request-Id': requestId,
       'Request-Timestamp': timestamp,
+      'Request-Target': endpointUrl,
       'Signature': signature,
     },
     body,
@@ -267,29 +283,30 @@ export async function createQRISPayment(params: DokuPaymentRequest): Promise<Dok
     },
   });
 
+  const requestId = crypto.randomUUID();
+
+  // Generate Digest
+  const digest = generateDigest(body);
+
   // Generate symmetric signature
   const signature = generateSymmetricSignature(
-    'POST',
+    DOKU_CLIENT_ID,
+    requestId,
+    timestamp,
     endpointUrl,
-    accessToken,
-    body,
-    timestamp
+    digest,
+    DOKU_SECRET_KEY
   );
-
-  const requestId = crypto.randomUUID();
 
   const response = await fetch(`${DOKU_BASE_URL}${endpointUrl}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
-      'X-TIMESTAMP': timestamp,
-      'X-SIGNATURE': signature,
-      'X-PARTNER-ID': DOKU_CLIENT_ID,
-      'X-EXTERNAL-ID': requestId,
       'Client-Id': DOKU_CLIENT_ID,
       'Request-Id': requestId,
       'Request-Timestamp': timestamp,
+      'Request-Target': endpointUrl,
       'Signature': signature,
     },
     body,
@@ -325,19 +342,21 @@ export function getDokuConfig() {
  * Verify DOKU webhook signature (Symmetric Signature)
  */
 export function verifyWebhookSignature(
-  httpMethod: string,
-  endpointUrl: string,
-  accessToken: string,
+  clientId: string,
+  requestId: string,
+  requestTimestamp: string,
+  requestTarget: string,
   requestBody: string,
-  timestamp: string,
   receivedSignature: string
 ): boolean {
+  const digest = generateDigest(requestBody);
   const expectedSignature = generateSymmetricSignature(
-    httpMethod,
-    endpointUrl,
-    accessToken,
-    requestBody,
-    timestamp
+    clientId,
+    requestId,
+    requestTimestamp,
+    requestTarget,
+    digest,
+    DOKU_SECRET_KEY
   );
 
   return receivedSignature === expectedSignature;
