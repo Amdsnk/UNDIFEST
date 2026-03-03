@@ -184,6 +184,23 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
   const timestamp = generateTimestamp();
   const endpointUrl = '/checkout/v1/payment';
 
+  // Map channel code to DOKU SNAP VA format
+  // Based on DOKU changelog: "BNI VA, Mandiri VA, BRI VA"
+  const channelCodeMap: Record<string, string> = {
+    'BNI': 'BNI VA',
+    'BRI': 'BRI VA',
+    'MANDIRI': 'MANDIRI VA',
+    'PERMATA': 'PERMATA VA',
+    'CIMB': 'CIMB VA',
+    'BCA': 'BCA VA',
+    'DANAMON': 'DANAMON VA',
+  };
+
+  const channelCode = channelCodeMap[params.paymentChannel || 'BCA'] || params.paymentChannel || 'BCA VA';
+
+  console.log('[DOKU] Original channel:', params.paymentChannel);
+  console.log('[DOKU] Mapped to SNAP format:', channelCode);
+
   const body = JSON.stringify({
     order: {
       invoice_number: params.referenceId,
@@ -193,7 +210,7 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
       payment_method_types: [params.paymentMethod || 'VIRTUAL_ACCOUNT_BANK'],
     },
     virtual_account_info: {
-      channel_code: params.paymentChannel || 'BCA',
+      channel_code: channelCode,
       virtual_account_name: params.name,
     },
     customer: {
