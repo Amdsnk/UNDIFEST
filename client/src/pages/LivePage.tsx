@@ -18,11 +18,9 @@ export default function LivePage() {
       // Push a new history state when video opens
       window.history.pushState({ videoOpen: true }, '');
 
-      const handlePopState = (e: PopStateEvent) => {
-        if (selectedVideo) {
-          e.preventDefault();
-          closeVideoAndGoHome();
-        }
+      const handlePopState = () => {
+        // Close video and go back to homepage
+        closeVideoAndGoHome();
       };
 
       window.addEventListener('popstate', handlePopState);
