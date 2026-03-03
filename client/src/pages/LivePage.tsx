@@ -19,8 +19,8 @@ export default function LivePage() {
       window.history.pushState({ videoOpen: true }, '');
 
       const handlePopState = () => {
-        // Close video and go back to homepage
-        closeVideoAndGoHome();
+        // Immediately redirect to homepage when back is pressed
+        window.location.href = '/#video-section';
       };
 
       window.addEventListener('popstate', handlePopState);
@@ -29,7 +29,7 @@ export default function LivePage() {
         window.removeEventListener('popstate', handlePopState);
       };
     }
-  }, [selectedVideo, closeVideoAndGoHome]);
+  }, [selectedVideo]);
 
   const { data: videos, isLoading } = useQuery<Video[]>({
     queryKey: ["/api/videos"],
