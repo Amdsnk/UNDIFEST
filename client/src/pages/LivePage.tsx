@@ -6,24 +6,35 @@ import { Play, Video as VideoIcon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { Video } from "@shared/schema";
 import { useVideo } from "@/contexts/VideoContext";
+import { useNavigate } from "wouter";
 
 export default function LivePage() {
   const [activeTab, setActiveTab] = useState<"live" | "video">("live");
   const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying, closeVideo, closeVideoAndGoHome } = useVideo();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const navigate = useNavigate();
 
   // Handle browser back button when video is open
   useEffect(() => {
     if (selectedVideo) {
-      // Replace current history state to homepage, then push video state
-      // This way, when user presses back, they go to homepage
-      window.history.replaceState(null, '', '/#video-section');
-      window.history.pushState({ videoOpen: true }, '', '/live');
+      // Push a new history state when video opens
+      window.history.pushState({ videoOpen: true }, '');
 
       const handlePopState = (e: PopStateEvent) => {
-        // User pressed back - close video and stay on homepage
+        // Close video
         setSelectedVideo(null);
         setIsPlaying(false);
+
+        // Navigate to homepage with hash
+        navigate('/', { replace: true });
+
+        // Scroll to video section after navigation
+        setTimeout(() => {
+          const videoSection = document.getElementById('video-section');
+          if (videoSection) {
+            videoSection.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
       };
 
       window.addEventListener('popstate', handlePopState);
@@ -32,7 +43,7 @@ export default function LivePage() {
         window.removeEventListener('popstate', handlePopState);
       };
     }
-  }, [selectedVideo, setSelectedVideo, setIsPlaying]);
+  }, [selectedVideo, setSelectedVideo, setIsPlaying, navigate]);
 
   const { data: videos, isLoading } = useQuery<Video[]>({
     queryKey: ["/api/videos"],
