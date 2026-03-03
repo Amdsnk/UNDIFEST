@@ -831,6 +831,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // SIMULATION MODE: DOKU channels are under verification
+      // Generate mock VA number for testing
+      const useSimulation = process.env.DOKU_SIMULATION_MODE === 'true';
+
+      if (useSimulation) {
+        console.log("[DOKU VA] Using simulation mode - channels under verification");
+
+        // Generate mock VA number based on bank
+        const bankPrefixes: Record<string, string> = {
+          'BNI': '8829172',
+          'BRI': '139250',
+          'MANDIRI': '70012',
+          'PERMATA': '896599',
+          'CIMB': '18999',
+        };
+
+        const prefix = bankPrefixes[paymentChannel] || '88888';
+        const randomSuffix = Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
+        const mockVANumber = prefix + randomSuffix;
+
+        // Mock expiry date (24 hours from now)
+        const expiryDate = new Date();
+        expiryDate.setHours(expiryDate.getHours() + 24);
+        const mockExpiry = expiryDate.toISOString();
+
+        // Update transaction with mock payment info
+        await storage.updateTransaction(transaction.id, {
+          paymentNumber: mockVANumber,
+        });
+
+        return res.status(201).json({
+          ...transaction,
+          paymentNo: mockVANumber,
+          paymentName: `Bank ${paymentChannel}`,
+          total: amount,
+          fee: 0,
+          expired: mockExpiry,
+          via: "VIRTUAL_ACCOUNT",
+          channel: paymentChannel,
+          simulationMode: true,
+        });
+      }
+
       try {
         const paymentResult = await createVirtualAccountPayment({
           name: userName,
