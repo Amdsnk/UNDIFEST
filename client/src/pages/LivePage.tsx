@@ -15,12 +15,15 @@ export default function LivePage() {
   // Handle browser back button when video is open
   useEffect(() => {
     if (selectedVideo) {
-      // Push a new history state when video opens
-      window.history.pushState({ videoOpen: true }, '');
+      // Replace current history state to homepage, then push video state
+      // This way, when user presses back, they go to homepage
+      window.history.replaceState(null, '', '/#video-section');
+      window.history.pushState({ videoOpen: true }, '', '/live');
 
-      const handlePopState = () => {
-        // Immediately redirect to homepage when back is pressed
-        window.location.href = '/#video-section';
+      const handlePopState = (e: PopStateEvent) => {
+        // User pressed back - close video and stay on homepage
+        setSelectedVideo(null);
+        setIsPlaying(false);
       };
 
       window.addEventListener('popstate', handlePopState);
@@ -29,7 +32,7 @@ export default function LivePage() {
         window.removeEventListener('popstate', handlePopState);
       };
     }
-  }, [selectedVideo]);
+  }, [selectedVideo, setSelectedVideo, setIsPlaying]);
 
   const { data: videos, isLoading } = useQuery<Video[]>({
     queryKey: ["/api/videos"],
