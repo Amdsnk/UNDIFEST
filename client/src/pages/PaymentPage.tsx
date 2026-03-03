@@ -457,13 +457,27 @@ export default function PaymentPage() {
               <div className="bg-white rounded-2xl p-6 space-y-4">
                 <h3 className="text-gray-800 text-lg font-bold text-center mb-4">Pilih Bank Virtual Account</h3>
                 <div className="grid grid-cols-3 gap-3">
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'BCA')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={bcaLogoUrl} alt="BCA" className="h-8 w-auto object-contain" />
-                  </button>
+                  {/* BCA - Disabled (Dalam Verifikasi) */}
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        toast({
+                          title: "BCA Sedang Dalam Verifikasi",
+                          description: "Silakan pilih bank lain untuk sementara waktu.",
+                          variant: "destructive",
+                        });
+                      }}
+                      disabled={true}
+                      className="w-full p-4 border-2 border-gray-200 rounded-lg opacity-40 cursor-not-allowed flex items-center justify-center"
+                    >
+                      <img src={bcaLogoUrl} alt="BCA" className="h-8 w-auto object-contain" />
+                    </button>
+                    <span className="absolute -top-2 -right-2 bg-yellow-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      Verifikasi
+                    </span>
+                  </div>
+
+                  {/* BNI - Active */}
                   <button
                     onClick={() => handlePaymentMethodSelect('va', 'BNI')}
                     disabled={isProcessing}
@@ -471,6 +485,8 @@ export default function PaymentPage() {
                   >
                     <img src={bniLogoUrl} alt="BNI" className="h-8 w-auto object-contain" />
                   </button>
+
+                  {/* BRI - Active */}
                   <button
                     onClick={() => handlePaymentMethodSelect('va', 'BRI')}
                     disabled={isProcessing}
@@ -478,6 +494,8 @@ export default function PaymentPage() {
                   >
                     <img src={briLogoUrl} alt="BRI" className="h-8 w-auto object-contain" />
                   </button>
+
+                  {/* Mandiri - Active */}
                   <button
                     onClick={() => handlePaymentMethodSelect('va', 'MANDIRI')}
                     disabled={isProcessing}
@@ -485,6 +503,8 @@ export default function PaymentPage() {
                   >
                     <img src={mandiriLogoUrl} alt="Mandiri" className="h-8 w-auto object-contain" />
                   </button>
+
+                  {/* Permata - Active */}
                   <button
                     onClick={() => handlePaymentMethodSelect('va', 'PERMATA')}
                     disabled={isProcessing}
@@ -492,6 +512,8 @@ export default function PaymentPage() {
                   >
                     <img src={permataLogoUrl} alt="Permata" className="h-8 w-auto object-contain" />
                   </button>
+
+                  {/* CIMB Niaga - Active */}
                   <button
                     onClick={() => handlePaymentMethodSelect('va', 'CIMB')}
                     disabled={isProcessing}

@@ -784,6 +784,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
+      // BCA is currently under verification - reject BCA payments
+      if (paymentChannel === 'BCA') {
+        return res.status(400).json({
+          error: "BCA Virtual Account sedang dalam proses verifikasi. Silakan pilih bank lain (BNI, Mandiri, BRI, Permata, atau CIMB)."
+        });
+      }
+
+      // Validate allowed payment channels
+      const allowedChannels = ['BNI', 'MANDIRI', 'BRI', 'PERMATA', 'CIMB'];
+      if (!allowedChannels.includes(paymentChannel)) {
+        return res.status(400).json({
+          error: `Payment channel tidak valid. Pilih salah satu: ${allowedChannels.join(', ')}`
+        });
+      }
+
       // Verify event exists and is active
       const event = await storage.getEvent(eventId);
       if (!event) {
