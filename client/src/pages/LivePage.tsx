@@ -6,13 +6,13 @@ import { Play, Video as VideoIcon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { Video } from "@shared/schema";
 import { useVideo } from "@/contexts/VideoContext";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 
 export default function LivePage() {
   const [activeTab, setActiveTab] = useState<"live" | "video">("live");
   const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying, closeVideo, closeVideoAndGoHome } = useVideo();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   // Handle browser back button when video is open
   useEffect(() => {
@@ -25,8 +25,8 @@ export default function LivePage() {
         setSelectedVideo(null);
         setIsPlaying(false);
 
-        // Navigate to homepage with hash
-        navigate('/', { replace: true });
+        // Navigate to homepage
+        setLocation('/');
 
         // Scroll to video section after navigation
         setTimeout(() => {
@@ -43,7 +43,7 @@ export default function LivePage() {
         window.removeEventListener('popstate', handlePopState);
       };
     }
-  }, [selectedVideo, setSelectedVideo, setIsPlaying, navigate]);
+  }, [selectedVideo, setSelectedVideo, setIsPlaying, setLocation]);
 
   const { data: videos, isLoading } = useQuery<Video[]>({
     queryKey: ["/api/videos"],
