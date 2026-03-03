@@ -6,45 +6,21 @@ import { Play, Video as VideoIcon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { Video } from "@shared/schema";
 import { useVideo } from "@/contexts/VideoContext";
-import { useLocation } from "wouter";
 
 export default function LivePage() {
   const [activeTab, setActiveTab] = useState<"live" | "video">("live");
   const { selectedVideo, setSelectedVideo, isPlaying, setIsPlaying, closeVideo, closeVideoAndGoHome } = useVideo();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [, setLocation] = useLocation();
 
   // Handle browser back button when video is open
   useEffect(() => {
     if (selectedVideo) {
-      // When video opens, push TWO states:
-      // 1. First push homepage state (this is where back button will go)
-      // 2. Then push video state (current state)
-      window.history.pushState({ page: 'home' }, '', '/');
-      window.history.pushState({ videoOpen: true }, '', '/live');
+      // Push a new history state when video opens
+      window.history.pushState({ videoOpen: true }, '');
 
-      const handlePopState = (e: PopStateEvent) => {
-        console.log('PopState triggered:', e.state);
-
-        // Check if we're going back to homepage
-        if (e.state?.page === 'home' || !e.state) {
-          // Close video
-          setSelectedVideo(null);
-          setIsPlaying(false);
-
-          // Make sure we're on homepage
-          if (window.location.pathname !== '/') {
-            setLocation('/');
-          }
-
-          // Scroll to video section
-          setTimeout(() => {
-            const videoSection = document.getElementById('video-section');
-            if (videoSection) {
-              videoSection.scrollIntoView({ behavior: 'smooth' });
-            }
-          }, 100);
-        }
+      const handlePopState = () => {
+        // When user presses browser back button, go to homepage
+        closeVideoAndGoHome();
       };
 
       window.addEventListener('popstate', handlePopState);
@@ -53,7 +29,7 @@ export default function LivePage() {
         window.removeEventListener('popstate', handlePopState);
       };
     }
-  }, [selectedVideo, setSelectedVideo, setIsPlaying, setLocation]);
+  }, [selectedVideo, closeVideoAndGoHome]);
 
   const { data: videos, isLoading } = useQuery<Video[]>({
     queryKey: ["/api/videos"],
@@ -288,7 +264,7 @@ export default function LivePage() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    closeVideo();
+                    closeVideoAndGoHome();
                   }}
                   className="text-white p-1.5 hover:bg-white/10 rounded-full transition-all flex-shrink-0"
                 >
