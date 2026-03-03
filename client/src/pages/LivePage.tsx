@@ -17,24 +17,34 @@ export default function LivePage() {
   // Handle browser back button when video is open
   useEffect(() => {
     if (selectedVideo) {
-      // Push a new history state when video opens
-      window.history.pushState({ videoOpen: true }, '');
+      // When video opens, push TWO states:
+      // 1. First push homepage state (this is where back button will go)
+      // 2. Then push video state (current state)
+      window.history.pushState({ page: 'home' }, '', '/');
+      window.history.pushState({ videoOpen: true }, '', '/live');
 
       const handlePopState = (e: PopStateEvent) => {
-        // Close video
-        setSelectedVideo(null);
-        setIsPlaying(false);
+        console.log('PopState triggered:', e.state);
 
-        // Navigate to homepage
-        setLocation('/');
+        // Check if we're going back to homepage
+        if (e.state?.page === 'home' || !e.state) {
+          // Close video
+          setSelectedVideo(null);
+          setIsPlaying(false);
 
-        // Scroll to video section after navigation
-        setTimeout(() => {
-          const videoSection = document.getElementById('video-section');
-          if (videoSection) {
-            videoSection.scrollIntoView({ behavior: 'smooth' });
+          // Make sure we're on homepage
+          if (window.location.pathname !== '/') {
+            setLocation('/');
           }
-        }, 100);
+
+          // Scroll to video section
+          setTimeout(() => {
+            const videoSection = document.getElementById('video-section');
+            if (videoSection) {
+              videoSection.scrollIntoView({ behavior: 'smooth' });
+            }
+          }, 100);
+        }
       };
 
       window.addEventListener('popstate', handlePopState);
