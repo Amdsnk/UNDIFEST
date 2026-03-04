@@ -97,7 +97,7 @@ export default function BuyerDataForm({
       <div className="text-center">
         <h3 className="text-gray-800 text-xl font-bold mb-2">Buyer Data</h3>
         <p className="text-gray-600 text-sm">
-          Isi data Anda untuk mengikuti undian
+          Isi data Anda
         </p>
       </div>
 

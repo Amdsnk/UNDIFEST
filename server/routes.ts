@@ -47,6 +47,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files
   app.use("/uploads", express.static(uploadDir));
 
+  // Check Server Outbound IP - untuk whitelist di DOKU
+  app.get("/api/server-ip", async (_req: Request, res: Response) => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json() as { ip: string };
+
+      return res.json({
+        success: true,
+        outboundIP: data.ip,
+        message: "Gunakan IP ini untuk whitelist di DOKU dashboard"
+      });
+    } catch (error) {
+      console.error('[SERVER IP] Error getting outbound IP:', error);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to get server IP"
+      });
+    }
+  });
+
   // Admin Authentication
   app.post("/api/admin/login", async (req, res) => {
     try {

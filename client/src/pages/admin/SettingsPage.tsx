@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings } from "lucide-react";
+import { Settings, Copy, Check, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import type { AppSetting } from "@shared/schema";
@@ -16,6 +16,7 @@ import type { AppSetting } from "@shared/schema";
 export default function SettingsPage() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<Record<string, string>>({});
+  const [copiedIP, setCopiedIP] = useState(false);
 
   const { data: settingsData = [], isLoading } = useQuery<AppSetting[]>({
     queryKey: ["/api/admin/settings"],
@@ -26,6 +27,11 @@ export default function SettingsPage() {
       });
       setSettings(settingsMap);
     },
+  });
+
+  // Query untuk mendapatkan IP outbound server
+  const { data: serverIPData } = useQuery<{ success: boolean; outboundIP: string; message: string }>({
+    queryKey: ["/api/server-ip"],
   });
 
   const updateMutation = useMutation({
@@ -57,6 +63,15 @@ export default function SettingsPage() {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const copyIPToClipboard = () => {
+    if (serverIPData?.outboundIP) {
+      navigator.clipboard.writeText(serverIPData.outboundIP);
+      setCopiedIP(true);
+      toast({ title: "IP berhasil disalin!" });
+      setTimeout(() => setCopiedIP(false), 2000);
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -70,6 +85,55 @@ export default function SettingsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Server IP Card - untuk DOKU whitelist */}
+              <Card className="border-blue-200 bg-blue-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-blue-900">
+                    <Globe className="h-5 w-5" />
+                    Server IP Address (untuk DOKU Whitelist)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="bg-white rounded-lg p-4 border border-blue-200">
+                      <Label className="text-sm text-gray-600 mb-2 block">
+                        IP Outbound Backend (Railway Production)
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 bg-gray-100 px-4 py-3 rounded font-mono text-lg font-bold text-blue-600">
+                          {serverIPData?.outboundIP || "Loading..."}
+                        </code>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={copyIPToClipboard}
+                          disabled={!serverIPData?.outboundIP}
+                          className="h-12 w-12"
+                        >
+                          {copiedIP ? (
+                            <Check className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <Copy className="h-5 w-5" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <p className="text-sm text-yellow-800">
+                        <strong>📋 Cara Whitelist di DOKU:</strong>
+                      </p>
+                      <ol className="text-sm text-yellow-800 mt-2 ml-4 list-decimal space-y-1">
+                        <li>Login ke DOKU Dashboard</li>
+                        <li>Masuk ke menu <strong>Settings → IP Whitelist</strong></li>
+                        <li>Tambahkan IP di atas ke whitelist</li>
+                        <li>Save dan tunggu beberapa menit untuk aktivasi</li>
+                      </ol>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
