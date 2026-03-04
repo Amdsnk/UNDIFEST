@@ -184,22 +184,21 @@ export async function createVirtualAccountPayment(params: DokuPaymentRequest): P
   const timestamp = generateTimestamp();
   const endpointUrl = '/checkout/v1/payment';
 
-  // Try different channel code formats
-  // Format 1: Uppercase without space
+  // Based on DOKU dashboard configuration, try exact bank names
+  // These are the exact names shown in your DOKU dashboard
   const channelCodeMap: Record<string, string> = {
-    'BNI': 'BNIVA',
-    'BRI': 'BRIVA',
-    'MANDIRI': 'MANDIRIVA',
-    'PERMATA': 'PERMATAVA',
-    'CIMB': 'CIMBVA',
-    'BCA': 'BCAVA',
-    'DANAMON': 'DANAMONVA',
+    'BNI': 'Bank Negara Indonesia',
+    'BRI': 'Bank Rakyat Indonesia',
+    'MANDIRI': 'Bank Mandiri',
+    'PERMATA': 'Bank Permata',
+    'CIMB': 'CIMB Niaga',
+    'BCA': 'Bank Central Asia',
   };
 
-  const channelCode = channelCodeMap[params.paymentChannel || 'BCA'] || params.paymentChannel || 'BCAVA';
+  const channelCode = channelCodeMap[params.paymentChannel || 'BCA'] || params.paymentChannel || 'BCA';
 
   console.log('[DOKU] Original channel:', params.paymentChannel);
-  console.log('[DOKU] Trying format:', channelCode);
+  console.log('[DOKU] Mapped to bank name:', channelCode);
 
   const body = JSON.stringify({
     order: {
