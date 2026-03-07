@@ -15,7 +15,6 @@ export function MobileHeader() {
           </Link>
           <div className="text-right">
             <div className="text-sm font-semibold text-white">PT. Undian Festival Indonesia</div>
-            <div className="text-xs text-gray-400">Izin Resmi : BAXSASRES</div>
           </div>
         </div>
       </div>
