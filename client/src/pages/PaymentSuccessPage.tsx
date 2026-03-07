@@ -27,16 +27,15 @@ export default function PaymentSuccessPage() {
     // Check payment status
     const checkStatus = async () => {
       try {
+        // Optional: include user token if available
         const userToken = localStorage.getItem("user_token");
-        if (!userToken) {
-          setStatus("error");
-          return;
+        const headers: Record<string, string> = {};
+        if (userToken) {
+          headers["Authorization"] = `Bearer ${userToken}`;
         }
 
         const response = await apiRequest(`/api/payments/status/${trxId}`, {
-          headers: {
-            "Authorization": `Bearer ${userToken}`
-          }
+          headers
         });
 
         setPaymentStatus(response.paymentStatus);

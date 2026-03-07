@@ -793,19 +793,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Check payment status
-  app.get("/api/payments/status/:transactionId", requireUser, async (req, res) => {
+  // Check payment status - Allow both authenticated and guest users
+  app.get("/api/payments/status/:transactionId", optionalAuth, async (req, res) => {
     try {
       const { transactionId } = req.params;
-      const userId = (req as any).user.userId;
+      const userId = (req as any).user?.userId;
 
       const transaction = await storage.getTransaction(transactionId);
       if (!transaction) {
         return res.status(404).json({ error: "Transaction not found" });
       }
 
-      // Verify user owns this transaction
-      if (transaction.userId !== userId) {
+      // If user is authenticated, verify ownership
+      // If transaction has userId, only allow owner to access
+      if (transaction.userId && userId !== transaction.userId) {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
