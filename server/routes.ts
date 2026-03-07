@@ -273,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { transactionId } = req.params;
 
       // Get transaction details
-      const transaction = await storage.getTransactionById(transactionId);
+      const transaction = await storage.getTransaction(transactionId);
       if (!transaction) {
         return res.status(404).json({ error: "Transaction not found" });
       }
@@ -287,7 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get event details to retrieve E-book
-      const event = await storage.getEventById(transaction.eventId);
+      const event = await storage.getEvent(transaction.eventId);
       if (!event) {
         return res.status(404).json({ error: "Event not found" });
       }

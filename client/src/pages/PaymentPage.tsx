@@ -412,7 +412,7 @@ export default function PaymentPage() {
                           description: "Redirect ke halaman sukses...",
                         });
                         setTimeout(() => {
-                          navigate(`/payment-success?transactionId=${paymentDetails.transactionId}`);
+                          navigate(`/payment/success?trx=${paymentDetails.transactionId}`);
                         }, 1000);
                       } else {
                         toast({
