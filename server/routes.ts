@@ -809,11 +809,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
+      // Get event details to include event name
+      const event = await storage.getEvent(transaction.eventId);
+
       res.json({
         id: transaction.id,
         paymentStatus: transaction.paymentStatus,
         paymentUrl: transaction.paymentUrl,
         paidAt: transaction.paidAt,
+        eventName: event?.name || "",
       });
     } catch (error) {
       console.error("[Payment Status] Error:", error);
