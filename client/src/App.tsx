@@ -66,17 +66,18 @@ function Router() {
       <Route path="/history">
         <RequireProfile><HistoryPage /></RequireProfile>
       </Route>
+
+      {/* Payment Routes - Must be before /payment/:eventId to avoid matching */}
+      <Route path="/payment/success" component={PaymentSuccessPage} />
+      <Route path="/payment/cancel" component={PaymentCancelPage} />
       <Route path="/payment/:eventId" component={PaymentPage} />
+
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/how-it-works" component={HowItWorksUserPage} />
       <Route path="/faq" component={FAQPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/brand" component={BrandPage} />
-
-      {/* Payment Routes */}
-      <Route path="/payment/success" component={PaymentSuccessPage} />
-      <Route path="/payment/cancel" component={PaymentCancelPage} />
 
       {/* Admin Routes */}
       <Route path="/admin" component={AdminLoginPage} />
