@@ -145,7 +145,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/events", requireAdmin, requireWrite, upload.fields([
     { name: "bannerHomepage", maxCount: 1 },
-    { name: "bannerUndian", maxCount: 1 }
+    { name: "bannerUndian", maxCount: 1 },
+    { name: "ebookFile", maxCount: 1 }
   ]), async (req, res) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -153,6 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert uploaded files to base64 for permanent storage
       let bannerHomepageUrl = "";
       let bannerUndianUrl = "";
+      let ebookFileData = "";
 
       if (files?.bannerHomepage?.[0]) {
         const file = files.bannerHomepage[0];
@@ -164,6 +166,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const file = files.bannerUndian[0];
         const fileBuffer = fs.readFileSync(file.path);
         bannerUndianUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(file.path); // Delete temp file
+      }
+      if (files?.ebookFile?.[0]) {
+        const file = files.ebookFile[0];
+        const fileBuffer = fs.readFileSync(file.path);
+        ebookFileData = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
         fs.unlinkSync(file.path); // Delete temp file
       }
 
@@ -179,6 +187,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isRefundable: req.body.isRefundable === "true",
         bannerHomepage: bannerHomepageUrl,
         bannerUndian: bannerUndianUrl,
+        ebookFile: ebookFileData || undefined,
+        ebookTitle: req.body.ebookTitle || undefined,
         imageUrl: bannerHomepageUrl || "https://via.placeholder.com/800x400",
         prize: `Hadiah Rp ${parseInt(req.body.hadiah || "1000000").toLocaleString("id-ID")}`,
         announcementDate: new Date(req.body.endDate),
@@ -199,7 +209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/events/:id", requireAdmin, requireWrite, upload.fields([
     { name: "bannerHomepage", maxCount: 1 },
-    { name: "bannerUndian", maxCount: 1 }
+    { name: "bannerUndian", maxCount: 1 },
+    { name: "ebookFile", maxCount: 1 }
   ]), async (req, res) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -229,6 +240,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data.bannerUndian = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
         fs.unlinkSync(file.path); // Delete temp file
       }
+      if (files?.ebookFile?.[0]) {
+        const file = files.ebookFile[0];
+        const fileBuffer = fs.readFileSync(file.path);
+        data.ebookFile = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(file.path); // Delete temp file
+      }
 
       // Clean up URL fields from the data object
       delete data.bannerHomepageUrl;
@@ -247,6 +264,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Update event error:", error);
       res.status(500).json({ error: "Failed to update event" });
+    }
+  });
+
+  // Secure E-book download endpoint - requires valid paid transaction
+  app.get("/api/ebook/download/:transactionId", async (req, res) => {
+    try {
+      const { transactionId } = req.params;
+
+      // Get transaction details
+      const transaction = await storage.getTransactionById(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+
+      // Verify payment status
+      if (transaction.paymentStatus !== "paid") {
+        return res.status(403).json({
+          error: "Access denied",
+          message: "E-book can only be downloaded after successful payment"
+        });
+      }
+
+      // Get event details to retrieve E-book
+      const event = await storage.getEventById(transaction.eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      if (!event.ebookFile) {
+        return res.status(404).json({ error: "E-book not available for this event" });
+      }
+
+      // Return E-book data
+      res.json({
+        success: true,
+        ebookFile: event.ebookFile,
+        ebookTitle: event.ebookTitle || event.name,
+        eventName: event.name,
+      });
+    } catch (error) {
+      console.error("E-book download error:", error);
+      res.status(500).json({ error: "Failed to download E-book" });
     }
   });
 

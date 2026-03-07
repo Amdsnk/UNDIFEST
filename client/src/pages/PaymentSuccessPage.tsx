@@ -9,8 +9,9 @@ export default function PaymentSuccessPage() {
   const [, navigate] = useLocation();
   const [status, setStatus] = useState<"loading" | "success" | "pending" | "error">("loading");
   const [paymentStatus, setPaymentStatus] = useState<string>("");
-  const [ebookUrl, setEbookUrl] = useState<string>("");
+  const [ebookData, setEbookData] = useState<{ file: string; title: string } | null>(null);
   const [eventName, setEventName] = useState<string>("");
+  const [transactionId, setTransactionId] = useState<string>("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -20,6 +21,8 @@ export default function PaymentSuccessPage() {
       setStatus("error");
       return;
     }
+
+    setTransactionId(trxId);
 
     // Check payment status
     const checkStatus = async () => {
@@ -39,10 +42,19 @@ export default function PaymentSuccessPage() {
         setPaymentStatus(response.paymentStatus);
         setEventName(response.eventName || "");
 
-        // Set E-book URL (untuk simulasi, gunakan URL dummy)
-        // Nanti bisa diganti dengan URL real dari database
+        // If payment is successful, fetch E-book data
         if (response.paymentStatus === "paid") {
-          setEbookUrl("https://drive.google.com/file/d/SAMPLE_EBOOK_ID/view"); // Ganti dengan URL real
+          try {
+            const ebookResponse = await apiRequest(`/api/ebook/download/${trxId}`);
+            if (ebookResponse.success && ebookResponse.ebookFile) {
+              setEbookData({
+                file: ebookResponse.ebookFile,
+                title: ebookResponse.ebookTitle || "E-book"
+              });
+            }
+          } catch (ebookError) {
+            console.log("E-book not available for this event");
+          }
           setStatus("success");
         } else if (response.paymentStatus === "pending") {
           setStatus("pending");
@@ -78,30 +90,31 @@ export default function PaymentSuccessPage() {
               <h1 className="text-2xl font-bold text-white mb-2">Pembayaran Berhasil!</h1>
               <p className="text-gray-400 mb-4">Tiket Anda telah berhasil dibeli.</p>
 
-              {/* E-book Download Section */}
-              <div className="w-full max-w-md bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg p-6 mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <FileText className="w-8 h-8 text-purple-400" />
-                  <div className="text-left">
-                    <h3 className="text-lg font-bold text-white">E-book Anda Siap!</h3>
-                    <p className="text-sm text-gray-400">Unduh sekarang juga</p>
+              {/* E-book Download Section - Only show if E-book is available */}
+              {ebookData && (
+                <div className="w-full max-w-md bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg p-6 mb-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <FileText className="w-8 h-8 text-purple-400" />
+                    <div className="text-left">
+                      <h3 className="text-lg font-bold text-white">E-book Anda Siap!</h3>
+                      <p className="text-sm text-gray-400">{ebookData.title}</p>
+                    </div>
                   </div>
+
+                  <a
+                    href={ebookData.file}
+                    download={`${ebookData.title}.pdf`}
+                    className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105"
+                  >
+                    <Download className="w-5 h-5" />
+                    Download E-book
+                  </a>
+
+                  <p className="text-xs text-gray-400 mt-3 text-center">
+                    Link download juga tersedia di riwayat transaksi Anda
+                  </p>
                 </div>
-
-                <a
-                  href={ebookUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105"
-                >
-                  <Download className="w-5 h-5" />
-                  Download E-book
-                </a>
-
-                <p className="text-xs text-gray-400 mt-3 text-center">
-                  Link download juga tersedia di riwayat transaksi Anda
-                </p>
-              </div>
+              )}
 
               <button
                 onClick={() => navigate("/history")}

@@ -36,6 +36,8 @@ export const events = pgTable("events", {
   bannerHomepage: text("banner_homepage"),
   bannerUndian: text("banner_undian"),
   isRefundable: boolean("is_refundable").notNull().default(false),
+  ebookFile: text("ebook_file"), // Path to uploaded E-book file
+  ebookTitle: text("ebook_title"), // Title of the E-book
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -25,6 +25,7 @@ const formSchema = z.object({
   category: z.string().min(1, "Kategori wajib dipilih"),
   bannerHomepage: z.string().optional(),
   bannerUndian: z.string().optional(),
+  ebookTitle: z.string().optional(),
   description: z.string().min(1, "Deskripsi wajib diisi"),
   startDate: z.string().min(1, "Jadwal mulai wajib diisi"),
   endDate: z.string().min(1, "Jadwal selesai wajib diisi"),
@@ -38,8 +39,10 @@ export default function CreateEventPage() {
   const { toast } = useToast();
   const [bannerHomepageFile, setBannerHomepageFile] = useState<File | null>(null);
   const [bannerUndianFile, setBannerUndianFile] = useState<File | null>(null);
+  const [ebookFile, setEbookFile] = useState<File | null>(null);
   const homepageBannerRef = useRef<HTMLInputElement>(null);
   const undianBannerRef = useRef<HTMLInputElement>(null);
+  const ebookFileRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -93,6 +96,14 @@ export default function CreateEventPage() {
         formData.append("bannerUndian", bannerUndianFile);
       }
 
+      // Handle E-book file
+      if (ebookFile) {
+        formData.append("ebookFile", ebookFile);
+      }
+      if (data.ebookTitle) {
+        formData.append("ebookTitle", data.ebookTitle);
+      }
+
       const response = await fetch("/api/events", {
         method: "POST",
         headers: {
@@ -118,6 +129,7 @@ export default function CreateEventPage() {
       // Reset form
       setBannerHomepageFile(null);
       setBannerUndianFile(null);
+      setEbookFile(null);
       
       // Ask if user wants to create another event
       const createAnother = window.confirm("Event berhasil dibuat! Apakah Anda ingin membuat event lagi?");
@@ -327,6 +339,72 @@ export default function CreateEventPage() {
                         <Label className="text-sm cursor-pointer">
                           {isRefundable ? "Refund" : "Non refund"}
                         </Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* E-book Upload Section */}
+                  <div className="border-t pt-6">
+                    <Label className="text-sm font-medium mb-3 block">📚 E-book (Opsional)</Label>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Upload file E-book (PDF) yang akan diberikan kepada pembeli setelah pembayaran berhasil.
+                    </p>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="ebookTitle" className="text-sm font-medium">
+                          Judul E-book
+                        </Label>
+                        <Input
+                          id="ebookTitle"
+                          {...register("ebookTitle")}
+                          placeholder="Contoh: Panduan Lengkap Undifest"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">
+                          File E-book (PDF)
+                        </Label>
+                        <input
+                          type="file"
+                          ref={ebookFileRef}
+                          accept=".pdf"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 10 * 1024 * 1024) {
+                                toast({
+                                  variant: "destructive",
+                                  title: "File terlalu besar",
+                                  description: "Ukuran file maksimal 10MB",
+                                });
+                                e.target.value = "";
+                                return;
+                              }
+                              setEbookFile(file);
+                              toast({
+                                title: "File dipilih",
+                                description: file.name,
+                              });
+                            }
+                          }}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => ebookFileRef.current?.click()}
+                          className="w-full"
+                        >
+                          {ebookFile ? `📄 ${ebookFile.name}` : "Pilih File PDF"}
+                        </Button>
+                        {ebookFile && (
+                          <p className="text-sm text-green-600 mt-2">
+                            ✓ File siap diupload: {ebookFile.name} ({(ebookFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
