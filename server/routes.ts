@@ -1193,6 +1193,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SIMULATION: Manual payment verification for testing
+  // This endpoint allows you to manually mark a transaction as paid during simulation mode
+  app.post("/api/transactions/:id/simulate-payment", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body; // "paid", "failed", or "expired"
+
+      // Only allow in simulation mode
+      if (process.env.DOKU_SIMULATION_MODE !== 'true') {
+        return res.status(403).json({
+          error: "This endpoint is only available in simulation mode"
+        });
+      }
+
+      const transaction = await storage.getTransaction(id);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+
+      const paymentStatus = status || "paid";
+      await storage.updateTransaction(id, {
+        paymentStatus,
+        paidAt: paymentStatus === "paid" ? new Date() : undefined,
+      });
+
+      console.log(`[SIMULATION] Transaction ${id} marked as ${paymentStatus}`);
+
+      res.json({
+        success: true,
+        message: `Transaction marked as ${paymentStatus}`,
+        transaction: await storage.getTransaction(id)
+      });
+    } catch (error) {
+      console.error("[SIMULATION] Error:", error);
+      res.status(500).json({ error: "Failed to simulate payment" });
+    }
+  });
+
   // Videos API (public for live page display)
   app.get("/api/videos", async (req, res) => {
     try {

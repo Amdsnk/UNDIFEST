@@ -34,6 +34,7 @@ interface PaymentDetails {
   qrImage?: string;
   via: string;
   channel: string;
+  transactionId?: string;
 }
 
 interface BuyerData {
@@ -157,6 +158,7 @@ export default function PaymentPage() {
           qrImage: responseData.qrImage,
           via: responseData.via,
           channel: responseData.channel,
+          transactionId: responseData.id, // Include transaction ID for simulation
         });
         toast({
           title: "Pembayaran Dibuat",
@@ -385,6 +387,52 @@ export default function PaymentPage() {
                 <li>Konfirmasi pembayaran</li>
               </ol>
             </div>
+
+            {/* Simulation Mode - Test Payment Button */}
+            {import.meta.env.VITE_DOKU_SIMULATION_MODE === 'true' && (
+              <div className="bg-yellow-900/30 border-2 border-yellow-500 p-4 rounded-xl">
+                <p className="text-yellow-400 text-sm font-bold mb-2">🧪 MODE SIMULASI</p>
+                <p className="text-yellow-200 text-xs mb-3">
+                  Klik tombol di bawah untuk simulasi pembayaran berhasil (untuk testing)
+                </p>
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`/api/transactions/${paymentDetails.transactionId}/simulate-payment`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'paid' }),
+                      });
+
+                      if (response.ok) {
+                        toast({
+                          title: "✅ Pembayaran Disimulasikan",
+                          description: "Redirect ke halaman sukses...",
+                        });
+                        setTimeout(() => {
+                          navigate(`/payment-success?transactionId=${paymentDetails.transactionId}`);
+                        }, 1000);
+                      } else {
+                        toast({
+                          variant: "destructive",
+                          title: "Simulasi Gagal",
+                          description: "Terjadi kesalahan saat simulasi pembayaran",
+                        });
+                      }
+                    } catch (error) {
+                      toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "Gagal melakukan simulasi pembayaran",
+                      });
+                    }
+                  }}
+                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-black py-3 rounded-lg font-bold transition-colors"
+                >
+                  🧪 Simulasi Pembayaran Berhasil
+                </button>
+              </div>
+            )}
 
             {/* Back Button */}
             <button
