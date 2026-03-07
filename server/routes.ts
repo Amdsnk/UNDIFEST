@@ -915,7 +915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const useSimulation = process.env.DOKU_SIMULATION_MODE === 'true';
 
       if (useSimulation) {
-        console.log("[DOKU VA] Using simulation mode - channels under verification");
+        console.log("[DOKU VA] ✅ Using simulation mode - channels under verification");
 
         // Generate mock VA number based on bank
         const bankPrefixes: Record<string, string> = {
@@ -940,6 +940,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paymentNumber: mockVANumber,
         });
 
+        console.log(`[DOKU VA] ✅ Generated mock VA: ${mockVANumber} for ${paymentChannel}`);
+
         return res.status(201).json({
           ...transaction,
           paymentNo: mockVANumber,
@@ -953,6 +955,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // PRODUCTION MODE: Call real DOKU API
+      console.log("[DOKU VA] Using production mode - calling real DOKU API");
       try {
         const paymentResult = await createVirtualAccountPayment({
           name: userName,
@@ -1069,6 +1073,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // SIMULATION MODE: DOKU channels are under verification
+      // Generate mock QRIS for testing
+      const useSimulation = process.env.DOKU_SIMULATION_MODE === 'true';
+
+      if (useSimulation) {
+        console.log("[DOKU QRIS] ✅ Using simulation mode - channels under verification");
+
+        // Generate mock QRIS content (base64 encoded dummy QR)
+        const mockQRContent = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+        // Mock expiry date (24 hours from now)
+        const expiryDate = new Date();
+        expiryDate.setHours(expiryDate.getHours() + 24);
+        const mockExpiry = expiryDate.toISOString();
+
+        console.log("[DOKU QRIS] ✅ Generated mock QRIS");
+
+        return res.status(201).json({
+          ...transaction,
+          qrImage: mockQRContent,
+          total: amount,
+          fee: 0,
+          expired: mockExpiry,
+          via: "QRIS",
+          channel: "QRIS",
+          simulationMode: true,
+        });
+      }
+
+      // PRODUCTION MODE: Call real DOKU API
+      console.log("[DOKU QRIS] Using production mode - calling real DOKU API");
       try {
         const paymentResult = await createQRISPayment({
           name: userName,
