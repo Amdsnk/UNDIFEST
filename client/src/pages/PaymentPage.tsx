@@ -35,6 +35,7 @@ interface PaymentDetails {
   via: string;
   channel: string;
   transactionId?: string;
+  simulationMode?: boolean;
 }
 
 interface BuyerData {
@@ -159,6 +160,7 @@ export default function PaymentPage() {
           via: responseData.via,
           channel: responseData.channel,
           transactionId: responseData.id, // Include transaction ID for simulation
+          simulationMode: responseData.simulationMode, // Check if in simulation mode
         });
         toast({
           title: "Pembayaran Dibuat",
@@ -389,7 +391,7 @@ export default function PaymentPage() {
             </div>
 
             {/* Simulation Mode - Test Payment Button */}
-            {import.meta.env.VITE_DOKU_SIMULATION_MODE === 'true' && (
+            {paymentDetails.simulationMode && (
               <div className="bg-yellow-900/30 border-2 border-yellow-500 p-4 rounded-xl">
                 <p className="text-yellow-400 text-sm font-bold mb-2">🧪 MODE SIMULASI</p>
                 <p className="text-yellow-200 text-xs mb-3">
