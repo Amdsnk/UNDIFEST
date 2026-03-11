@@ -6,7 +6,7 @@ import { z } from "zod";
 import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, updateVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema, insertTermsConditionSchema } from "@shared/schema";
 import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite, verifyUserToken } from "./auth";
 import { createPayment, createDirectPayment, isIPaymuConfigured, getIPaymuConfig } from "./ipaymu";
-import { createVirtualAccountPayment, createQRISPayment, isDokuConfigured, getDokuConfig, verifyWebhookSignature } from "./doku";
+import { createVAPayment, createQRISPayment as createMidtransQRIS, isMidtransConfigured, getMidtransConfig, verifyMidtransSignature } from "./midtrans";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -47,7 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files
   app.use("/uploads", express.static(uploadDir));
 
-  // Check Server Outbound IP - untuk whitelist di DOKU
+  // Check Server Outbound IP - untuk whitelist di Midtrans
   app.get("/api/server-ip", async (_req: Request, res: Response) => {
     try {
       const response = await fetch('https://api.ipify.org?format=json');
@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json({
         success: true,
         outboundIP: data.ip,
-        message: "Gunakan IP ini untuk whitelist di DOKU dashboard"
+        message: "Gunakan IP ini untuk whitelist di Midtrans dashboard"
       });
     } catch (error) {
       console.error('[SERVER IP] Error getting outbound IP:', error);
@@ -831,14 +831,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(getIPaymuConfig());
   });
 
-  // Get DOKU config status (admin only)
-  app.get("/api/admin/doku-config", requireAdmin, async (req, res) => {
-    res.json(getDokuConfig());
+  // Get Midtrans config status (admin only)
+  app.get("/api/admin/midtrans-config", requireAdmin, async (req, res) => {
+    res.json(getMidtransConfig());
   });
 
-  // DOKU Payment Endpoints
-  // Create DOKU Virtual Account payment
-  app.post("/api/transactions/doku/va", optionalAuth, async (req, res) => {
+  // Midtrans Payment Endpoints
+  // Create Midtrans Virtual Account payment
+  app.post("/api/transactions/midtrans/va", optionalAuth, async (req, res) => {
     try {
       // Get user info if authenticated
       let userId: string | undefined;
@@ -868,16 +868,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      // BCA is currently under verification - reject BCA payments
-      if (paymentChannel === 'BCA') {
-        return res.status(400).json({
-          error: "BCA Virtual Account sedang dalam proses verifikasi. Silakan pilih bank lain (BNI, Mandiri, BRI, Permata, atau CIMB)."
-        });
-      }
-
-      // Validate allowed payment channels
+      // Validate allowed payment channels (active on Midtrans dashboard)
       const allowedChannels = ['BNI', 'MANDIRI', 'BRI', 'PERMATA', 'CIMB'];
-      if (!allowedChannels.includes(paymentChannel)) {
+      if (!allowedChannels.includes(paymentChannel.toUpperCase())) {
         return res.status(400).json({
           error: `Payment channel tidak valid. Pilih salah satu: ${allowedChannels.join(', ')}`
         });
@@ -903,26 +896,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         buyerEmail: buyerEmail || null,
         paymentStatus: "pending",
         paymentMethod: "va",
-        paymentChannel,
+        paymentChannel: paymentChannel.toUpperCase(),
       });
 
-      // Check if DOKU is configured
-      if (!isDokuConfigured()) {
-        console.log("[DOKU VA] DOKU not configured, transaction created without payment");
-        return res.status(201).json({
-          ...transaction,
-          message: "Transaction created (DOKU not configured)",
-        });
-      }
-
-      // SIMULATION MODE: DOKU channels are under verification
-      // Generate mock VA number for testing
-      const useSimulation = process.env.DOKU_SIMULATION_MODE === 'true';
+      // SIMULATION MODE
+      const useSimulation = process.env.MIDTRANS_SIMULATION_MODE === 'true';
 
       if (useSimulation) {
-        console.log("[DOKU VA] ✅ Using simulation mode - channels under verification");
+        console.log("[Midtrans VA] ✅ Using simulation mode");
 
-        // Generate mock VA number based on bank
         const bankPrefixes: Record<string, string> = {
           'BNI': '8829172',
           'BRI': '139250',
@@ -931,94 +913,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'CIMB': '18999',
         };
 
-        const prefix = bankPrefixes[paymentChannel] || '88888';
+        const prefix = bankPrefixes[paymentChannel.toUpperCase()] || '88888';
         const randomSuffix = Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
         const mockVANumber = prefix + randomSuffix;
 
-        // Mock expiry date (24 hours from now)
         const expiryDate = new Date();
         expiryDate.setHours(expiryDate.getHours() + 24);
-        const mockExpiry = expiryDate.toISOString();
 
-        // Update transaction with mock payment info
-        await storage.updateTransaction(transaction.id, {
-          paymentNumber: mockVANumber,
-        });
+        await storage.updateTransaction(transaction.id, { paymentNumber: mockVANumber });
 
-        console.log(`[DOKU VA] ✅ Generated mock VA: ${mockVANumber} for ${paymentChannel}`);
+        console.log(`[Midtrans VA] ✅ Mock VA: ${mockVANumber} for ${paymentChannel}`);
 
         return res.status(201).json({
           ...transaction,
           paymentNo: mockVANumber,
-          paymentName: `Bank ${paymentChannel}`,
+          paymentName: `${paymentChannel.toUpperCase()} Virtual Account`,
           total: amount,
           fee: 0,
-          expired: mockExpiry,
+          expired: expiryDate.toISOString(),
           via: "VIRTUAL_ACCOUNT",
-          channel: paymentChannel,
+          channel: paymentChannel.toUpperCase(),
           simulationMode: true,
         });
       }
 
-      // PRODUCTION MODE: Call real DOKU API
-      console.log("[DOKU VA] Using production mode - calling real DOKU API");
+      // PRODUCTION MODE: Call Midtrans Core API
+      console.log("[Midtrans VA] Production mode - calling Midtrans API");
       try {
-        const paymentResult = await createVirtualAccountPayment({
-          name: userName,
-          phone: phoneNumber,
-          email: userEmail,
-          amount: amount,
-          referenceId: transaction.id,
-          description: `Tiket ${eventName}`,
-          paymentMethod: 'VIRTUAL_ACCOUNT_BANK',
-          paymentChannel: paymentChannel,
+        const paymentResult = await createVAPayment(paymentChannel.toLowerCase(), {
+          orderId: transaction.id,
+          grossAmount: amount,
+          customerName: userName,
+          customerEmail: userEmail,
+          customerPhone: phoneNumber,
+          itemName: `Tiket ${eventName}`,
         });
 
-        console.log("[DOKU VA] Response:", paymentResult);
+        console.log("[Midtrans VA] Response:", paymentResult);
 
-        if (paymentResult.response_code === "2000000" && paymentResult.virtual_account_info) {
-          // Update transaction with payment info
-          await storage.updateTransaction(transaction.id, {
-            paymentNumber: paymentResult.virtual_account_info.virtual_account_number,
-          });
+        await storage.updateTransaction(transaction.id, {
+          paymentNumber: paymentResult.vaNumber,
+          paymentId: paymentResult.transactionId,
+        });
 
-          return res.status(201).json({
-            ...transaction,
-            paymentNo: paymentResult.virtual_account_info.virtual_account_number,
-            paymentName: paymentResult.virtual_account_info.bank_name,
-            total: paymentResult.order.amount,
-            fee: 0,
-            expired: paymentResult.virtual_account_info.expired_date,
-            via: "VIRTUAL_ACCOUNT",
-            channel: paymentResult.virtual_account_info.channel_code,
-          });
-        } else {
-          console.error("[DOKU VA] Error:", paymentResult.response_message);
-          return res.status(201).json({
-            ...transaction,
-            paymentError: paymentResult.response_message || "Payment gateway error",
-          });
-        }
-      } catch (paymentError) {
-        console.error("[DOKU VA] Exception:", paymentError);
         return res.status(201).json({
           ...transaction,
-          paymentError: "Failed to connect to DOKU payment gateway",
+          paymentNo: paymentResult.vaNumber,
+          paymentName: paymentResult.bankName,
+          total: amount,
+          fee: 0,
+          expired: paymentResult.expiryTime,
+          via: "VIRTUAL_ACCOUNT",
+          channel: paymentChannel.toUpperCase(),
+        });
+      } catch (paymentError: any) {
+        console.error("[Midtrans VA] Exception:", paymentError);
+        return res.status(201).json({
+          ...transaction,
+          paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
         });
       }
     } catch (error) {
-      console.error("[DOKU VA] Error:", error);
+      console.error("[Midtrans VA] Error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      res.status(500).json({ error: "Failed to create DOKU VA payment" });
+      res.status(500).json({ error: "Failed to create Midtrans VA payment" });
     }
   });
 
-  // Create DOKU QRIS payment
-  app.post("/api/transactions/doku/qris", optionalAuth, async (req, res) => {
+  // Create Midtrans QRIS payment
+  app.post("/api/transactions/midtrans/qris", optionalAuth, async (req, res) => {
     try {
-      // Get user info if authenticated
       let userId: string | undefined;
       let phoneNumber = "081234567890";
       let userName = "Guest Customer";
@@ -1037,7 +1003,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { eventId, amount, eventName, buyerName, buyerPhone, buyerEmail } = req.body;
 
-      // Use buyer data if provided
       if (buyerName) userName = buyerName;
       if (buyerPhone) phoneNumber = buyerPhone;
       if (buyerEmail) userEmail = buyerEmail;
@@ -1046,7 +1011,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      // Verify event exists and is active
       const event = await storage.getEvent(eventId);
       if (!event) {
         return res.status(404).json({ error: "Event not found" });
@@ -1055,7 +1019,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Event is not active" });
       }
 
-      // Create transaction
       const transaction = await storage.createTransaction({
         userId: userId || undefined,
         eventId,
@@ -1069,118 +1032,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentChannel: "QRIS",
       });
 
-      // Check if DOKU is configured
-      if (!isDokuConfigured()) {
-        console.log("[DOKU QRIS] DOKU not configured, transaction created without payment");
-        return res.status(201).json({
-          ...transaction,
-          message: "Transaction created (DOKU not configured)",
-        });
-      }
-
-      // SIMULATION MODE: DOKU channels are under verification
-      // Generate mock QRIS for testing
-      const useSimulation = process.env.DOKU_SIMULATION_MODE === 'true';
+      // SIMULATION MODE
+      const useSimulation = process.env.MIDTRANS_SIMULATION_MODE === 'true';
 
       if (useSimulation) {
-        console.log("[DOKU QRIS] ✅ Using simulation mode - channels under verification");
+        console.log("[Midtrans QRIS] ✅ Using simulation mode");
 
-        // Generate mock QRIS content (base64 encoded dummy QR)
         const mockQRContent = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-
-        // Mock expiry date (24 hours from now)
         const expiryDate = new Date();
         expiryDate.setHours(expiryDate.getHours() + 24);
-        const mockExpiry = expiryDate.toISOString();
-
-        console.log("[DOKU QRIS] ✅ Generated mock QRIS");
 
         return res.status(201).json({
           ...transaction,
           qrImage: mockQRContent,
           total: amount,
           fee: 0,
-          expired: mockExpiry,
+          expired: expiryDate.toISOString(),
           via: "QRIS",
           channel: "QRIS",
           simulationMode: true,
         });
       }
 
-      // PRODUCTION MODE: Call real DOKU API
-      console.log("[DOKU QRIS] Using production mode - calling real DOKU API");
+      // PRODUCTION MODE: Call Midtrans Core API
+      console.log("[Midtrans QRIS] Production mode - calling Midtrans API");
       try {
-        const paymentResult = await createQRISPayment({
-          name: userName,
-          phone: phoneNumber,
-          email: userEmail,
-          amount: amount,
-          referenceId: transaction.id,
-          description: `Tiket ${eventName}`,
+        const paymentResult = await createMidtransQRIS({
+          orderId: transaction.id,
+          grossAmount: amount,
+          customerName: userName,
+          customerEmail: userEmail,
+          customerPhone: phoneNumber,
+          itemName: `Tiket ${eventName}`,
         });
 
-        console.log("[DOKU QRIS] Response:", paymentResult);
+        console.log("[Midtrans QRIS] Response:", paymentResult);
 
-        if (paymentResult.response_code === "2000000" && paymentResult.qris_info) {
-          return res.status(201).json({
-            ...transaction,
-            qrImage: paymentResult.qris_info.qr_content,
-            total: paymentResult.order.amount,
-            fee: 0,
-            expired: paymentResult.qris_info.expired_date,
-            via: "QRIS",
-            channel: "QRIS",
-          });
-        } else {
-          console.error("[DOKU QRIS] Error:", paymentResult.response_message);
-          return res.status(201).json({
-            ...transaction,
-            paymentError: paymentResult.response_message || "Payment gateway error",
-          });
-        }
-      } catch (paymentError) {
-        console.error("[DOKU QRIS] Exception:", paymentError);
+        await storage.updateTransaction(transaction.id, {
+          paymentId: paymentResult.transactionId,
+        });
+
         return res.status(201).json({
           ...transaction,
-          paymentError: "Failed to connect to DOKU payment gateway",
+          qrImage: paymentResult.qrCodeUrl,
+          total: amount,
+          fee: 0,
+          expired: paymentResult.expiryTime,
+          via: "QRIS",
+          channel: "QRIS",
+        });
+      } catch (paymentError: any) {
+        console.error("[Midtrans QRIS] Exception:", paymentError);
+        return res.status(201).json({
+          ...transaction,
+          paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
         });
       }
     } catch (error) {
-      console.error("[DOKU QRIS] Error:", error);
+      console.error("[Midtrans QRIS] Error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      res.status(500).json({ error: "Failed to create DOKU QRIS payment" });
+      res.status(500).json({ error: "Failed to create Midtrans QRIS payment" });
     }
   });
 
-  // DOKU Webhook callback
-  app.post("/api/payments/doku/callback", async (req, res) => {
+  // Midtrans Notification callback (webhook)
+  app.post("/api/payments/midtrans/notification", async (req, res) => {
     try {
-      console.log("[DOKU Callback] Received:", req.body);
-      console.log("[DOKU Callback] Headers:", req.headers);
+      console.log("[Midtrans Notification] Received:", req.body);
 
-      const { order, transaction } = req.body;
+      const {
+        order_id,
+        status_code,
+        gross_amount,
+        signature_key,
+        transaction_status,
+        fraud_status,
+      } = req.body;
 
-      if (!order || !order.invoice_number) {
-        console.error("[DOKU Callback] Missing invoice_number");
-        return res.status(400).json({ error: "Missing invoice_number" });
+      if (!order_id) {
+        console.error("[Midtrans Notification] Missing order_id");
+        return res.status(400).json({ error: "Missing order_id" });
       }
 
-      // Find transaction by invoice_number (our transaction ID)
-      const dbTransaction = await storage.getTransaction(order.invoice_number);
+      // Verify signature
+      if (signature_key && !verifyMidtransSignature(order_id, status_code, gross_amount, signature_key)) {
+        console.error("[Midtrans Notification] Invalid signature for order:", order_id);
+        return res.status(403).json({ error: "Invalid signature" });
+      }
+
+      // Find transaction
+      const dbTransaction = await storage.getTransaction(order_id);
       if (!dbTransaction) {
-        console.error("[DOKU Callback] Transaction not found:", order.invoice_number);
+        console.error("[Midtrans Notification] Transaction not found:", order_id);
         return res.status(404).json({ error: "Transaction not found" });
       }
 
-      // Update transaction based on payment status
+      // Map Midtrans status to our status
       let paymentStatus = "pending";
-      if (transaction.status === "SUCCESS") {
+      if (transaction_status === "settlement" || (transaction_status === "capture" && fraud_status === "accept")) {
         paymentStatus = "paid";
-      } else if (transaction.status === "FAILED") {
+      } else if (transaction_status === "deny" || transaction_status === "cancel" || transaction_status === "failure") {
         paymentStatus = "failed";
-      } else if (transaction.status === "EXPIRED") {
+      } else if (transaction_status === "expire") {
         paymentStatus = "expired";
       }
 
@@ -1189,24 +1144,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paidAt: paymentStatus === "paid" ? new Date() : undefined,
       });
 
-      console.log("[DOKU Callback] Transaction updated:", dbTransaction.id, "Status:", paymentStatus);
+      console.log("[Midtrans Notification] Transaction updated:", dbTransaction.id, "Status:", paymentStatus);
 
       res.json({ success: true });
     } catch (error) {
-      console.error("[DOKU Callback] Error:", error);
-      res.status(500).json({ error: "Callback processing failed" });
+      console.error("[Midtrans Notification] Error:", error);
+      res.status(500).json({ error: "Notification processing failed" });
     }
   });
 
   // SIMULATION: Manual payment verification for testing
-  // This endpoint allows you to manually mark a transaction as paid during simulation mode
   app.post("/api/transactions/:id/simulate-payment", async (req, res) => {
     try {
       const { id } = req.params;
       const { status } = req.body; // "paid", "failed", or "expired"
 
       // Only allow in simulation mode
-      if (process.env.DOKU_SIMULATION_MODE !== 'true') {
+      if (process.env.MIDTRANS_SIMULATION_MODE !== 'true') {
         return res.status(403).json({
           error: "This endpoint is only available in simulation mode"
         });

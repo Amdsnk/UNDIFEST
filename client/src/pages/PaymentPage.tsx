@@ -104,7 +104,7 @@ export default function PaymentPage() {
     }
 
     try {
-      console.log("Creating DOKU payment with:", {
+      console.log("Creating Midtrans payment with:", {
         eventId: event.id,
         amount: event.price,
         eventName: event.name,
@@ -115,12 +115,12 @@ export default function PaymentPage() {
         buyerEmail: data.email,
       });
 
-      // Determine DOKU endpoint based on payment method
-      const dokuEndpoint = paymentMethod === 'qris'
-        ? "/api/transactions/doku/qris"
-        : "/api/transactions/doku/va";
+      // Determine Midtrans endpoint based on payment method
+      const midtransEndpoint = paymentMethod === 'qris'
+        ? "/api/transactions/midtrans/qris"
+        : "/api/transactions/midtrans/va";
 
-      const response = await fetch(dokuEndpoint, {
+      const response = await fetch(midtransEndpoint, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -148,19 +148,19 @@ export default function PaymentPage() {
         return;
       }
 
-      if (responseData.paymentNo) {
+      if (responseData.paymentNo || responseData.qrImage) {
         // Payment successful - show payment details
         setPaymentDetails({
-          paymentNo: responseData.paymentNo,
-          paymentName: responseData.paymentName,
-          total: responseData.total,
-          fee: responseData.fee,
-          expired: responseData.expired,
+          paymentNo: responseData.paymentNo || '',
+          paymentName: responseData.paymentName || (responseData.channel === 'QRIS' ? 'QRIS' : ''),
+          total: responseData.total || event.price,
+          fee: responseData.fee || 0,
+          expired: responseData.expired || '',
           qrImage: responseData.qrImage,
-          via: responseData.via,
-          channel: responseData.channel,
-          transactionId: responseData.id, // Include transaction ID for simulation
-          simulationMode: responseData.simulationMode, // Check if in simulation mode
+          via: responseData.via || '',
+          channel: responseData.channel || '',
+          transactionId: responseData.id,
+          simulationMode: responseData.simulationMode,
         });
         toast({
           title: "Pembayaran Dibuat",
@@ -335,35 +335,41 @@ export default function PaymentPage() {
           <div className="px-4 py-4 space-y-4">
             {/* QR Code for QRIS */}
             {paymentDetails.qrImage && (
-              <div className="bg-white p-4 rounded-xl">
-                <img src={paymentDetails.qrImage} alt="QR Code" className="w-full max-w-xs mx-auto" />
+              <div className="bg-white p-4 rounded-xl text-center">
+                <p className="text-gray-700 font-semibold mb-3">Scan QR Code untuk membayar</p>
+                <img src={paymentDetails.qrImage} alt="QR Code QRIS" className="w-full max-w-xs mx-auto" />
+                <p className="text-gray-500 text-xs mt-2">Gunakan aplikasi apapun yang mendukung QRIS</p>
               </div>
             )}
 
-            {/* Payment Number */}
-            <div className="bg-[#1a2332] p-4 rounded-xl">
-              <p className="text-gray-400 text-sm mb-2">Nomor Pembayaran</p>
-              <div className="flex items-center justify-between">
-                <p className="text-white text-lg font-mono font-bold">{paymentDetails.paymentNo}</p>
-                <button
-                  onClick={() => copyToClipboard(paymentDetails.paymentNo)}
-                  className="p-2 hover:bg-[#00D4FF]/20 rounded-lg transition-colors"
-                >
-                  {copied ? (
-                    <Check className="w-5 h-5 text-green-400" />
-                  ) : (
-                    <Copy className="w-5 h-5 text-[#00D4FF]" />
-                  )}
-                </button>
+            {/* Payment Number (VA only) */}
+            {paymentDetails.paymentNo && (
+              <div className="bg-[#1a2332] p-4 rounded-xl">
+                <p className="text-gray-400 text-sm mb-2">Nomor Virtual Account</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-white text-lg font-mono font-bold">{paymentDetails.paymentNo}</p>
+                  <button
+                    onClick={() => copyToClipboard(paymentDetails.paymentNo)}
+                    className="p-2 hover:bg-[#00D4FF]/20 rounded-lg transition-colors"
+                  >
+                    {copied ? (
+                      <Check className="w-5 h-5 text-green-400" />
+                    ) : (
+                      <Copy className="w-5 h-5 text-[#00D4FF]" />
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Payment Info */}
             <div className="bg-[#1a2332] p-4 rounded-xl space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-sm">Bank/Metode</span>
-                <span className="text-white text-sm font-bold">{paymentDetails.paymentName}</span>
-              </div>
+              {paymentDetails.paymentName && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400 text-sm">Bank/Metode</span>
+                  <span className="text-white text-sm font-bold">{paymentDetails.paymentName}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-400 text-sm">Total</span>
                 <span className="text-white text-sm font-bold">Rp {paymentDetails.total.toLocaleString()}</span>
@@ -372,22 +378,34 @@ export default function PaymentPage() {
                 <span className="text-gray-400 text-sm">Biaya Admin</span>
                 <span className="text-white text-sm">Rp {paymentDetails.fee.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-sm">Berlaku Hingga</span>
-                <span className="text-white text-sm">{new Date(paymentDetails.expired).toLocaleString("id-ID")}</span>
-              </div>
+              {paymentDetails.expired && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400 text-sm">Berlaku Hingga</span>
+                  <span className="text-white text-sm">{new Date(paymentDetails.expired).toLocaleString("id-ID")}</span>
+                </div>
+              )}
             </div>
 
             {/* Instructions */}
             <div className="bg-[#1a2332] p-4 rounded-xl">
               <p className="text-gray-400 text-sm mb-2">Instruksi Pembayaran</p>
-              <ol className="text-white text-sm space-y-1 list-decimal list-inside">
-                <li>Salin nomor pembayaran di atas</li>
-                <li>Buka aplikasi mobile banking atau ATM</li>
-                <li>Pilih menu transfer ke {paymentDetails.paymentName}</li>
-                <li>Masukkan nomor pembayaran</li>
-                <li>Konfirmasi pembayaran</li>
-              </ol>
+              {paymentDetails.channel === 'QRIS' ? (
+                <ol className="text-white text-sm space-y-1 list-decimal list-inside">
+                  <li>Buka aplikasi dompet digital (GoPay, OVO, DANA, dll.)</li>
+                  <li>Pilih menu "Bayar" atau "Scan QR"</li>
+                  <li>Scan QR Code di atas</li>
+                  <li>Konfirmasi jumlah pembayaran</li>
+                  <li>Selesaikan pembayaran</li>
+                </ol>
+              ) : (
+                <ol className="text-white text-sm space-y-1 list-decimal list-inside">
+                  <li>Salin nomor Virtual Account di atas</li>
+                  <li>Buka aplikasi mobile banking atau ATM</li>
+                  <li>Pilih menu transfer ke {paymentDetails.paymentName || 'Virtual Account'}</li>
+                  <li>Masukkan nomor Virtual Account</li>
+                  <li>Konfirmasi pembayaran</li>
+                </ol>
+              )}
             </div>
 
             {/* Simulation Mode - Test Payment Button */}

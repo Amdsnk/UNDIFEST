@@ -1,0 +1,226 @@
+import crypto from 'crypto';
+
+// Midtrans Production Configuration
+const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || 'Mid-server-7BW1Qn7VDbm3UBmThQRz0OyO';
+const MIDTRANS_CLIENT_KEY = process.env.MIDTRANS_CLIENT_KEY || 'Mid-client-qrm31AWXMvysNEiz';
+const MIDTRANS_MERCHANT_ID = process.env.MIDTRANS_MERCHANT_ID || 'M342243687';
+const MIDTRANS_BASE_URL = 'https://api.midtrans.com';
+
+// Auth header: Basic base64(SERVER_KEY:)
+function getAuthHeader(): string {
+  const encoded = Buffer.from(`${MIDTRANS_SERVER_KEY}:`).toString('base64');
+  return `Basic ${encoded}`;
+}
+
+interface MidtransChargeParams {
+  orderId: string;
+  grossAmount: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  itemName: string;
+}
+
+interface MidtransVAResponse {
+  status_code: string;
+  status_message: string;
+  transaction_id: string;
+  order_id: string;
+  gross_amount: string;
+  payment_type: string;
+  transaction_status: string;
+  expiry_time: string;
+  va_numbers?: Array<{ bank: string; va_number: string }>;
+  bill_key?: string;
+  biller_code?: string;
+}
+
+interface MidtransQRISResponse {
+  status_code: string;
+  status_message: string;
+  transaction_id: string;
+  order_id: string;
+  gross_amount: string;
+  payment_type: string;
+  transaction_status: string;
+  expiry_time: string;
+  qr_string?: string;
+  actions?: Array<{ name: string; method: string; url: string }>;
+}
+
+const BANK_NAMES: Record<string, string> = {
+  bni: 'BNI Virtual Account',
+  bri: 'BRI Virtual Account',
+  mandiri: 'Mandiri Virtual Account',
+  permata: 'Permata Virtual Account',
+  cimb: 'CIMB Niaga Virtual Account',
+};
+
+/**
+ * Create Virtual Account payment via Midtrans Core API
+ * Supported banks: bni, bri, mandiri, permata, cimb
+ */
+export async function createVAPayment(
+  bank: string,
+  params: MidtransChargeParams
+): Promise<{ vaNumber: string; bankName: string; expiryTime: string; transactionId: string }> {
+  const payload: Record<string, any> = {
+    payment_type: 'bank_transfer',
+    transaction_details: {
+      order_id: params.orderId,
+      gross_amount: params.grossAmount,
+    },
+    bank_transfer: {
+      bank: bank.toLowerCase(),
+    },
+    customer_details: {
+      first_name: params.customerName,
+      email: params.customerEmail,
+      phone: params.customerPhone,
+    },
+    item_details: [
+      {
+        id: params.orderId,
+        price: params.grossAmount,
+        quantity: 1,
+        name: params.itemName.substring(0, 50),
+      },
+    ],
+  };
+
+  const response = await fetch(`${MIDTRANS_BASE_URL}/v2/charge`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': getAuthHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Midtrans VA Error: ${response.status} - ${errText}`);
+  }
+
+  const result = await response.json() as MidtransVAResponse;
+  console.log('[Midtrans VA] Response:', result);
+
+  if (result.status_code !== '201') {
+    throw new Error(`Midtrans VA Error: ${result.status_message}`);
+  }
+
+  let vaNumber = '';
+  if (result.va_numbers && result.va_numbers.length > 0) {
+    vaNumber = result.va_numbers[0].va_number;
+  } else if (result.bill_key) {
+    // Mandiri echannel fallback
+    vaNumber = `${result.biller_code}-${result.bill_key}`;
+  }
+
+  return {
+    vaNumber,
+    bankName: BANK_NAMES[bank.toLowerCase()] || `${bank.toUpperCase()} Virtual Account`,
+    expiryTime: result.expiry_time,
+    transactionId: result.transaction_id,
+  };
+}
+
+/**
+ * Create QRIS payment via Midtrans Core API (GoPay Dynamic QRIS)
+ */
+export async function createQRISPayment(
+  params: MidtransChargeParams
+): Promise<{ qrCodeUrl: string; expiryTime: string; transactionId: string }> {
+  const payload = {
+    payment_type: 'qris',
+    transaction_details: {
+      order_id: params.orderId,
+      gross_amount: params.grossAmount,
+    },
+    qris: {
+      acquirer: 'gopay',
+    },
+    customer_details: {
+      first_name: params.customerName,
+      email: params.customerEmail,
+      phone: params.customerPhone,
+    },
+    item_details: [
+      {
+        id: params.orderId,
+        price: params.grossAmount,
+        quantity: 1,
+        name: params.itemName.substring(0, 50),
+      },
+    ],
+  };
+
+  const response = await fetch(`${MIDTRANS_BASE_URL}/v2/charge`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': getAuthHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Midtrans QRIS Error: ${response.status} - ${errText}`);
+  }
+
+  const result = await response.json() as MidtransQRISResponse;
+  console.log('[Midtrans QRIS] Response:', result);
+
+  if (result.status_code !== '201') {
+    throw new Error(`Midtrans QRIS Error: ${result.status_message}`);
+  }
+
+  // Get QR code image URL from actions array
+  const qrAction = result.actions?.find(a => a.name === 'generate-qr-code');
+  const qrCodeUrl = qrAction?.url || '';
+
+  return {
+    qrCodeUrl,
+    expiryTime: result.expiry_time,
+    transactionId: result.transaction_id,
+  };
+}
+
+/**
+ * Verify Midtrans notification signature
+ * SHA512(order_id + status_code + gross_amount + server_key)
+ */
+export function verifyMidtransSignature(
+  orderId: string,
+  statusCode: string,
+  grossAmount: string,
+  receivedSignature: string
+): boolean {
+  const stringToSign = `${orderId}${statusCode}${grossAmount}${MIDTRANS_SERVER_KEY}`;
+  const expected = crypto.createHash('sha512').update(stringToSign).digest('hex');
+  return expected === receivedSignature;
+}
+
+/**
+ * Check if Midtrans is configured
+ */
+export function isMidtransConfigured(): boolean {
+  return !!MIDTRANS_SERVER_KEY;
+}
+
+/**
+ * Get Midtrans configuration status
+ */
+export function getMidtransConfig() {
+  return {
+    isConfigured: isMidtransConfigured(),
+    merchantId: MIDTRANS_MERCHANT_ID,
+    clientKey: MIDTRANS_CLIENT_KEY ? '***' + MIDTRANS_CLIENT_KEY.slice(-4) : 'Not set',
+    serverKey: MIDTRANS_SERVER_KEY ? '***' + MIDTRANS_SERVER_KEY.slice(-4) : 'Not set',
+    environment: 'production',
+  };
+}
+
