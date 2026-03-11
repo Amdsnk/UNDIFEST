@@ -5,6 +5,7 @@ const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || 'Mid-server-7BW1Q
 const MIDTRANS_CLIENT_KEY = process.env.MIDTRANS_CLIENT_KEY || 'Mid-client-qrm31AWXMvysNEiz';
 const MIDTRANS_MERCHANT_ID = process.env.MIDTRANS_MERCHANT_ID || 'M342243687';
 const MIDTRANS_BASE_URL = 'https://api.midtrans.com';
+const MIDTRANS_SNAP_URL = 'https://app.midtrans.com/snap/v1/transactions';
 
 // Auth header: Basic base64(SERVER_KEY:)
 function getAuthHeader(): string {
@@ -221,6 +222,81 @@ export function getMidtransConfig() {
     clientKey: MIDTRANS_CLIENT_KEY ? '***' + MIDTRANS_CLIENT_KEY.slice(-4) : 'Not set',
     serverKey: MIDTRANS_SERVER_KEY ? '***' + MIDTRANS_SERVER_KEY.slice(-4) : 'Not set',
     environment: 'production',
+  };
+}
+
+/**
+ * Create Midtrans Snap transaction (hosted payment page)
+ * More reliable than Core API - uses channels already active in dashboard
+ */
+export async function createSnapTransaction(params: {
+  orderId: string;
+  grossAmount: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  itemName: string;
+  enabledPayments?: string[];
+  finishUrl?: string;
+  errorUrl?: string;
+  pendingUrl?: string;
+}): Promise<{ token: string; redirectUrl: string }> {
+  const payload: Record<string, any> = {
+    transaction_details: {
+      order_id: params.orderId,
+      gross_amount: params.grossAmount,
+    },
+    customer_details: {
+      first_name: params.customerName,
+      email: params.customerEmail,
+      phone: params.customerPhone,
+    },
+    item_details: [
+      {
+        id: params.orderId,
+        price: params.grossAmount,
+        quantity: 1,
+        name: params.itemName.substring(0, 50),
+      },
+    ],
+  };
+
+  if (params.enabledPayments && params.enabledPayments.length > 0) {
+    payload.enabled_payments = params.enabledPayments;
+  }
+
+  if (params.finishUrl || params.errorUrl || params.pendingUrl) {
+    payload.callbacks = {};
+    if (params.finishUrl) payload.callbacks.finish = params.finishUrl;
+    if (params.errorUrl) payload.callbacks.error = params.errorUrl;
+    if (params.pendingUrl) payload.callbacks.pending = params.pendingUrl;
+  }
+
+  const response = await fetch(MIDTRANS_SNAP_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': getAuthHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Midtrans Snap Error: ${response.status} - ${errText}`);
+  }
+
+  const result = await response.json() as { token?: string; redirect_url?: string; status_message?: string };
+  console.log('[Midtrans Snap] Response:', result);
+
+  if (!result.token) {
+    throw new Error(`Midtrans Snap Error: ${result.status_message || 'Failed to create snap transaction'}`);
+  }
+
+  return {
+    token: result.token,
+    redirectUrl: result.redirect_url || `https://app.midtrans.com/snap/v2/vtweb/${result.token}`,
   };
 }
 

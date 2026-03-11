@@ -6,7 +6,7 @@ import { z } from "zod";
 import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, updateVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema, insertTermsConditionSchema } from "@shared/schema";
 import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite, verifyUserToken } from "./auth";
 import { createPayment, createDirectPayment, isIPaymuConfigured, getIPaymuConfig } from "./ipaymu";
-import { createVAPayment, createQRISPayment as createMidtransQRIS, isMidtransConfigured, getMidtransConfig, verifyMidtransSignature } from "./midtrans";
+import { createVAPayment, createQRISPayment as createMidtransQRIS, createSnapTransaction, isMidtransConfigured, getMidtransConfig, verifyMidtransSignature } from "./midtrans";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -937,33 +937,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // PRODUCTION MODE: Call Midtrans Core API
-      console.log("[Midtrans VA] Production mode - calling Midtrans API");
+      // PRODUCTION MODE: Use Midtrans Snap (hosted payment page)
+      console.log("[Midtrans VA] Production mode - calling Midtrans Snap API");
       try {
-        const paymentResult = await createVAPayment(paymentChannel.toLowerCase(), {
+        const enabledPaymentsMap: Record<string, string[]> = {
+          'BNI': ['bni_va'],
+          'BRI': ['bri_va'],
+          'MANDIRI': ['mandiri_va'],
+          'PERMATA': ['permata_va'],
+          'CIMB': ['cimb_va'],
+        };
+        const enabledPayments = enabledPaymentsMap[paymentChannel.toUpperCase()] || ['bni_va', 'bri_va', 'mandiri_va', 'permata_va', 'cimb_va'];
+        const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+
+        const snapResult = await createSnapTransaction({
           orderId: transaction.id,
           grossAmount: amount,
           customerName: userName,
           customerEmail: userEmail,
           customerPhone: phoneNumber,
           itemName: `Tiket ${eventName}`,
+          enabledPayments,
+          finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+          errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
+          pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
         });
 
-        console.log("[Midtrans VA] Response:", paymentResult);
+        console.log("[Midtrans VA] Snap token created:", snapResult.token);
 
         await storage.updateTransaction(transaction.id, {
-          paymentNumber: paymentResult.vaNumber,
-          paymentId: paymentResult.transactionId,
+          paymentId: snapResult.token,
+          paymentUrl: snapResult.redirectUrl,
         });
 
         return res.status(201).json({
           ...transaction,
-          paymentNo: paymentResult.vaNumber,
-          paymentName: paymentResult.bankName,
-          total: amount,
-          fee: 0,
-          expired: paymentResult.expiryTime,
-          via: "VIRTUAL_ACCOUNT",
+          snapToken: snapResult.token,
+          redirectUrl: snapResult.redirectUrl,
           channel: paymentChannel.toUpperCase(),
         });
       } catch (paymentError: any) {
@@ -1054,31 +1064,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // PRODUCTION MODE: Call Midtrans Core API
-      console.log("[Midtrans QRIS] Production mode - calling Midtrans API");
+      // PRODUCTION MODE: Use Midtrans Snap (hosted payment page)
+      console.log("[Midtrans QRIS] Production mode - calling Midtrans Snap API");
       try {
-        const paymentResult = await createMidtransQRIS({
+        const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+
+        const snapResult = await createSnapTransaction({
           orderId: transaction.id,
           grossAmount: amount,
           customerName: userName,
           customerEmail: userEmail,
           customerPhone: phoneNumber,
           itemName: `Tiket ${eventName}`,
+          enabledPayments: ['qris'],
+          finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+          errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
+          pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
         });
 
-        console.log("[Midtrans QRIS] Response:", paymentResult);
+        console.log("[Midtrans QRIS] Snap token created:", snapResult.token);
 
         await storage.updateTransaction(transaction.id, {
-          paymentId: paymentResult.transactionId,
+          paymentId: snapResult.token,
+          paymentUrl: snapResult.redirectUrl,
         });
 
         return res.status(201).json({
           ...transaction,
-          qrImage: paymentResult.qrCodeUrl,
-          total: amount,
-          fee: 0,
-          expired: paymentResult.expiryTime,
-          via: "QRIS",
+          snapToken: snapResult.token,
+          redirectUrl: snapResult.redirectUrl,
           channel: "QRIS",
         });
       } catch (paymentError: any) {

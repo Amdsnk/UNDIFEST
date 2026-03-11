@@ -148,8 +148,16 @@ export default function PaymentPage() {
         return;
       }
 
-      if (responseData.paymentNo || responseData.qrImage) {
-        // Payment successful - show payment details
+      if (responseData.redirectUrl) {
+        // Production mode: redirect to Midtrans Snap hosted page
+        toast({
+          title: "Mengarahkan ke Halaman Pembayaran",
+          description: "Anda akan diarahkan ke halaman pembayaran Midtrans...",
+        });
+        window.location.href = responseData.redirectUrl;
+        return;
+      } else if (responseData.paymentNo || responseData.qrImage) {
+        // Simulation mode: show payment details inline
         setPaymentDetails({
           paymentNo: responseData.paymentNo || '',
           paymentName: responseData.paymentName || (responseData.channel === 'QRIS' ? 'QRIS' : ''),
