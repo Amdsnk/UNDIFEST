@@ -1029,6 +1029,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Event is not active" });
       }
 
+      const { paymentChannel: reqChannel } = req.body;
+      const isGopay = reqChannel === 'GOPAY';
+
       const transaction = await storage.createTransaction({
         userId: userId || undefined,
         eventId,
@@ -1038,8 +1041,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         buyerName: buyerName || null,
         buyerEmail: buyerEmail || null,
         paymentStatus: "pending",
-        paymentMethod: "qris",
-        paymentChannel: "QRIS",
+        paymentMethod: isGopay ? "gopay" : "qris",
+        paymentChannel: isGopay ? "GOPAY" : "QRIS",
       });
 
       // SIMULATION MODE
@@ -1076,7 +1079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           customerEmail: userEmail,
           customerPhone: phoneNumber,
           itemName: `Tiket ${eventName}`,
-          enabledPayments: ['qris'],
+          enabledPayments: isGopay ? ['gopay'] : ['gopay', 'qris'],
           finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
           pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,

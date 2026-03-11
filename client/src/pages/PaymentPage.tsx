@@ -498,6 +498,22 @@ export default function PaymentPage() {
                 </div>
               </button>
 
+              {/* GoPay QRIS */}
+              <button
+                onClick={() => handlePaymentMethodSelect('qris', 'GOPAY')}
+                disabled={isProcessing}
+                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-900 font-semibold text-base">GoPay</span>
+                  <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded">Recommendation</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="bg-[#00AA13] text-white text-xs font-bold px-2 py-1 rounded">GoPay</div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
+              </button>
+
               {/* QRIS */}
               <button
                 onClick={() => handlePaymentMethodSelect('qris', 'QRIS')}
@@ -506,7 +522,6 @@ export default function PaymentPage() {
               >
                 <div className="flex items-center gap-2">
                   <span className="text-gray-900 font-semibold text-base">QRIS</span>
-                  <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded">Recommendation</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <img src={qrisIconUrl} alt="QRIS" className="h-6" />
