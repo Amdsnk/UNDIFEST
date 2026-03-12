@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
+import { Package } from "lucide-react";
 import loginPicUrl from "@assets/login pic_1763510393431.png";
 
 export default function AccountPage() {
@@ -236,6 +237,17 @@ export default function AccountPage() {
                   <p className="text-white text-lg font-bold" data-testid="text-account">{user?.accountNumber || "-"}</p>
                 </div>
               </div>
+              {/* Cek Pesanan Link */}
+              <Link href="/cek-pesanan">
+                <div className="flex items-center justify-between w-full h-14 rounded-xl px-5 mb-4 bg-[#1a2332] border border-[#00D4FF]/30 hover:border-[#00D4FF]/60 cursor-pointer transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Package className="w-5 h-5 text-[#00D4FF]" />
+                    <span className="text-white font-semibold">Cek Pesanan</span>
+                  </div>
+                  <span className="text-gray-400 text-lg">›</span>
+                </div>
+              </Link>
+
               <button
                 onClick={handleLogout}
                 data-testid="button-logout"
@@ -343,6 +355,17 @@ export default function AccountPage() {
                   Ubah Nomor
                 </button>
               )}
+
+              {/* Cek Pesanan untuk guest */}
+              <div className="mt-8 pt-6 border-t border-white/10">
+                <p className="text-gray-400 text-sm text-center mb-3">Beli tanpa akun?</p>
+                <Link href="/cek-pesanan">
+                  <div className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-[#00D4FF]/40 hover:border-[#00D4FF]/70 hover:bg-[#00D4FF]/5 cursor-pointer transition-colors">
+                    <Package className="w-4 h-4 text-[#00D4FF]" />
+                    <span className="text-[#00D4FF] font-semibold text-sm">Cek Pesanan Saya</span>
+                  </div>
+                </Link>
+              </div>
             </div>)
           )}
         </div>
