@@ -309,6 +309,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public: lookup paid orders by phone number (for guest re-download)
+  app.get("/api/orders/lookup", async (req, res) => {
+    try {
+      const phone = (req.query.phone as string || "").trim();
+      if (!phone || phone.length < 8) {
+        return res.status(400).json({ error: "Nomor telepon tidak valid" });
+      }
+
+      const allTransactions = await storage.getAllTransactions();
+      const matched = allTransactions.filter(
+        (t) => t.phoneNumber === phone && t.paymentStatus === "paid"
+      );
+
+      // Return safe subset — no internal IDs exposed beyond what's needed
+      const result = await Promise.all(
+        matched.map(async (t) => {
+          const event = await storage.getEvent(t.eventId);
+          return {
+            transactionId: t.id,
+            eventName: t.eventName,
+            ticketCount: t.ticketCount,
+            amount: t.amount,
+            paidAt: t.paidAt,
+            hasEbook: !!(event?.ebookFile),
+          };
+        })
+      );
+
+      res.json(result);
+    } catch (error) {
+      console.error("[Orders Lookup] Error:", error);
+      res.status(500).json({ error: "Gagal mencari pesanan" });
+    }
+  });
+
   app.delete("/api/events/:id", requireAdmin, requireWrite, async (req, res) => {
     try {
       const deleted = await storage.deleteEvent(req.params.id);

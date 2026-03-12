@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { CheckCircle, Loader2, Download, FileText, Clock } from "lucide-react";
+import { CheckCircle, Loader2, Download, FileText, Link2, Copy, Check } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 const MAX_POLL_ATTEMPTS = 40; // 40 × 3s = 2 minutes
@@ -15,8 +15,20 @@ export default function PaymentSuccessPage() {
   const [eventName, setEventName] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
   const [pollAttempt, setPollAttempt] = useState(0);
+  const [copied, setCopied] = useState(false);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasDownloadedRef = useRef(false);
+
+  const successPageUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/payment/success?trx=${transactionId}`
+    : "";
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(successPageUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
 
   const triggerAutoDownload = useCallback((fileUrl: string, title: string) => {
     if (hasDownloadedRef.current) return;
@@ -143,10 +155,38 @@ export default function PaymentSuccessPage() {
                   </a>
 
                   <p className="text-xs text-gray-400 mt-3 text-center">
-                    Link download juga tersedia di riwayat transaksi Anda
+                    Download otomatis dimulai. Klik tombol di atas jika belum terunduh.
                   </p>
                 </div>
               )}
+
+              {/* Save Download Link Box - for guests without account */}
+              <div className="w-full max-w-md bg-[#1a2332] border border-[#00D4FF]/30 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Link2 className="w-4 h-4 text-[#00D4FF]" />
+                  <p className="text-sm font-semibold text-[#00D4FF]">Simpan Link Download Anda</p>
+                </div>
+                <p className="text-xs text-gray-400 mb-3">
+                  Belum punya akun? Simpan link ini — buka kapan saja untuk download ulang e-book Anda.
+                </p>
+                <div className="flex items-center gap-2 bg-[#0a1621] rounded-md p-2">
+                  <span className="text-xs text-gray-300 flex-1 truncate">{successPageUrl}</span>
+                  <button
+                    onClick={handleCopyLink}
+                    className="flex-shrink-0 flex items-center gap-1 px-3 py-1 bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] rounded text-xs font-semibold transition-colors"
+                  >
+                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {copied ? "Tersalin!" : "Salin"}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Atau gunakan{" "}
+                  <a href="/cek-pesanan" className="text-[#00D4FF] underline">
+                    Cek Pesanan
+                  </a>{" "}
+                  dengan nomor telepon Anda
+                </p>
+              </div>
 
               <button
                 onClick={() => navigate("/history")}

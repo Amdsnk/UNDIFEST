@@ -13,6 +13,7 @@ import HistoryPage from "@/pages/HistoryPage";
 import PaymentPage from "@/pages/PaymentPage";
 import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 import PaymentCancelPage from "@/pages/PaymentCancelPage";
+import CheckOrderPage from "@/pages/CheckOrderPage";
 import TermsPage from "@/pages/TermsPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import HowItWorksUserPage from "@/pages/HowItWorksPage";
@@ -71,6 +72,7 @@ function Router() {
       <Route path="/payment/success" component={PaymentSuccessPage} />
       <Route path="/payment/cancel" component={PaymentCancelPage} />
       <Route path="/payment/:eventId" component={PaymentPage} />
+      <Route path="/cek-pesanan" component={CheckOrderPage} />
 
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
