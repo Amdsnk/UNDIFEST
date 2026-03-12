@@ -111,9 +111,11 @@ export default function EventParticipantsPage() {
     },
   });
 
-  const getUserStats = (userId: string) => {
+  const getUserStats = (userId: string, phoneNumber: string) => {
     const userTransactions = transactions.filter(
-      t => t.userId === userId && t.eventId === eventId
+      t => (t.userId === userId || t.phoneNumber === phoneNumber) &&
+           t.eventId === eventId &&
+           t.paymentStatus === "paid"
     );
     const totalTickets = userTransactions.reduce((sum, t) => sum + t.ticketCount, 0);
     const totalAmount = userTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -139,8 +141,39 @@ export default function EventParticipantsPage() {
   };
 
   const eventParticipants = users.filter(user =>
-    transactions.some(t => t.userId === user.id && t.eventId === eventId)
+    transactions.some(
+      t => t.eventId === eventId &&
+           t.paymentStatus === "paid" &&
+           (t.userId === user.id || t.phoneNumber === user.phoneNumber)
+    )
   );
+
+  // Guest participants: paid transactions without a matching registered user
+  const registeredPhones = new Set(users.map(u => u.phoneNumber));
+  const guestTransactions = transactions.filter(
+    t => t.eventId === eventId &&
+         t.paymentStatus === "paid" &&
+         !t.userId &&
+         !registeredPhones.has(t.phoneNumber)
+  );
+  // Deduplicate guests by phone number
+  const guestParticipantsMap = new Map<string, typeof guestTransactions[0]>();
+  guestTransactions.forEach(t => {
+    if (!guestParticipantsMap.has(t.phoneNumber)) {
+      guestParticipantsMap.set(t.phoneNumber, t);
+    }
+  });
+  const guestParticipants = Array.from(guestParticipantsMap.values());
+
+  const getGuestStats = (phone: string) => {
+    const gt = transactions.filter(
+      t => t.phoneNumber === phone && t.eventId === eventId && t.paymentStatus === "paid"
+    );
+    return {
+      totalTickets: gt.reduce((sum, t) => sum + t.ticketCount, 0),
+      totalAmount: gt.reduce((sum, t) => sum + t.amount, 0),
+    };
+  };
 
   const filteredUsers = eventParticipants
     .filter(user => {
@@ -182,12 +215,12 @@ export default function EventParticipantsPage() {
           bValue = (b.email || "").toLowerCase();
           break;
         case "totalTickets":
-          aValue = getUserStats(a.id).totalTickets;
-          bValue = getUserStats(b.id).totalTickets;
+          aValue = getUserStats(a.id, a.phoneNumber).totalTickets;
+          bValue = getUserStats(b.id, b.phoneNumber).totalTickets;
           break;
         case "totalAmount":
-          aValue = getUserStats(a.id).totalAmount;
-          bValue = getUserStats(b.id).totalAmount;
+          aValue = getUserStats(a.id, a.phoneNumber).totalAmount;
+          bValue = getUserStats(b.id, b.phoneNumber).totalAmount;
           break;
         case "status":
           aValue = a.isActive ? 1 : 0;
@@ -281,7 +314,7 @@ export default function EventParticipantsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-blue-100 text-sm font-medium">Total Peserta</p>
-                      <p className="text-3xl font-bold mt-1">{eventParticipants.length}</p>
+                      <p className="text-3xl font-bold mt-1">{eventParticipants.length + guestParticipants.length}</p>
                     </div>
                     <div className="bg-white/20 rounded-full p-3">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -518,7 +551,7 @@ export default function EventParticipantsPage() {
                         </TableRow>
                       ) : (
                         paginatedUsers.map((user, index) => {
-                          const stats = getUserStats(user.id);
+                          const stats = getUserStats(user.id, user.phoneNumber);
                           const isWinner = winners.some(w => w.userId === user.id && w.eventId === eventId);
                           const rowNumber = (currentPage - 1) * itemsPerPage + index + 1;
 
@@ -705,6 +738,63 @@ export default function EventParticipantsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Guest Participants Section */}
+            {guestParticipants.length > 0 && (
+              <Card className="bg-white shadow-lg border-0 rounded-xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6">
+                  <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Peserta Guest ({guestParticipants.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="rounded-xl border-2 border-gray-200 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
+                          <TableHead className="font-bold text-gray-700">No</TableHead>
+                          <TableHead className="font-bold text-gray-700">Nama</TableHead>
+                          <TableHead className="font-bold text-gray-700">No WA</TableHead>
+                          <TableHead className="font-bold text-gray-700">Email</TableHead>
+                          <TableHead className="font-bold text-right text-gray-700">Total Tiket</TableHead>
+                          <TableHead className="font-bold text-right text-gray-700">Total Rp</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {guestParticipants.map((t, index) => {
+                          const gs = getGuestStats(t.phoneNumber);
+                          return (
+                            <TableRow key={t.phoneNumber} className="hover:bg-orange-50/50 transition-colors">
+                              <TableCell className="font-semibold text-gray-700">{index + 1}</TableCell>
+                              <TableCell className="font-semibold text-gray-900">{t.buyerName || "-"}</TableCell>
+                              <TableCell>
+                                <span className="font-mono bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                                  {t.phoneNumber}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-gray-700">{t.buyerEmail || "-"}</TableCell>
+                              <TableCell className="text-right">
+                                <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
+                                  {gs.totalTickets}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
+                                  {new Intl.NumberFormat("id-ID").format(gs.totalAmount)}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
