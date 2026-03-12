@@ -91,7 +91,7 @@ export const winners = pgTable("winners", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   transactionId: varchar("transaction_id").notNull().references(() => transactions.id),
   eventId: varchar("event_id").notNull().references(() => events.id),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").references(() => users.id),
   announcedAt: timestamp("announced_at").notNull().defaultNow(),
 });
 

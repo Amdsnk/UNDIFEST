@@ -2476,6 +2476,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Guest winner nomination by transactionId (Superadmin and QS Custom only)
+  app.post("/api/winners/nominate-guest", requireAdmin, requireRole("superadmin", "qs_custom"), async (req, res) => {
+    try {
+      const { transactionId, eventId } = z.object({
+        transactionId: z.string(),
+        eventId: z.string()
+      }).parse(req.body);
+
+      // Check if transaction already nominated
+      const allWinners = await storage.getAllWinners();
+      const existingWinner = allWinners.find(w => w.transactionId === transactionId && w.eventId === eventId);
+
+      if (existingWinner) {
+        return res.status(400).json({ error: "Guest is already a winner for this event" });
+      }
+
+      // Verify transaction exists and belongs to this event
+      const allTransactions = await storage.getAllTransactions();
+      const transaction = allTransactions.find(t => t.id === transactionId && t.eventId === eventId);
+
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found for this event" });
+      }
+
+      // Create winner record without userId (guest)
+      const winner = await storage.createWinner({
+        transactionId: transactionId,
+        eventId: eventId,
+        userId: null,
+      });
+
+      res.json({ winner, transaction });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to nominate guest winner" });
+    }
+  });
+
+  // Cancel guest winner nomination by transactionId (Superadmin and QS Custom only)
+  app.delete("/api/winners/transaction/:transactionId/:eventId", requireAdmin, requireRole("superadmin", "qs_custom"), async (req, res) => {
+    try {
+      const { transactionId, eventId } = req.params;
+
+      const allWinners = await storage.getAllWinners();
+      const winner = allWinners.find(w => w.transactionId === transactionId && w.eventId === eventId);
+
+      if (!winner) {
+        return res.status(404).json({ error: "Winner not found" });
+      }
+
+      const deleted = await storage.deleteWinner(winner.id);
+
+      if (!deleted) {
+        return res.status(500).json({ error: "Failed to delete winner" });
+      }
+
+      res.json({ success: true, message: "Guest winner nomination cancelled" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to cancel guest winner nomination" });
+    }
+  });
+
   // Cancel winner nomination (Superadmin and QS Custom only)
   app.delete("/api/winners/:userId/:eventId", requireAdmin, requireRole("superadmin", "qs_custom"), async (req, res) => {
     try {

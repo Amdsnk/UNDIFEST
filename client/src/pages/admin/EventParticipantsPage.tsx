@@ -111,6 +111,38 @@ export default function EventParticipantsPage() {
     },
   });
 
+  const nominateGuestMutation = useMutation({
+    mutationFn: async ({ transactionId, eventId: evId }: { transactionId: string; eventId: string }) => {
+      return apiRequest("/api/winners/nominate-guest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transactionId, eventId: evId }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/winners"] });
+      toast({ title: "Berhasil", description: "Guest berhasil dinominasikan sebagai pemenang" });
+    },
+    onError: (error: Error) => {
+      toast({ variant: "destructive", title: "Gagal", description: error.message || "Gagal menominasikan guest" });
+    },
+  });
+
+  const cancelGuestNominationMutation = useMutation({
+    mutationFn: async ({ transactionId, eventId: evId }: { transactionId: string; eventId: string }) => {
+      return apiRequest(`/api/winners/transaction/${transactionId}/${evId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/winners"] });
+      toast({ title: "Berhasil", description: "Nominasi guest berhasil dibatalkan" });
+    },
+    onError: (error: Error) => {
+      toast({ variant: "destructive", title: "Gagal", description: error.message || "Gagal membatalkan nominasi guest" });
+    },
+  });
+
   const getUserStats = (userId: string, phoneNumber: string) => {
     const userTransactions = transactions.filter(
       t => (t.userId === userId || t.phoneNumber === phoneNumber) &&
@@ -761,15 +793,27 @@ export default function EventParticipantsPage() {
                           <TableHead className="font-bold text-gray-700">Email</TableHead>
                           <TableHead className="font-bold text-right text-gray-700">Total Tiket</TableHead>
                           <TableHead className="font-bold text-right text-gray-700">Total Rp</TableHead>
+                          <TableHead className="font-bold text-gray-700">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {guestParticipants.map((t, index) => {
                           const gs = getGuestStats(t.phoneNumber);
+                          const isGuestWinner = winners.some(w => w.transactionId === t.id && w.eventId === eventId);
                           return (
                             <TableRow key={t.phoneNumber} className="hover:bg-orange-50/50 transition-colors">
                               <TableCell className="font-semibold text-gray-700">{index + 1}</TableCell>
-                              <TableCell className="font-semibold text-gray-900">{t.buyerName || "-"}</TableCell>
+                              <TableCell className="font-semibold">
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-semibold text-gray-900">{t.buyerName || "-"}</span>
+                                  {isGuestWinner && (
+                                    <span className="inline-flex items-center gap-1 text-xs bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full font-bold w-fit">
+                                      <Trophy className="w-3 h-3" />
+                                      Pemenang
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
                               <TableCell>
                                 <span className="font-mono bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
                                   {t.phoneNumber}
@@ -785,6 +829,28 @@ export default function EventParticipantsPage() {
                                 <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
                                   {new Intl.NumberFormat("id-ID").format(gs.totalAmount)}
                                 </span>
+                              </TableCell>
+                              <TableCell>
+                                {!isGuestWinner ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => nominateGuestMutation.mutate({ transactionId: t.id, eventId: eventId! })}
+                                    disabled={nominateGuestMutation.isPending}
+                                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                  >
+                                    <Trophy className="w-3 h-3 mr-1" />
+                                    Nominasi
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => cancelGuestNominationMutation.mutate({ transactionId: t.id, eventId: eventId! })}
+                                    disabled={cancelGuestNominationMutation.isPending}
+                                    className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                  >
+                                    ❌ Batalkan
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
                           );
