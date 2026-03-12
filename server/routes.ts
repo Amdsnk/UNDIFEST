@@ -434,10 +434,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Transaction not found" });
       }
 
+      const wasNotPaid = transaction.paymentStatus !== "paid";
+
       const updated = await storage.updateTransaction(id, {
         paymentStatus,
         paidAt: paymentStatus === "paid" ? new Date() : transaction.paidAt
       });
+
+      // Increment event tickets only if transitioning to paid for the first time
+      if (paymentStatus === "paid" && wasNotPaid) {
+        await storage.incrementEventTickets(transaction.eventId).catch(e =>
+          console.error("[Admin Status] Failed to increment tickets:", e)
+        );
+      }
 
       res.json(updated);
     } catch (error) {
@@ -823,6 +832,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 paymentStatus: "paid",
                 paidAt: new Date(),
               });
+              // Increment event tickets (transaction was pending, now confirmed paid)
+              await storage.incrementEventTickets(transaction.eventId).catch(e =>
+                console.error("[Payment Status] Failed to increment tickets:", e)
+              );
               console.log("[Payment Status] Updated to paid via direct Midtrans check:", transactionId);
             } else if (transactionStatus === "deny" || transactionStatus === "cancel" || transactionStatus === "failure") {
               currentStatus = "failed";
@@ -1184,10 +1197,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentStatus = "expired";
       }
 
+      const wasNotPaid = dbTransaction.paymentStatus !== "paid";
+
       await storage.updateTransaction(dbTransaction.id, {
         paymentStatus,
         paidAt: paymentStatus === "paid" ? new Date() : undefined,
       });
+
+      // Increment event ticket count only once per transaction
+      if (paymentStatus === "paid" && wasNotPaid) {
+        try {
+          await storage.incrementEventTickets(dbTransaction.eventId);
+          console.log("[Midtrans Notification] Event tickets incremented for event:", dbTransaction.eventId);
+        } catch (ticketErr) {
+          console.error("[Midtrans Notification] Failed to increment event tickets:", ticketErr);
+        }
+      }
 
       console.log("[Midtrans Notification] Transaction updated:", dbTransaction.id, "Status:", paymentStatus);
 

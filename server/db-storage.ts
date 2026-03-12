@@ -49,7 +49,7 @@ import {
   type InsertTermsCondition,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import type { IStorage } from "./storage";
 
 export class DatabaseStorage implements IStorage {
@@ -147,6 +147,12 @@ export class DatabaseStorage implements IStorage {
   async updateEvent(id: string, updateData: Partial<InsertEvent>): Promise<Event | undefined> {
     const [event] = await db.update(events).set(updateData).where(eq(events.id, id)).returning();
     return event || undefined;
+  }
+
+  async incrementEventTickets(eventId: string, count: number = 1): Promise<void> {
+    await db.update(events)
+      .set({ ticketsReceived: sql`${events.ticketsReceived} + ${count}` })
+      .where(eq(events.id, eventId));
   }
 
   async deleteEvent(id: string): Promise<boolean> {

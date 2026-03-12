@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Users, ShoppingCart, Calendar, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { Search, Users, ShoppingCart, Calendar, Trash2, CheckCircle, XCircle, UserX } from "lucide-react";
 import { useState } from "react";
 import type { User, Transaction } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -67,6 +67,11 @@ export default function MembersPage() {
     return user.name && user.email && user.city && user.bankName && user.accountNumber;
   };
 
+  // Guest buyers: paid transactions where userId is null
+  const guestBuyers = transactions?.filter(
+    (t) => !t.userId && t.paymentStatus === "paid"
+  ) || [];
+
   return (
     <SidebarProvider>
       <AdminSidebar />
@@ -82,7 +87,7 @@ export default function MembersPage() {
 
         <div className="flex-1 p-8 overflow-y-auto">
             <div className="max-w-7xl mx-auto space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
@@ -116,10 +121,22 @@ export default function MembersPage() {
                     </div>
                     <p className="text-gray-600 text-sm mb-1">Rata-rata Transaksi/Member</p>
                     <h3 className="text-4xl font-bold text-gray-900">
-                      {users && users.length > 0 && transactions 
-                        ? Math.round(transactions.length / users.length) 
+                      {users && users.length > 0 && transactions
+                        ? Math.round(transactions.length / users.length)
                         : 0}
                     </h3>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-0 shadow-lg">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="p-3 bg-orange-100 rounded-xl">
+                        <UserX className="w-6 h-6 text-orange-600" />
+                      </div>
+                    </div>
+                    <p className="text-gray-600 text-sm mb-1">Guest Buyers</p>
+                    <h3 className="text-4xl font-bold text-gray-900">{guestBuyers.length}</h3>
                   </CardContent>
                 </Card>
               </div>
@@ -231,6 +248,83 @@ export default function MembersPage() {
                                   </p>
                                   <p className="text-sm text-gray-500 mt-1">
                                     {searchQuery ? "Coba kata kunci lain" : "Member akan muncul setelah melakukan transaksi"}
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Guest Buyers Section */}
+              <Card className="border-0 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <UserX className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">Guest Buyers</h2>
+                      <p className="text-sm text-gray-500">Pembeli yang tidak login saat melakukan transaksi</p>
+                    </div>
+                    <span className="ml-auto text-sm text-gray-600">{guestBuyers.length} pembeli</span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 hover:bg-gray-50">
+                          <TableHead className="font-semibold text-gray-900">No</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Nama</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Nomor Telepon</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Email</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Event</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Jumlah Tiket</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Total Bayar</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Tanggal</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {guestBuyers.length > 0 ? (
+                          guestBuyers.map((t, index) => (
+                            <TableRow key={t.id} className="hover:bg-gray-50 transition-colors">
+                              <TableCell className="font-medium text-gray-900">{index + 1}</TableCell>
+                              <TableCell className="text-gray-700">{t.buyerName || "-"}</TableCell>
+                              <TableCell className="font-semibold text-gray-900">{t.phoneNumber}</TableCell>
+                              <TableCell className="text-gray-700">{t.buyerEmail || "-"}</TableCell>
+                              <TableCell className="text-gray-700">{t.eventName}</TableCell>
+                              <TableCell>
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold">
+                                  {t.ticketCount} tiket
+                                </span>
+                              </TableCell>
+                              <TableCell className="font-semibold text-gray-900">
+                                Rp {t.amount.toLocaleString('id-ID')}
+                              </TableCell>
+                              <TableCell className="text-gray-600 text-sm">
+                                {new Date(t.createdAt).toLocaleDateString('id-ID', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-12">
+                              <div className="flex flex-col items-center gap-3">
+                                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                                  <UserX className="w-8 h-8 text-gray-400" />
+                                </div>
+                                <div>
+                                  <p className="text-gray-900 font-semibold">Belum ada guest buyer</p>
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    Transaksi dari pembeli tanpa login akan muncul di sini
                                   </p>
                                 </div>
                               </div>

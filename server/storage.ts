@@ -54,6 +54,7 @@ export interface IStorage {
   getAllEvents(): Promise<Event[]>;
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: string, event: Partial<InsertEvent>): Promise<Event | undefined>;
+  incrementEventTickets(eventId: string, count?: number): Promise<void>;
   deleteEvent(id: string): Promise<boolean>;
 
   // Banners
@@ -251,6 +252,13 @@ export class MemStorage implements IStorage {
     const updated = { ...event, ...updateData };
     this.events.set(id, updated);
     return updated;
+  }
+
+  async incrementEventTickets(eventId: string, count: number = 1): Promise<void> {
+    const event = this.events.get(eventId);
+    if (event) {
+      this.events.set(eventId, { ...event, ticketsReceived: event.ticketsReceived + count });
+    }
   }
 
   async deleteEvent(id: string): Promise<boolean> {
