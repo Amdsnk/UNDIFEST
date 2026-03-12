@@ -6,7 +6,7 @@ import { z } from "zod";
 import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, updateVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema, insertTermsConditionSchema } from "@shared/schema";
 import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite, verifyUserToken } from "./auth";
 import { createPayment, createDirectPayment, isIPaymuConfigured, getIPaymuConfig } from "./ipaymu";
-import { createVAPayment, createQRISPayment as createMidtransQRIS, createSnapTransaction, isMidtransConfigured, getMidtransConfig, verifyMidtransSignature } from "./midtrans";
+import { createVAPayment, createQRISPayment as createMidtransQRIS, createSnapTransaction, checkMidtransTransactionStatus, isMidtransConfigured, getMidtransConfig, verifyMidtransSignature } from "./midtrans";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -805,20 +805,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // If user is authenticated, verify ownership
-      // If transaction has userId, only allow owner to access
       if (transaction.userId && userId !== transaction.userId) {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
-      // Get event details to include event name
+      let currentStatus = transaction.paymentStatus;
+
+      // If still pending, check Midtrans API directly (handles webhook delay)
+      if (currentStatus === "pending" && transaction.paymentId) {
+        try {
+          const midtransStatus = await checkMidtransTransactionStatus(transactionId);
+          if (midtransStatus) {
+            const { transactionStatus, fraudStatus } = midtransStatus;
+            if (transactionStatus === "settlement" || (transactionStatus === "capture" && fraudStatus === "accept")) {
+              currentStatus = "paid";
+              await storage.updateTransaction(transactionId, {
+                paymentStatus: "paid",
+                paidAt: new Date(),
+              });
+              console.log("[Payment Status] Updated to paid via direct Midtrans check:", transactionId);
+            } else if (transactionStatus === "deny" || transactionStatus === "cancel" || transactionStatus === "failure") {
+              currentStatus = "failed";
+              await storage.updateTransaction(transactionId, { paymentStatus: "failed" });
+            } else if (transactionStatus === "expire") {
+              currentStatus = "expired";
+              await storage.updateTransaction(transactionId, { paymentStatus: "expired" });
+            }
+          }
+        } catch (midtransErr) {
+          console.error("[Payment Status] Midtrans check failed (non-fatal):", midtransErr);
+        }
+      }
+
+      // Get event details
       const event = await storage.getEvent(transaction.eventId);
 
       res.json({
         id: transaction.id,
-        paymentStatus: transaction.paymentStatus,
+        paymentStatus: currentStatus,
         paymentUrl: transaction.paymentUrl,
         paidAt: transaction.paidAt,
         eventName: event?.name || "",
+        hasEbook: !!(event?.ebookFile),
       });
     } catch (error) {
       console.error("[Payment Status] Error:", error);

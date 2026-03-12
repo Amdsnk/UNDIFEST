@@ -300,3 +300,51 @@ export async function createSnapTransaction(params: {
   };
 }
 
+/**
+ * Check Midtrans transaction status directly from Midtrans API
+ * Used to verify payment status when webhook hasn't arrived yet
+ */
+export async function checkMidtransTransactionStatus(orderId: string): Promise<{
+  transactionStatus: string;
+  fraudStatus?: string;
+  paymentType?: string;
+  grossAmount?: string;
+} | null> {
+  try {
+    const response = await fetch(`${MIDTRANS_BASE_URL}/v2/${orderId}/status`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': getAuthHeader(),
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`[Midtrans Status] HTTP error ${response.status} for order ${orderId}`);
+      return null;
+    }
+
+    const result = await response.json() as {
+      transaction_status?: string;
+      fraud_status?: string;
+      payment_type?: string;
+      gross_amount?: string;
+      status_code?: string;
+    };
+
+    if (result.status_code === '404') {
+      return null;
+    }
+
+    return {
+      transactionStatus: result.transaction_status || 'pending',
+      fraudStatus: result.fraud_status,
+      paymentType: result.payment_type,
+      grossAmount: result.gross_amount,
+    };
+  } catch (error) {
+    console.error('[Midtrans Status] Error checking transaction status:', error);
+    return null;
+  }
+}
+

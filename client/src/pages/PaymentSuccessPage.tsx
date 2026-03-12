@@ -1,17 +1,46 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { CheckCircle, Loader2, Download, FileText } from "lucide-react";
+import { CheckCircle, Loader2, Download, FileText, Clock } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+
+const MAX_POLL_ATTEMPTS = 40; // 40 × 3s = 2 minutes
+const POLL_INTERVAL_MS = 3000;
 
 export default function PaymentSuccessPage() {
   const [, navigate] = useLocation();
   const [status, setStatus] = useState<"loading" | "success" | "pending" | "error">("loading");
-  const [paymentStatus, setPaymentStatus] = useState<string>("");
   const [ebookData, setEbookData] = useState<{ file: string; title: string } | null>(null);
   const [eventName, setEventName] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
+  const [pollAttempt, setPollAttempt] = useState(0);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasDownloadedRef = useRef(false);
+
+  const triggerAutoDownload = useCallback((fileUrl: string, title: string) => {
+    if (hasDownloadedRef.current) return;
+    hasDownloadedRef.current = true;
+    // Create invisible anchor and click to auto-download
+    const anchor = document.createElement("a");
+    anchor.href = fileUrl;
+    anchor.download = `${title}.pdf`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+  }, []);
+
+  const fetchEbook = useCallback(async (trxId: string): Promise<{ file: string; title: string } | null> => {
+    try {
+      const ebookResponse = await apiRequest(`/api/ebook/download/${trxId}`);
+      if (ebookResponse.success && ebookResponse.ebookFile) {
+        return { file: ebookResponse.ebookFile, title: ebookResponse.ebookTitle || "E-book" };
+      }
+    } catch {
+      console.log("E-book not available for this event");
+    }
+    return null;
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -24,50 +53,54 @@ export default function PaymentSuccessPage() {
 
     setTransactionId(trxId);
 
-    // Check payment status
-    const checkStatus = async () => {
+    const checkStatus = async (attempt: number) => {
       try {
-        // Optional: include user token if available
         const userToken = localStorage.getItem("user_token");
         const headers: Record<string, string> = {};
-        if (userToken) {
-          headers["Authorization"] = `Bearer ${userToken}`;
-        }
+        if (userToken) headers["Authorization"] = `Bearer ${userToken}`;
 
-        const response = await apiRequest(`/api/payments/status/${trxId}`, {
-          headers
-        });
+        const response = await apiRequest(`/api/payments/status/${trxId}`, { headers });
 
-        setPaymentStatus(response.paymentStatus);
         setEventName(response.eventName || "");
+        setPollAttempt(attempt);
 
-        // If payment is successful, fetch E-book data
         if (response.paymentStatus === "paid") {
-          try {
-            const ebookResponse = await apiRequest(`/api/ebook/download/${trxId}`);
-            if (ebookResponse.success && ebookResponse.ebookFile) {
-              setEbookData({
-                file: ebookResponse.ebookFile,
-                title: ebookResponse.ebookTitle || "E-book"
-              });
-            }
-          } catch (ebookError) {
-            console.log("E-book not available for this event");
-          }
+          // Payment confirmed — fetch ebook and auto-download
+          const ebook = await fetchEbook(trxId);
+          setEbookData(ebook);
           setStatus("success");
+          if (ebook) {
+            triggerAutoDownload(ebook.file, ebook.title);
+          }
+        } else if (
+          response.paymentStatus === "pending" &&
+          attempt < MAX_POLL_ATTEMPTS
+        ) {
+          // Still pending — keep polling
+          setStatus("pending");
+          pollTimerRef.current = setTimeout(() => checkStatus(attempt + 1), POLL_INTERVAL_MS);
         } else if (response.paymentStatus === "pending") {
+          // Timed out
           setStatus("pending");
         } else {
           setStatus("error");
         }
       } catch (error) {
         console.error("Error checking payment status:", error);
-        setStatus("error");
+        if (attempt < MAX_POLL_ATTEMPTS) {
+          pollTimerRef.current = setTimeout(() => checkStatus(attempt + 1), POLL_INTERVAL_MS);
+        } else {
+          setStatus("error");
+        }
       }
     };
 
-    checkStatus();
-  }, []);
+    checkStatus(0);
+
+    return () => {
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    };
+  }, [fetchEbook, triggerAutoDownload]);
 
   return (
     <div className="min-h-screen bg-[#0a1621]">
