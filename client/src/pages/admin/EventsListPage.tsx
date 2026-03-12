@@ -27,7 +27,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search, Plus, Edit, Trash2, Eye, TrendingUp, Calendar as CalendarIcon } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
-import type { Event } from "@shared/schema";
+import type { Event, Transaction } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,6 +40,18 @@ export default function EventsListPage() {
   const { data: events, isLoading } = useQuery<Event[]>({
     queryKey: ["/api/admin/events"],
   });
+
+  const { data: allTransactions } = useQuery<Transaction[]>({
+    queryKey: ["/api/transactions"],
+  });
+
+  // Calculate actual paid tickets from transactions (more accurate than ticketsReceived field)
+  const getEventTicketsSold = (eventId: string) => {
+    if (!allTransactions) return 0;
+    return allTransactions
+      .filter((t) => t.eventId === eventId && t.paymentStatus === "paid")
+      .reduce((sum, t) => sum + (t.ticketCount || 1), 0);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -206,13 +218,13 @@ export default function EventsListPage() {
                                   <div className="flex-1 max-w-[120px] h-2 bg-gray-200 rounded-full overflow-hidden">
                                     <div
                                       className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all"
-                                      style={{ width: `${Math.min((event.ticketsReceived / event.ticketCount) * 100, 100)}%` }}
+                                      style={{ width: `${Math.min((getEventTicketsSold(event.id) / event.ticketCount) * 100, 100)}%` }}
                                     />
                                   </div>
-                                  <span className="text-sm font-bold text-gray-700">{Math.round((event.ticketsReceived / event.ticketCount) * 100)}%</span>
+                                  <span className="text-sm font-bold text-gray-700">{Math.round((getEventTicketsSold(event.id) / event.ticketCount) * 100)}%</span>
                                 </div>
                                 <span className="text-xs text-gray-600 font-medium">
-                                  {event.ticketsReceived} / {event.ticketCount} tiket
+                                  {getEventTicketsSold(event.id)} / {event.ticketCount} tiket
                                 </span>
                               </div>
                             </TableCell>

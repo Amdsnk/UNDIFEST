@@ -59,8 +59,10 @@ export default function MembersPage() {
     (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase()))
   ) || [];
 
-  const getUserTransactionCount = (userId: string) => {
-    return transactions?.filter(t => t.userId === userId).length || 0;
+  const getUserTransactionCount = (userId: string, phoneNumber: string) => {
+    return transactions?.filter(
+      (t) => t.paymentStatus === "paid" && (t.userId === userId || t.phoneNumber === phoneNumber)
+    ).length || 0;
   };
 
   const isProfileComplete = (user: User) => {
@@ -213,7 +215,7 @@ export default function MembersPage() {
                               <TableCell>
                                 <span className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-semibold">
                                   <ShoppingCart className="w-4 h-4" />
-                                  {getUserTransactionCount(user.id)}
+                                  {getUserTransactionCount(user.id, user.phoneNumber)}
                                 </span>
                               </TableCell>
                               <TableCell className="text-gray-600 text-sm">
