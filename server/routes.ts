@@ -1166,7 +1166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           customerEmail: userEmail,
           customerPhone: phoneNumber,
           itemName: `Tiket ${eventName}`,
-          enabledPayments: isGopay ? ['gopay'] : ['gopay', 'qris'],
+          enabledPayments: isGopay ? ['gopay'] : ['qris'],
           finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
           pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,

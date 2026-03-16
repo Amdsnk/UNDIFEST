@@ -127,7 +127,7 @@ export default function PaymentPage() {
           eventId: event.id,
           amount: event.price,
           eventName: event.name,
-          paymentChannel: paymentMethod === 'qris' ? 'QRIS' : paymentChannel,
+          paymentChannel: paymentChannel,
           buyerName: data.name,
           buyerPhone: data.phone,
           buyerEmail: data.email,
