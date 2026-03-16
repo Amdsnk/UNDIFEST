@@ -2134,17 +2134,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         otpStorage.delete(otp);
       }, 5 * 60 * 1000);
 
-      const isDevelopment = process.env.NODE_ENV === "development";
       const hasFonnteToken = !!process.env.FONNTE_API_TOKEN;
 
-      // In production with Fonnte configured: Send OTP via WhatsApp
-      if (!isDevelopment && hasFonnteToken) {
+      // Send OTP via WhatsApp whenever Fonnte is configured
+      if (hasFonnteToken) {
         const sent = await sendWhatsAppOTP(phoneNumber, otp);
         if (!sent) {
           console.error(`[OTP] Failed to send WhatsApp OTP to ${phoneNumber}`);
-          // Still allow login but log the error
         }
-        console.log(`[OTP] Production mode - OTP sent via WhatsApp to ${phoneNumber}`);
+        console.log(`[OTP] OTP sent via WhatsApp to ${phoneNumber}`);
         return res.json({
           success: true,
           message: "Kode OTP telah dikirim ke WhatsApp Anda"
