@@ -6,7 +6,7 @@ import { z } from "zod";
 import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, updateVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema, insertTermsConditionSchema } from "@shared/schema";
 import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite, verifyUserToken } from "./auth";
 import { createPayment, createDirectPayment, isIPaymuConfigured, getIPaymuConfig } from "./ipaymu";
-import { createVAPayment, createQRISPayment as createMidtransQRIS, createSnapTransaction, checkMidtransTransactionStatus, isMidtransConfigured, getMidtransConfig, verifyMidtransSignature } from "./midtrans";
+import { createVAPayment, createQRISPayment as createMidtransQRIS, createSnapTransaction, createPaymentLink, checkMidtransTransactionStatus, isMidtransConfigured, getMidtransConfig, verifyMidtransSignature } from "./midtrans";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -1154,36 +1154,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // PRODUCTION MODE: Use Midtrans Snap (hosted payment page)
-      console.log("[Midtrans QRIS] Production mode - calling Midtrans Snap API");
+      // PRODUCTION MODE: Use Midtrans Payment Link (avoids Snap app detection issue for QRIS)
+      console.log("[Midtrans QRIS] Production mode - calling Midtrans Payment Link API");
       try {
         const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
 
-        const snapResult = await createSnapTransaction({
+        const enabledPayments = isGopay ? ['gopay'] : ['qris'];
+        const linkResult = await createPaymentLink({
           orderId: transaction.id,
           grossAmount: amount,
           customerName: userName,
           customerEmail: userEmail,
           customerPhone: phoneNumber,
           itemName: `Tiket ${eventName}`,
-          enabledPayments: isGopay ? ['gopay'] : ['qris'],
+          enabledPayments,
           finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
           pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
         });
 
-        console.log("[Midtrans QRIS] Snap token created:", snapResult.token);
+        console.log("[Midtrans QRIS] Payment link created:", linkResult.paymentUrl);
 
         await storage.updateTransaction(transaction.id, {
-          paymentId: snapResult.token,
-          paymentUrl: snapResult.redirectUrl,
+          paymentId: transaction.id,
+          paymentUrl: linkResult.paymentUrl,
         });
 
         return res.status(201).json({
           ...transaction,
-          snapToken: snapResult.token,
-          redirectUrl: snapResult.redirectUrl,
-          channel: "QRIS",
+          redirectUrl: linkResult.paymentUrl,
+          channel: isGopay ? "GOPAY" : "QRIS",
         });
       } catch (paymentError: any) {
         console.error("[Midtrans QRIS] Exception:", paymentError);

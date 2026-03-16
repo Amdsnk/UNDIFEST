@@ -301,6 +301,80 @@ export async function createSnapTransaction(params: {
 }
 
 /**
+ * Create Midtrans Payment Link (for QRIS - avoids Snap app detection issue)
+ * Returns a payment-links URL that shows QR code directly without app detection
+ */
+export async function createPaymentLink(params: {
+  orderId: string;
+  grossAmount: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  itemName: string;
+  enabledPayments?: string[];
+  finishUrl?: string;
+  errorUrl?: string;
+  pendingUrl?: string;
+}): Promise<{ paymentUrl: string }> {
+  const payload: Record<string, any> = {
+    transaction_details: {
+      order_id: params.orderId,
+      gross_amount: params.grossAmount,
+      payment_link_id: params.orderId,
+    },
+    customer_details: {
+      first_name: params.customerName,
+      email: params.customerEmail,
+      phone: params.customerPhone,
+    },
+    item_details: [
+      {
+        id: params.orderId,
+        price: params.grossAmount,
+        quantity: 1,
+        name: params.itemName.substring(0, 50),
+      },
+    ],
+    usage_limit: 1,
+  };
+
+  if (params.enabledPayments && params.enabledPayments.length > 0) {
+    payload.enabled_payments = params.enabledPayments;
+  }
+
+  if (params.finishUrl || params.errorUrl || params.pendingUrl) {
+    payload.callbacks = {};
+    if (params.finishUrl) payload.callbacks.finish = params.finishUrl;
+    if (params.errorUrl) payload.callbacks.error = params.errorUrl;
+    if (params.pendingUrl) payload.callbacks.pending = params.pendingUrl;
+  }
+
+  const response = await fetch(`${MIDTRANS_BASE_URL}/v1/payment-links`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': getAuthHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Midtrans Payment Link Error: ${response.status} - ${errText}`);
+  }
+
+  const result = await response.json() as { payment_url?: string; status_message?: string };
+  console.log('[Midtrans Payment Link] Response:', result);
+
+  if (!result.payment_url) {
+    throw new Error(`Midtrans Payment Link Error: ${result.status_message || 'Failed to create payment link'}`);
+  }
+
+  return { paymentUrl: result.payment_url };
+}
+
+/**
  * Check Midtrans transaction status directly from Midtrans API
  * Used to verify payment status when webhook hasn't arrived yet
  */
