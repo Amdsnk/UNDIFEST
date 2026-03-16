@@ -2059,13 +2059,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (!formattedPhone.startsWith('62')) {
         formattedPhone = '62' + formattedPhone;
       }
+      const fonnteDevice = process.env.FONNTE_DEVICE;
+      const payload: Record<string, string> = { target: formattedPhone, message, countryCode: '62' };
+      if (fonnteDevice) payload.device = fonnteDevice;
       const response = await fetch('https://api.fonnte.com/send', {
         method: 'POST',
         headers: { 'Authorization': FONNTE_TOKEN, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: formattedPhone, message, countryCode: '62', device: '08889988616' }),
+        body: JSON.stringify(payload),
       });
       const result = await response.json();
-      console.log(`[WA] Sent to ${formattedPhone}:`, result.status ? 'Success' : 'Failed');
+      console.log(`[WA] Sent to ${formattedPhone}:`, result.status ? 'Success' : `Failed - ${JSON.stringify(result)}`);
       return result.status === true;
     } catch (error) {
       console.error("[WA] Failed to send WhatsApp:", error);
@@ -2093,18 +2096,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const message = `*UNDIFEST* - Kode OTP Anda adalah: *${otp}*\n\nKode ini berlaku selama 5 menit.\nJangan bagikan kode ini kepada siapapun.`;
 
+      const fonnteDevice = process.env.FONNTE_DEVICE;
+      const otpPayload: Record<string, string> = { target: formattedPhone, message, countryCode: '62' };
+      if (fonnteDevice) otpPayload.device = fonnteDevice;
       const response = await fetch('https://api.fonnte.com/send', {
         method: 'POST',
         headers: {
           'Authorization': FONNTE_TOKEN,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          target: formattedPhone,
-          message: message,
-          countryCode: '62',
-          device: '08889988616',
-        }),
+        body: JSON.stringify(otpPayload),
       });
 
       const result = await response.json();
