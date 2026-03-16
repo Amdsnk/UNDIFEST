@@ -2062,7 +2062,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch('https://api.fonnte.com/send', {
         method: 'POST',
         headers: { 'Authorization': FONNTE_TOKEN, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: formattedPhone, message, countryCode: '62', device: '08811111898' }),
+        body: JSON.stringify({ target: formattedPhone, message, countryCode: '62', device: '08889988616' }),
       });
       const result = await response.json();
       console.log(`[WA] Sent to ${formattedPhone}:`, result.status ? 'Success' : 'Failed');
@@ -2103,7 +2103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           target: formattedPhone,
           message: message,
           countryCode: '62',
-          device: '08811111898',
+          device: '08889988616',
         }),
       });
 
