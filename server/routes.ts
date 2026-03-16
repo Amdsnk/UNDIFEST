@@ -1154,43 +1154,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // PRODUCTION MODE: Use Midtrans Payment Link (avoids Snap app detection issue for QRIS)
-      console.log("[Midtrans QRIS] Production mode - calling Midtrans Payment Link API");
-      try {
-        const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-
-        const enabledPayments = isGopay ? ['gopay'] : ['qris'];
-        const linkResult = await createPaymentLink({
-          orderId: transaction.id,
-          grossAmount: amount,
-          customerName: userName,
-          customerEmail: userEmail,
-          customerPhone: phoneNumber,
-          itemName: `Tiket ${eventName}`,
-          enabledPayments,
-          finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
-          errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
-          pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
-        });
-
-        console.log("[Midtrans QRIS] Payment link created:", linkResult.paymentUrl);
-
-        await storage.updateTransaction(transaction.id, {
-          paymentId: transaction.id,
-          paymentUrl: linkResult.paymentUrl,
-        });
-
-        return res.status(201).json({
-          ...transaction,
-          redirectUrl: linkResult.paymentUrl,
-          channel: isGopay ? "GOPAY" : "QRIS",
-        });
-      } catch (paymentError: any) {
-        console.error("[Midtrans QRIS] Exception:", paymentError);
-        return res.status(201).json({
-          ...transaction,
-          paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
-        });
+      // PRODUCTION MODE
+      if (isGopay) {
+        // GoPay: Payment Link (shows GoPay app selector)
+        console.log("[Midtrans QRIS] Production mode - GoPay via Payment Link API");
+        try {
+          const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+          const linkResult = await createPaymentLink({
+            orderId: transaction.id,
+            grossAmount: amount,
+            customerName: userName,
+            customerEmail: userEmail,
+            customerPhone: phoneNumber,
+            itemName: `Tiket ${eventName}`,
+            enabledPayments: ['gopay'],
+            finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+            errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
+            pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+          });
+          console.log("[Midtrans QRIS] GoPay payment link created:", linkResult.paymentUrl);
+          await storage.updateTransaction(transaction.id, {
+            paymentId: transaction.id,
+            paymentUrl: linkResult.paymentUrl,
+          });
+          return res.status(201).json({
+            ...transaction,
+            redirectUrl: linkResult.paymentUrl,
+            channel: "GOPAY",
+          });
+        } catch (paymentError: any) {
+          console.error("[Midtrans QRIS] GoPay exception:", paymentError);
+          return res.status(201).json({
+            ...transaction,
+            paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
+          });
+        }
+      } else {
+        // QRIS: Payment Link WITHOUT enabled_payments filter
+        // Sending ['qris'] causes "no payment channels available" — must send all channels
+        console.log("[Midtrans QRIS] Production mode - QRIS via Payment Link (no channel filter)");
+        try {
+          const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+          const linkResult = await createPaymentLink({
+            orderId: transaction.id,
+            grossAmount: amount,
+            customerName: userName,
+            customerEmail: userEmail,
+            customerPhone: phoneNumber,
+            itemName: `Tiket ${eventName}`,
+            enabledPayments: [], // no filter = all active channels shown (VA + QRIS)
+            finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+            errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
+            pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+          });
+          console.log("[Midtrans QRIS] Payment link created:", linkResult.paymentUrl);
+          await storage.updateTransaction(transaction.id, {
+            paymentId: transaction.id,
+            paymentUrl: linkResult.paymentUrl,
+          });
+          return res.status(201).json({
+            ...transaction,
+            redirectUrl: linkResult.paymentUrl,
+            channel: "QRIS",
+          });
+        } catch (paymentError: any) {
+          console.error("[Midtrans QRIS] Payment Link exception:", paymentError);
+          return res.status(201).json({
+            ...transaction,
+            paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
+          });
+        }
       }
     } catch (error) {
       console.error("[Midtrans QRIS] Error:", error);
