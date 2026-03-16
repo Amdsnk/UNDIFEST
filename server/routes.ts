@@ -871,6 +871,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.incrementEventTickets(transaction.eventId).catch(e =>
                 console.error("[Payment Status] Failed to increment tickets:", e)
               );
+              // Send WhatsApp notification once (status was pending, now paid)
+              if (transaction.phoneNumber) {
+                const baseUrl = process.env.APP_URL || "https://undifest.com";
+                const downloadLink = `${baseUrl}/payment/success?trx=${transaction.id}`;
+                const ev = await storage.getEvent(transaction.eventId).catch(() => null);
+                const hasEbook = !!(ev?.ebookFile);
+                const waMsg = hasEbook
+                  ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n📥 Klik link berikut untuk mendownload e-book Anda:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
+                  : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\nTiket Anda sudah aktif. Klik link berikut untuk melihat detail:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+                sendWhatsAppMessage(transaction.phoneNumber, waMsg).catch(() => {});
+              }
               console.log("[Payment Status] Updated to paid via direct Midtrans check:", transactionId);
             } else if (transactionStatus === "deny" || transactionStatus === "cancel" || transactionStatus === "failure") {
               currentStatus = "failed";
@@ -1246,6 +1257,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("[Midtrans Notification] Event tickets incremented for event:", dbTransaction.eventId);
         } catch (ticketErr) {
           console.error("[Midtrans Notification] Failed to increment event tickets:", ticketErr);
+        }
+
+        // Send WhatsApp notification with download link
+        if (dbTransaction.phoneNumber) {
+          const baseUrl = process.env.APP_URL || "https://undifest.com";
+          const downloadLink = `${baseUrl}/payment/success?trx=${dbTransaction.id}`;
+          const event = await storage.getEvent(dbTransaction.eventId).catch(() => null);
+          const hasEbook = !!(event?.ebookFile);
+          const waMessage = hasEbook
+            ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${dbTransaction.eventName}* telah dikonfirmasi.\n\n📥 Klik link berikut untuk mendownload e-book Anda:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
+            : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${dbTransaction.eventName}* telah dikonfirmasi.\n\nTiket Anda sudah aktif. Klik link berikut untuk melihat detail:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+          sendWhatsAppMessage(dbTransaction.phoneNumber, waMessage).catch(e =>
+            console.error("[Midtrans Notification] Failed to send WA notification:", e)
+          );
         }
       }
 
@@ -2023,6 +2048,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Store OTP -> {phoneNumber, expiresAt} to prevent phone number spoofing
   const otpStorage = new Map<string, { phoneNumber: string; expiresAt: number }>();
 
+  // Generic WhatsApp message sender via Fonnte API
+  async function sendWhatsAppMessage(phoneNumber: string, message: string): Promise<boolean> {
+    const FONNTE_TOKEN = process.env.FONNTE_API_TOKEN;
+    if (!FONNTE_TOKEN) return false;
+    try {
+      let formattedPhone = phoneNumber.replace(/\D/g, '');
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '62' + formattedPhone.substring(1);
+      } else if (!formattedPhone.startsWith('62')) {
+        formattedPhone = '62' + formattedPhone;
+      }
+      const response = await fetch('https://api.fonnte.com/send', {
+        method: 'POST',
+        headers: { 'Authorization': FONNTE_TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: formattedPhone, message, countryCode: '62', device: '628811111898' }),
+      });
+      const result = await response.json();
+      console.log(`[WA] Sent to ${formattedPhone}:`, result.status ? 'Success' : 'Failed');
+      return result.status === true;
+    } catch (error) {
+      console.error("[WA] Failed to send WhatsApp:", error);
+      return false;
+    }
+  }
+
   // Function to send OTP via WhatsApp using Fonnte API
   async function sendWhatsAppOTP(phoneNumber: string, otp: string): Promise<boolean> {
     const FONNTE_TOKEN = process.env.FONNTE_API_TOKEN;
@@ -2053,6 +2103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           target: formattedPhone,
           message: message,
           countryCode: '62',
+          device: '628811111898',
         }),
       });
 
