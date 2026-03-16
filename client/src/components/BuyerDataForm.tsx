@@ -17,17 +17,31 @@ interface BuyerDataFormProps {
   eventPrice?: number;
 }
 
-export default function BuyerDataForm({ 
-  onSubmit, 
-  onBack, 
+export default function BuyerDataForm({
+  onSubmit,
+  onBack,
   isProcessing = false,
-  eventPrice = 0 
+  eventPrice = 0
 }: BuyerDataFormProps) {
-  const [formData, setFormData] = useState<BuyerData>({
-    name: "",
-    phone: "",
-    email: "",
-  });
+  // Pre-fill from logged-in user data if available
+  const getInitialData = (): BuyerData => {
+    try {
+      const userData = localStorage.getItem("user_data");
+      if (userData) {
+        const user = JSON.parse(userData);
+        return {
+          name: user.name || "",
+          phone: user.phoneNumber || "",
+          email: user.email || "",
+        };
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return { name: "", phone: "", email: "" };
+  };
+
+  const [formData, setFormData] = useState<BuyerData>(getInitialData);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreeProtection, setAgreeProtection] = useState(false);
   const [errors, setErrors] = useState<Partial<BuyerData>>({});
