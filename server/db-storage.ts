@@ -156,15 +156,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteEvent(id: string): Promise<boolean> {
-    try {
-      const result = await db.delete(events).where(eq(events.id, id));
-      return result.rowCount ? result.rowCount > 0 : false;
-    } catch (error: any) {
-      if (error.code === '23503') {
-        throw new Error("Cannot delete event with existing transactions or winners");
-      }
-      throw error;
-    }
+    // Cascade: delete winners → transactions → event
+    // (termsConditions already has onDelete: cascade in schema)
+    await db.delete(winners).where(eq(winners.eventId, id));
+    await db.delete(transactions).where(eq(transactions.eventId, id));
+    const result = await db.delete(events).where(eq(events.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   // Banners
