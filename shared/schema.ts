@@ -75,6 +75,8 @@ export const transactions = pgTable("transactions", {
   // Buyer information for lottery
   buyerName: varchar("buyer_name", { length: 255 }),
   buyerEmail: varchar("buyer_email", { length: 255 }),
+  buyerBankName: varchar("buyer_bank_name", { length: 100 }),
+  buyerAccountNumber: varchar("buyer_account_number", { length: 50 }),
   // Payment fields
   paymentStatus: varchar("payment_status", { length: 20 }).notNull().default("pending"), // pending, paid, failed, expired
   paymentId: varchar("payment_id", { length: 100 }), // iPaymu transaction ID

@@ -42,6 +42,8 @@ interface BuyerData {
   name: string;
   phone: string;
   email: string;
+  bankName: string;
+  accountNumber: string;
 }
 
 export default function PaymentPage() {
@@ -131,6 +133,8 @@ export default function PaymentPage() {
           buyerName: data.name,
           buyerPhone: data.phone,
           buyerEmail: data.email,
+          buyerBankName: data.bankName,
+          buyerAccountNumber: data.accountNumber,
         }),
       });
 

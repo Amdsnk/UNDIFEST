@@ -701,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phoneNumber = guestPhoneNumber;
       }
 
-      const { eventId, amount, eventName, paymentMethod, paymentChannel, buyerName, buyerPhone, buyerEmail } = req.body;
+      const { eventId, amount, eventName, paymentMethod, paymentChannel, buyerName, buyerPhone, buyerEmail, buyerBankName, buyerAccountNumber } = req.body;
 
       // Use buyer data if provided (for lottery purposes)
       if (buyerName) {
@@ -741,6 +741,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eventName,
         buyerName: buyerName || null,
         buyerEmail: buyerEmail || null,
+        buyerBankName: buyerBankName || null,
+        buyerAccountNumber: buyerAccountNumber || null,
         paymentStatus: "pending",
         paymentMethod,
         paymentChannel,
@@ -982,7 +984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const { eventId, amount, eventName, paymentChannel, buyerName, buyerPhone, buyerEmail } = req.body;
+      const { eventId, amount, eventName, paymentChannel, buyerName, buyerPhone, buyerEmail, buyerBankName, buyerAccountNumber } = req.body;
 
       // Use buyer data if provided
       if (buyerName) userName = buyerName;
@@ -1019,6 +1021,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eventName,
         buyerName: buyerName || null,
         buyerEmail: buyerEmail || null,
+        buyerBankName: buyerBankName || null,
+        buyerAccountNumber: buyerAccountNumber || null,
         paymentStatus: "pending",
         paymentMethod: "va",
         paymentChannel: paymentChannel.toUpperCase(),
@@ -1136,7 +1140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const { eventId, amount, eventName, buyerName, buyerPhone, buyerEmail } = req.body;
+      const { eventId, amount, eventName, buyerName, buyerPhone, buyerEmail, buyerBankName, buyerAccountNumber } = req.body;
 
       if (buyerName) userName = buyerName;
       if (buyerPhone) phoneNumber = buyerPhone;
@@ -1165,6 +1169,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eventName,
         buyerName: buyerName || null,
         buyerEmail: buyerEmail || null,
+        buyerBankName: buyerBankName || null,
+        buyerAccountNumber: buyerAccountNumber || null,
         paymentStatus: "pending",
         paymentMethod: isGopay ? "gopay" : "qris",
         paymentChannel: isGopay ? "GOPAY" : "QRIS",

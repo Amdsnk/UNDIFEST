@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Mail, Phone, CheckCircle2 } from "lucide-react";
+import { User, Mail, Phone, CheckCircle2, CreditCard, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,6 +8,8 @@ interface BuyerData {
   name: string;
   phone: string;
   email: string;
+  bankName: string;
+  accountNumber: string;
 }
 
 interface BuyerDataFormProps {
@@ -33,12 +35,14 @@ export default function BuyerDataForm({
           name: user.name || "",
           phone: user.phoneNumber || "",
           email: user.email || "",
+          bankName: user.bankName || "",
+          accountNumber: user.accountNumber || "",
         };
       }
     } catch {
       // ignore parse errors
     }
-    return { name: "", phone: "", email: "" };
+    return { name: "", phone: "", email: "", bankName: "", accountNumber: "" };
   };
 
   const [formData, setFormData] = useState<BuyerData>(getInitialData);
@@ -63,6 +67,16 @@ export default function BuyerDataForm({
       newErrors.email = "Email harus diisi";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Format email tidak valid";
+    }
+
+    if (!formData.bankName.trim()) {
+      newErrors.bankName = "Nama bank harus diisi";
+    }
+
+    if (!formData.accountNumber.trim()) {
+      newErrors.accountNumber = "Nomor rekening harus diisi";
+    } else if (!/^[0-9]{6,20}$/.test(formData.accountNumber.replace(/[\s-]/g, ""))) {
+      newErrors.accountNumber = "Nomor rekening tidak valid (6-20 digit angka)";
     }
 
     setErrors(newErrors);
@@ -171,6 +185,46 @@ export default function BuyerDataForm({
           {errors.email && (
             <p className="text-red-500 text-xs">{errors.email}</p>
           )}
+        </div>
+
+        {/* Bank Name Input */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <Landmark className="w-4 h-4" />
+            Nama Bank
+          </label>
+          <Input
+            type="text"
+            placeholder="Contoh: BCA, BRI, BNI, Mandiri, GoPay, OVO, dll"
+            value={formData.bankName}
+            onChange={(e) => handleInputChange("bankName", e.target.value)}
+            className={errors.bankName ? "border-red-500" : ""}
+            disabled={isProcessing}
+          />
+          {errors.bankName && (
+            <p className="text-red-500 text-xs">{errors.bankName}</p>
+          )}
+        </div>
+
+        {/* Account Number Input */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            Nomor Rekening / E-Wallet
+          </label>
+          <Input
+            type="text"
+            placeholder="Masukkan nomor rekening atau nomor e-wallet"
+            value={formData.accountNumber}
+            onChange={(e) => handleInputChange("accountNumber", e.target.value.replace(/[^0-9]/g, ""))}
+            className={errors.accountNumber ? "border-red-500" : ""}
+            disabled={isProcessing}
+            inputMode="numeric"
+          />
+          {errors.accountNumber && (
+            <p className="text-red-500 text-xs">{errors.accountNumber}</p>
+          )}
+          <p className="text-xs text-gray-400">Digunakan jika Anda memenangkan hadiah refund</p>
         </div>
 
         {/* Protection Notice */}

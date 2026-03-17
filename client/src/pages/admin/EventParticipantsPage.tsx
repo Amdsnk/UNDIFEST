@@ -791,6 +791,8 @@ export default function EventParticipantsPage() {
                           <TableHead className="font-bold text-gray-700">Nama</TableHead>
                           <TableHead className="font-bold text-gray-700">No WA</TableHead>
                           <TableHead className="font-bold text-gray-700">Email</TableHead>
+                          <TableHead className="font-bold text-gray-700">Bank</TableHead>
+                          <TableHead className="font-bold text-gray-700">No. Rekening</TableHead>
                           <TableHead className="font-bold text-right text-gray-700">Total Tiket</TableHead>
                           <TableHead className="font-bold text-right text-gray-700">Total Rp</TableHead>
                           <TableHead className="font-bold text-gray-700">Aksi</TableHead>
@@ -820,6 +822,12 @@ export default function EventParticipantsPage() {
                                 </span>
                               </TableCell>
                               <TableCell className="text-gray-700">{t.buyerEmail || "-"}</TableCell>
+                              <TableCell>
+                                <span className="font-medium text-gray-700">{t.buyerBankName || "-"}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-700">{t.buyerAccountNumber || "-"}</span>
+                              </TableCell>
                               <TableCell className="text-right">
                                 <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
                                   {gs.totalTickets}

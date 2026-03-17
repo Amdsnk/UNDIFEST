@@ -284,6 +284,8 @@ export default function MembersPage() {
                           <TableHead className="font-semibold text-gray-900">Nama</TableHead>
                           <TableHead className="font-semibold text-gray-900">Nomor Telepon</TableHead>
                           <TableHead className="font-semibold text-gray-900">Email</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Bank</TableHead>
+                          <TableHead className="font-semibold text-gray-900">No. Rekening</TableHead>
                           <TableHead className="font-semibold text-gray-900">Event</TableHead>
                           <TableHead className="font-semibold text-gray-900">Jumlah Tiket</TableHead>
                           <TableHead className="font-semibold text-gray-900">Total Bayar</TableHead>
@@ -298,6 +300,10 @@ export default function MembersPage() {
                               <TableCell className="text-gray-700">{t.buyerName || "-"}</TableCell>
                               <TableCell className="font-semibold text-gray-900">{t.phoneNumber}</TableCell>
                               <TableCell className="text-gray-700">{t.buyerEmail || "-"}</TableCell>
+                              <TableCell className="font-medium text-gray-700">{t.buyerBankName || "-"}</TableCell>
+                              <TableCell>
+                                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-700">{t.buyerAccountNumber || "-"}</span>
+                              </TableCell>
                               <TableCell className="text-gray-700">{t.eventName}</TableCell>
                               <TableCell>
                                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold">
