@@ -181,17 +181,6 @@ export const indonesiaCities = [
   "Kabupaten Fakfak", "Kabupaten Kaimana", "Kabupaten Manokwari", "Kabupaten Manokwari Selatan",
   "Kabupaten Maybrat", "Kabupaten Pegunungan Arfak", "Kabupaten Raja Ampat", "Kabupaten Sorong",
   "Kabupaten Sorong Selatan", "Kabupaten Tambrauw", "Kabupaten Teluk Bintuni", "Kabupaten Teluk Wondama",
-  // PAPUA SELATAN (4)
-  "Kabupaten Asmat", "Kabupaten Boven Digoel", "Kabupaten Mappi", "Kabupaten Merauke",
-  // PAPUA TENGAH (8)
-  "Kabupaten Deiyai", "Kabupaten Dogiyai", "Kabupaten Intan Jaya", "Kabupaten Mimika",
-  "Kabupaten Nabire", "Kabupaten Paniai", "Kabupaten Puncak", "Kabupaten Puncak Jaya",
-  // PAPUA PEGUNUNGAN (8)
-  "Kabupaten Jayawijaya", "Kabupaten Lanny Jaya", "Kabupaten Mamberamo Tengah", "Kabupaten Nduga",
-  "Kabupaten Pegunungan Bintang", "Kabupaten Tolikara", "Kabupaten Yahukimo", "Kabupaten Yalimo",
-  // PAPUA BARAT DAYA (6)
-  "Kota Sorong", "Kabupaten Maybrat", "Kabupaten Raja Ampat", "Kabupaten Sorong",
-  "Kabupaten Sorong Selatan", "Kabupaten Tambrauw"
 ].sort();
 
 // Daftar Bank di Indonesia (termasuk bank digital)

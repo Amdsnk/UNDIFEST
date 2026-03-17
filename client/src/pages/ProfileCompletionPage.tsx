@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -19,6 +19,8 @@ export default function ProfileCompletionPage() {
   const [showBankDropdown, setShowBankDropdown] = useState(false);
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
+  const bankDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const userToken = localStorage.getItem("user_token");
@@ -87,13 +89,21 @@ export default function ProfileCompletionPage() {
     }
   };
 
-  const filteredCities = indonesiaCities.filter(c =>
-    c.toLowerCase().includes(citySearch.toLowerCase())
-  );
+  const filteredCities = (() => {
+    if (!citySearch.trim()) return [];
+    const q = citySearch.toLowerCase();
+    const startsWith = indonesiaCities.filter(c => c.toLowerCase().startsWith(q));
+    const contains = indonesiaCities.filter(c => !c.toLowerCase().startsWith(q) && c.toLowerCase().includes(q));
+    return [...startsWith, ...contains].slice(0, 30);
+  })();
 
-  const filteredBanks = indonesiaBanks.filter(b =>
-    b.toLowerCase().includes(bankSearch.toLowerCase())
-  );
+  const filteredBanks = (() => {
+    if (!bankSearch.trim()) return [];
+    const q = bankSearch.toLowerCase();
+    const startsWith = indonesiaBanks.filter(b => b.toLowerCase().startsWith(q));
+    const contains = indonesiaBanks.filter(b => !b.toLowerCase().startsWith(q) && b.toLowerCase().includes(q));
+    return [...startsWith, ...contains].slice(0, 20);
+  })();
 
   return (
     <div className="min-h-screen bg-[#16202a]">
@@ -153,18 +163,30 @@ export default function ProfileCompletionPage() {
             <label className="text-gray-300 text-sm mb-1 block">Kota:</label>
             <Input
               type="text"
-              placeholder="* Ketik untuk mencari kota"
+              placeholder="* Ketik nama kota / kabupaten"
+              autoComplete="off"
               value={city || citySearch}
-              onChange={(e) => { setCitySearch(e.target.value); setCity(""); setShowCityDropdown(true); }}
-              onFocus={() => setShowCityDropdown(true)}
+              onChange={(e) => {
+                setCitySearch(e.target.value);
+                setCity("");
+                setShowCityDropdown(true);
+                // reset scroll saat pencarian berubah
+                if (cityDropdownRef.current) cityDropdownRef.current.scrollTop = 0;
+              }}
+              onFocus={() => { if (citySearch.trim()) setShowCityDropdown(true); }}
+              onBlur={() => setTimeout(() => setShowCityDropdown(false), 150)}
               className="bg-white border-2 border-gray-300 text-black placeholder:text-gray-400 h-12 rounded-lg"
             />
             {showCityDropdown && filteredCities.length > 0 && (
-              <div className="absolute z-50 w-full bg-white border-2 border-gray-300 rounded-lg mt-1 max-h-48 overflow-y-auto">
-                {filteredCities.map((c) => (
+              <div
+                ref={cityDropdownRef}
+                className="absolute z-50 w-full bg-white border-2 border-gray-300 rounded-lg mt-1 max-h-48 overflow-y-auto shadow-lg"
+              >
+                {filteredCities.map((c, i) => (
                   <div
-                    key={c}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-black"
+                    key={`${c}-${i}`}
+                    className="px-4 py-2 hover:bg-purple-50 cursor-pointer text-black border-b border-gray-100 last:border-0"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => { setCity(c); setCitySearch(""); setShowCityDropdown(false); }}
                   >
                     {c}
@@ -188,18 +210,29 @@ export default function ProfileCompletionPage() {
               <div className="relative flex-1">
                 <Input
                   type="text"
-                  placeholder="* [Bank]"
+                  placeholder="* Ketik bank"
+                  autoComplete="off"
                   value={bankName || bankSearch}
-                  onChange={(e) => { setBankSearch(e.target.value); setBankName(""); setShowBankDropdown(true); }}
-                  onFocus={() => setShowBankDropdown(true)}
+                  onChange={(e) => {
+                    setBankSearch(e.target.value);
+                    setBankName("");
+                    setShowBankDropdown(true);
+                    if (bankDropdownRef.current) bankDropdownRef.current.scrollTop = 0;
+                  }}
+                  onFocus={() => { if (bankSearch.trim()) setShowBankDropdown(true); }}
+                  onBlur={() => setTimeout(() => setShowBankDropdown(false), 150)}
                   className="bg-white border-2 border-gray-300 text-black placeholder:text-gray-400 h-12 rounded-lg"
                 />
                 {showBankDropdown && filteredBanks.length > 0 && (
-                  <div className="absolute z-50 w-full bg-white border-2 border-gray-300 rounded-lg mt-1 max-h-48 overflow-y-auto">
-                    {filteredBanks.map((b) => (
+                  <div
+                    ref={bankDropdownRef}
+                    className="absolute z-50 w-full bg-white border-2 border-gray-300 rounded-lg mt-1 max-h-48 overflow-y-auto shadow-lg"
+                  >
+                    {filteredBanks.map((b, i) => (
                       <div
-                        key={b}
-                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-black text-sm"
+                        key={`${b}-${i}`}
+                        className="px-4 py-2 hover:bg-purple-50 cursor-pointer text-black text-sm border-b border-gray-100 last:border-0"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => { setBankName(b); setBankSearch(""); setShowBankDropdown(false); }}
                       >
                         {b}
