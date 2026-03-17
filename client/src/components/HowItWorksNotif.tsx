@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { ArrowRight, X } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export function HowItWorksNotif() {
   const [isVisible, setIsVisible] = useState(true);
+  const [location] = useLocation();
 
-  if (!isVisible) return null;
+  // Hide on payment pages so it doesn't cover Kembali/Bayar Sekarang buttons
+  if (!isVisible || location.startsWith("/payment")) return null;
 
   return (
     <div className="fixed bottom-[80px] left-0 right-0 w-screen md:max-w-undifest md:left-1/2 md:-translate-x-1/2 px-2 md:px-4 z-40">
