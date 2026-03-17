@@ -1190,33 +1190,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } else {
-        // QRIS: Core API langsung — tidak ada halaman customer details Midtrans
-        console.log("[Midtrans QRIS] Production mode - QRIS via Core API (direct QR code)");
+        // QRIS: Payment Link tanpa filter channel (semua channel aktif tampil, termasuk QRIS)
+        console.log("[Midtrans QRIS] Production mode - QRIS via Payment Link (no channel filter)");
         try {
-          const qrisResult = await createMidtransQRIS({
+          const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+          const linkResult = await createPaymentLink({
             orderId: transaction.id,
             grossAmount: amount,
             customerName: userName,
             customerEmail: userEmail,
             customerPhone: phoneNumber,
             itemName: `Tiket ${eventName}`,
+            enabledPayments: [],
+            finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+            errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
+            pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           });
-          console.log("[Midtrans QRIS] Core API QR code created:", qrisResult.qrCodeUrl);
+          console.log("[Midtrans QRIS] Payment link created:", linkResult.paymentUrl);
           await storage.updateTransaction(transaction.id, {
-            paymentId: qrisResult.transactionId,
+            paymentId: transaction.id,
+            paymentUrl: linkResult.paymentUrl,
           });
-          const expiryDate = new Date(qrisResult.expiryTime);
           return res.status(201).json({
             ...transaction,
-            qrImage: qrisResult.qrCodeUrl,
-            total: amount,
-            fee: 0,
-            expired: expiryDate.toISOString(),
-            via: "QRIS",
+            redirectUrl: linkResult.paymentUrl,
             channel: "QRIS",
           });
         } catch (paymentError: any) {
-          console.error("[Midtrans QRIS] Core API exception:", paymentError);
+          console.error("[Midtrans QRIS] Payment Link exception:", paymentError);
           return res.status(201).json({
             ...transaction,
             paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
