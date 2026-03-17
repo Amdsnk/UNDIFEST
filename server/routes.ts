@@ -1156,11 +1156,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // PRODUCTION MODE
       if (isGopay) {
-        // GoPay: Snap API langsung ke halaman GoPay tanpa form customer blocking
-        console.log("[Midtrans QRIS] Production mode - GoPay via Snap API");
+        // GoPay: Payment Link dengan filter gopay (skip form customer)
+        console.log("[Midtrans QRIS] Production mode - GoPay via Payment Link");
         try {
           const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-          const snapResult = await createSnapTransaction({
+          const linkResult = await createPaymentLink({
             orderId: transaction.id,
             grossAmount: amount,
             customerName: userName,
@@ -1172,54 +1172,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
             errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
             pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           });
-          const snapUrl = `https://app.midtrans.com/snap/v2/vtweb/${snapResult.token}`;
-          console.log("[Midtrans QRIS] GoPay Snap URL:", snapUrl);
+          console.log("[Midtrans QRIS] GoPay payment link created:", linkResult.paymentUrl);
           await storage.updateTransaction(transaction.id, {
             paymentId: transaction.id,
-            paymentUrl: snapUrl,
+            paymentUrl: linkResult.paymentUrl,
           });
           return res.status(201).json({
             ...transaction,
-            redirectUrl: snapUrl,
+            redirectUrl: linkResult.paymentUrl,
             channel: "GOPAY",
           });
         } catch (paymentError: any) {
-          console.error("[Midtrans QRIS] GoPay Snap exception:", paymentError);
+          console.error("[Midtrans QRIS] GoPay exception:", paymentError);
           return res.status(201).json({
             ...transaction,
             paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
           });
         }
       } else {
-        // QRIS: Snap API dengan channel other_qris langsung ke QR code tanpa form blocking
-        console.log("[Midtrans QRIS] Production mode - QRIS via Snap API");
+        // QRIS: Payment Link tanpa filter channel (skip form customer, tampil semua metode)
+        console.log("[Midtrans QRIS] Production mode - QRIS via Payment Link (no channel filter)");
         try {
           const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-          const snapResult = await createSnapTransaction({
+          const linkResult = await createPaymentLink({
             orderId: transaction.id,
             grossAmount: amount,
             customerName: userName,
             customerEmail: userEmail,
             customerPhone: phoneNumber,
             itemName: `Tiket ${eventName}`,
-            enabledPayments: ['other_qris'],
+            enabledPayments: [],
             finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
             errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
             pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           });
-          const snapUrl = `https://app.midtrans.com/snap/v2/vtweb/${snapResult.token}`;
-          console.log("[Midtrans QRIS] QRIS Snap URL:", snapUrl);
+          console.log("[Midtrans QRIS] QRIS payment link created:", linkResult.paymentUrl);
           await storage.updateTransaction(transaction.id, {
             paymentId: transaction.id,
-            paymentUrl: snapUrl,
+            paymentUrl: linkResult.paymentUrl,
           });
           return res.status(201).json({
             ...transaction,
-            redirectUrl: snapUrl,
+            redirectUrl: linkResult.paymentUrl,
             channel: "QRIS",
           });
         } catch (paymentError: any) {
-          console.error("[Midtrans QRIS] QRIS Snap exception:", paymentError);
+          console.error("[Midtrans QRIS] QRIS Payment Link exception:", paymentError);
           return res.status(201).json({
             ...transaction,
             paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",

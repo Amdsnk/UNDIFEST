@@ -316,6 +316,8 @@ export async function createPaymentLink(params: {
   errorUrl?: string;
   pendingUrl?: string;
 }): Promise<{ paymentUrl: string }> {
+  // customer_required: false + customer_details: null = skip form customer di Midtrans
+  // (seperti Payment Link yang dibuat dari dashboard dengan setting "skip")
   const payload: Record<string, any> = {
     transaction_details: {
       order_id: params.orderId,
@@ -323,11 +325,6 @@ export async function createPaymentLink(params: {
       payment_link_id: params.orderId,
     },
     customer_required: false,
-    customer_details: {
-      first_name: params.customerName,
-      email: params.customerEmail,
-      phone: params.customerPhone,
-    },
     item_details: [
       {
         id: params.orderId,
