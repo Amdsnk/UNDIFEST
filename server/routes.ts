@@ -519,6 +519,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.incrementEventTickets(transaction.eventId).catch(e =>
           console.error("[Admin Status] Failed to increment tickets:", e)
         );
+
+        // Send WhatsApp notification via Fonnte
+        if (transaction.phoneNumber) {
+          const baseUrl = process.env.APP_URL || "https://undifest.com";
+          const downloadLink = `${baseUrl}/payment/success?trx=${transaction.id}`;
+          const event = await storage.getEvent(transaction.eventId).catch(() => null);
+          const hasEbook = !!(event?.ebookFile);
+          const waMessage = hasEbook
+            ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n📥 Klik link berikut untuk mendownload e-book Anda:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
+            : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\nTiket Anda sudah aktif. Klik link berikut untuk melihat detail:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+          sendWhatsAppMessage(transaction.phoneNumber, waMessage).catch(e =>
+            console.error("[Admin Status] Failed to send WA notification:", e)
+          );
+          console.log("[Admin Status] WA notification sent to:", transaction.phoneNumber);
+        }
       }
 
       res.json(updated);
@@ -970,6 +985,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results: string[] = [];
 
       const migrations = [
+        `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_name VARCHAR(200)`,
+        `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_email VARCHAR(200)`,
         `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_bank_name VARCHAR(100)`,
         `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_account_number VARCHAR(50)`,
       ];

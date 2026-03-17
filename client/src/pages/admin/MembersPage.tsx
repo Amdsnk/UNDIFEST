@@ -69,9 +69,9 @@ export default function MembersPage() {
     return user.name && user.email && user.city && user.bankName && user.accountNumber;
   };
 
-  // Guest buyers: paid transactions where userId is null
+  // Guest buyers: ALL transactions where userId is null (including pending QRIS)
   const guestBuyers = transactions?.filter(
-    (t) => !t.userId && t.paymentStatus === "paid"
+    (t) => !t.userId
   ) || [];
 
   return (
@@ -289,6 +289,7 @@ export default function MembersPage() {
                           <TableHead className="font-semibold text-gray-900">Event</TableHead>
                           <TableHead className="font-semibold text-gray-900">Jumlah Tiket</TableHead>
                           <TableHead className="font-semibold text-gray-900">Total Bayar</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Status</TableHead>
                           <TableHead className="font-semibold text-gray-900">Tanggal</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -312,6 +313,19 @@ export default function MembersPage() {
                               </TableCell>
                               <TableCell className="font-semibold text-gray-900">
                                 Rp {t.amount.toLocaleString('id-ID')}
+                              </TableCell>
+                              <TableCell>
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                                  t.paymentStatus === "paid"
+                                    ? "bg-green-100 text-green-700"
+                                    : t.paymentStatus === "pending"
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : t.paymentStatus === "failed"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-gray-100 text-gray-600"
+                                }`}>
+                                  {t.paymentStatus === "paid" ? "✅ Lunas" : t.paymentStatus === "pending" ? "⏳ Pending" : t.paymentStatus === "failed" ? "❌ Gagal" : t.paymentStatus}
+                                </span>
                               </TableCell>
                               <TableCell className="text-gray-600 text-sm">
                                 {new Date(t.createdAt).toLocaleDateString('id-ID', {
