@@ -59,6 +59,7 @@ const contentMenuItems = [
 
 const settingsMenuItems = [
   { title: "Admin Management", url: "/admin/admin-management", icon: Shield, id: "admin-management" },
+  { title: "Settings", url: "/admin/settings", icon: Save, id: "settings" },
   { title: "Edit Lain-Lain", url: "/admin/edit-lain2", icon: Settings, id: "edit-lain2" },
   { title: "IP Whitelist", url: "/admin/ip-whitelist", icon: Shield, id: "ip-whitelist" },
   { title: "Bank", url: "/admin/banks", icon: Landmark, id: "banks" },
