@@ -30,17 +30,48 @@ export default function PaymentSuccessPage() {
     });
   };
 
+  /**
+   * Convert a base64 data URL to a Blob object URL and trigger download.
+   * Browsers block auto-download of large base64 data URLs for security reasons,
+   * but Blob object URLs are allowed.
+   */
+  const downloadFileUrl = useCallback((fileUrl: string, title: string) => {
+    try {
+      if (fileUrl.startsWith("data:")) {
+        const [header, base64Data] = fileUrl.split(",");
+        const mimeType = header.match(/:(.*?);/)?.[1] || "application/pdf";
+        const byteCharacters = atob(base64Data);
+        const byteArray = new Uint8Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteArray[i] = byteCharacters.charCodeAt(i);
+        }
+        const blob = new Blob([byteArray], { type: mimeType });
+        const objectUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = objectUrl;
+        anchor.download = `${title}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+      } else {
+        const anchor = document.createElement("a");
+        anchor.href = fileUrl;
+        anchor.download = `${title}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+      }
+    } catch (err) {
+      console.error("Download failed:", err);
+    }
+  }, []);
+
   const triggerAutoDownload = useCallback((fileUrl: string, title: string) => {
     if (hasDownloadedRef.current) return;
     hasDownloadedRef.current = true;
-    // Create invisible anchor and click to auto-download
-    const anchor = document.createElement("a");
-    anchor.href = fileUrl;
-    anchor.download = `${title}.pdf`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-  }, []);
+    downloadFileUrl(fileUrl, title);
+  }, [downloadFileUrl]);
 
   const fetchEbook = useCallback(async (trxId: string): Promise<{ file: string; title: string } | null> => {
     try {
@@ -145,14 +176,13 @@ export default function PaymentSuccessPage() {
                     </div>
                   </div>
 
-                  <a
-                    href={ebookData.file}
-                    download={`${ebookData.title}.pdf`}
+                  <button
+                    onClick={() => downloadFileUrl(ebookData.file, ebookData.title)}
                     className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105"
                   >
                     <Download className="w-5 h-5" />
                     Download E-book
-                  </a>
+                  </button>
 
                   <p className="text-xs text-gray-400 mt-3 text-center">
                     Download otomatis dimulai. Klik tombol di atas jika belum terunduh.

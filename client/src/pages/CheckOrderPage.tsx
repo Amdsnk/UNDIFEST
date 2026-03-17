@@ -42,17 +42,45 @@ export default function CheckOrderPage() {
     }
   };
 
+  const downloadFileUrl = (fileUrl: string, title: string) => {
+    try {
+      if (fileUrl.startsWith("data:")) {
+        const [header, base64Data] = fileUrl.split(",");
+        const mimeType = header.match(/:(.*?);/)?.[1] || "application/pdf";
+        const byteCharacters = atob(base64Data);
+        const byteArray = new Uint8Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteArray[i] = byteCharacters.charCodeAt(i);
+        }
+        const blob = new Blob([byteArray], { type: mimeType });
+        const objectUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = objectUrl;
+        anchor.download = `${title}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+      } else {
+        const anchor = document.createElement("a");
+        anchor.href = fileUrl;
+        anchor.download = `${title}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+      }
+    } catch (err) {
+      console.error("Download failed:", err);
+      alert("Gagal mengunduh e-book. Coba lagi.");
+    }
+  };
+
   const handleDownload = async (transactionId: string, eventName: string) => {
     setDownloadingId(transactionId);
     try {
       const res = await apiRequest(`/api/ebook/download/${transactionId}`);
       if (res.success && res.ebookFile) {
-        const anchor = document.createElement("a");
-        anchor.href = res.ebookFile;
-        anchor.download = `${res.ebookTitle || eventName}.pdf`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        document.body.removeChild(anchor);
+        downloadFileUrl(res.ebookFile, res.ebookTitle || eventName);
       }
     } catch {
       alert("Gagal mengunduh e-book. Coba lagi.");
