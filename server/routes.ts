@@ -1193,43 +1193,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // PRODUCTION MODE
+      // Static Payment Link untuk semua metode QRIS/GoPay
+      const staticQrisUrl = "https://app.midtrans.com/payment-links/f4cadb49-3b3e-4510-8fc0-cb0982f57d65";
+
       if (isGopay) {
-        // GoPay: Payment Link dengan filter gopay (skip form customer)
-        console.log("[Midtrans QRIS] Production mode - GoPay via Payment Link");
-        try {
-          const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-          const linkResult = await createPaymentLink({
-            orderId: transaction.id,
-            grossAmount: amount,
-            customerName: userName,
-            customerEmail: userEmail,
-            customerPhone: phoneNumber,
-            itemName: `Tiket ${eventName}`,
-            enabledPayments: ['gopay'],
-            finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
-            errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
-            pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
-          });
-          console.log("[Midtrans QRIS] GoPay payment link created:", linkResult.paymentUrl);
-          await storage.updateTransaction(transaction.id, {
-            paymentId: transaction.id,
-            paymentUrl: linkResult.paymentUrl,
-          });
-          return res.status(201).json({
-            ...transaction,
-            redirectUrl: linkResult.paymentUrl,
-            channel: "GOPAY",
-          });
-        } catch (paymentError: any) {
-          console.error("[Midtrans QRIS] GoPay exception:", paymentError);
-          return res.status(201).json({
-            ...transaction,
-            paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
-          });
-        }
+        console.log("[Midtrans QRIS] Production mode - GoPay via static payment link:", staticQrisUrl);
+        await storage.updateTransaction(transaction.id, {
+          paymentId: transaction.id,
+          paymentUrl: staticQrisUrl,
+        });
+        return res.status(201).json({
+          ...transaction,
+          redirectUrl: staticQrisUrl,
+          channel: "GOPAY",
+        });
       } else {
-        // QRIS: Gunakan static Payment Link yang sudah dibuat di Midtrans Dashboard
-        const staticQrisUrl = "https://app.midtrans.com/payment-links/f4cadb49-3b3e-4510-8fc0-cb0982f57d65";
         console.log("[Midtrans QRIS] Production mode - using static QRIS payment link:", staticQrisUrl);
         await storage.updateTransaction(transaction.id, {
           paymentId: transaction.id,
