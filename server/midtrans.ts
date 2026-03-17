@@ -322,6 +322,7 @@ export async function createPaymentLink(params: {
       gross_amount: params.grossAmount,
       payment_link_id: params.orderId,
     },
+    customer_required: false,
     customer_details: {
       first_name: params.customerName,
       email: params.customerEmail,
