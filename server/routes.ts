@@ -1263,7 +1263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         // QRIS: gunakan static Payment Link
-        const staticQrisUrl = "https://app.midtrans.com/payment-links/f4cadb49-3b3e-4510-8fc0-cb0982f57d65";
+        const staticQrisUrl = "https://app.midtrans.com/payment-links/6761052c-1a86-44ad-aac1-4870a6906f7c";
         console.log("[Midtrans QRIS] Production mode - using static QRIS payment link:", staticQrisUrl);
         await storage.updateTransaction(transaction.id, {
           paymentId: transaction.id,
