@@ -254,7 +254,7 @@ export default function PaymentPage() {
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
-      <div className="max-w-undifest mx-auto pb-20 bg-[#16202a]">
+      <div className="max-w-undifest mx-auto pb-44 bg-[#16202a]">
         <MobileHeader />
 
         {/* Event Title - Only show if not in payment details view */}
@@ -489,12 +489,12 @@ export default function PaymentPage() {
               <button
                 onClick={() => setPaymentMethod('va')}
                 disabled={isProcessing}
-                className="w-full bg-[#16202a] rounded-xl p-4 flex items-center justify-between transition-all hover:bg-[#1a2332] disabled:opacity-50"
+                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
               >
-                <span className="text-white font-semibold text-base">Virtual Account (VA)</span>
+                <span className="text-gray-900 font-semibold text-base">Virtual Account (VA)</span>
                 <div className="flex items-center gap-2">
                   <img src={bankIconUrl} alt="Bank" className="h-6" />
-                  <ChevronRight className="w-5 h-5 text-gray-300" />
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </button>
 
@@ -502,15 +502,15 @@ export default function PaymentPage() {
               <button
                 onClick={() => handlePaymentMethodSelect('qris', 'GOPAY')}
                 disabled={isProcessing}
-                className="w-full bg-[#16202a] rounded-xl p-4 flex items-center justify-between transition-all hover:bg-[#1a2332] disabled:opacity-50"
+                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-white font-semibold text-base">GoPay</span>
-                  <span className="bg-green-800 text-green-300 text-xs font-semibold px-2 py-1 rounded">Recommendation</span>
+                  <span className="text-gray-900 font-semibold text-base">GoPay</span>
+                  <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded">Recommendation</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="bg-[#00AA13] text-white text-xs font-bold px-2 py-1 rounded">GoPay</div>
-                  <ChevronRight className="w-5 h-5 text-gray-300" />
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </button>
 
@@ -518,14 +518,14 @@ export default function PaymentPage() {
               <button
                 onClick={() => handlePaymentMethodSelect('qris', 'QRIS')}
                 disabled={isProcessing}
-                className="w-full bg-[#16202a] rounded-xl p-4 flex items-center justify-between transition-all hover:bg-[#1a2332] disabled:opacity-50"
+                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-white font-semibold text-base">QRIS</span>
+                  <span className="text-gray-900 font-semibold text-base">QRIS</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <img src={qrisIconUrl} alt="QRIS" className="h-6" />
-                  <ChevronRight className="w-5 h-5 text-gray-300" />
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </button>
             </div>
