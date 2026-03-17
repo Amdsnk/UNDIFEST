@@ -286,7 +286,7 @@ export default function AccountPage() {
               <div className="mb-4 relative">
                 <Input
                   type="tel"
-                  placeholder="Masukan Nnomr Whatsapp"
+                  placeholder="Masukkan Nomor WhatsApp"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   disabled={step === "otp" || isLoading}

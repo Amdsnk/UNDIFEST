@@ -317,14 +317,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Nomor telepon tidak valid" });
       }
 
+      // Normalize phone: strip spaces/dashes/+, convert 62xx → 0xx
+      const normalizePhone = (p: string) => {
+        let n = p.replace(/[\s\-\+]/g, "");
+        if (n.startsWith("62")) n = "0" + n.slice(2);
+        return n;
+      };
+      const normalizedInput = normalizePhone(phone);
+
       const allTransactions = await storage.getAllTransactions();
-      const matched = allTransactions.filter(
-        (t) => t.phoneNumber === phone && t.paymentStatus === "paid"
+
+      // Match by normalized phone (any status first, then we'll resolve)
+      const phoneMatched = allTransactions.filter(
+        (t) => normalizePhone(t.phoneNumber) === normalizedInput
       );
+
+      // For pending transactions, check Midtrans directly and update status
+      await Promise.all(
+        phoneMatched
+          .filter((t) => t.paymentStatus === "pending" && t.paymentId)
+          .map(async (t) => {
+            try {
+              const midtransStatus = await checkMidtransTransactionStatus(t.id);
+              if (!midtransStatus) return;
+              const { transactionStatus, fraudStatus } = midtransStatus;
+              if (transactionStatus === "settlement" || (transactionStatus === "capture" && fraudStatus === "accept")) {
+                await storage.updateTransaction(t.id, { paymentStatus: "paid", paidAt: new Date() });
+                t.paymentStatus = "paid"; // reflect in-memory for filter below
+                await storage.incrementEventTickets(t.eventId).catch(() => {});
+              } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
+                await storage.updateTransaction(t.id, { paymentStatus: "failed" });
+                t.paymentStatus = "failed";
+              } else if (transactionStatus === "expire") {
+                await storage.updateTransaction(t.id, { paymentStatus: "expired" });
+                t.paymentStatus = "expired";
+              }
+            } catch {
+              // non-fatal: just skip this transaction's Midtrans check
+            }
+          })
+      );
+
+      const paid = phoneMatched.filter((t) => t.paymentStatus === "paid");
 
       // Return safe subset — no internal IDs exposed beyond what's needed
       const result = await Promise.all(
-        matched.map(async (t) => {
+        paid.map(async (t) => {
           const event = await storage.getEvent(t.eventId);
           return {
             transactionId: t.id,
