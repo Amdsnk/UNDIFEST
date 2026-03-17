@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings, Copy, Check, Globe } from "lucide-react";
+import { Settings, Copy, Check, Globe, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import type { AppSetting } from "@shared/schema";
@@ -61,6 +61,35 @@ export default function SettingsPage() {
 
   const handleChange = (key: string, value: string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const [migrationResult, setMigrationResult] = useState<string[] | null>(null);
+  const [isRunningMigration, setIsRunningMigration] = useState(false);
+
+  const runMigration = async () => {
+    setIsRunningMigration(true);
+    setMigrationResult(null);
+    try {
+      const response = await fetch("/api/admin/run-migration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+        },
+      });
+      const data = await response.json();
+      setMigrationResult(data.results || [data.error || "Unknown error"]);
+      if (data.success) {
+        toast({ title: "✅ Migration berhasil dijalankan!" });
+      } else {
+        toast({ variant: "destructive", title: "Migration gagal", description: data.error });
+      }
+    } catch (err: any) {
+      setMigrationResult([`Error: ${err.message}`]);
+      toast({ variant: "destructive", title: "Migration gagal" });
+    } finally {
+      setIsRunningMigration(false);
+    }
   };
 
   const copyIPToClipboard = () => {
@@ -131,6 +160,36 @@ export default function SettingsPage() {
                       </ol>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Database Migration Card */}
+              <Card className="border-purple-200 bg-purple-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-purple-900">
+                    <Database className="h-5 w-5" />
+                    Database Migration
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-purple-800">
+                    Jalankan ini jika kolom baru (buyer_bank_name, buyer_account_number) belum ada di database.
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={runMigration}
+                    disabled={isRunningMigration}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    {isRunningMigration ? "Menjalankan..." : "🔄 Jalankan Migration"}
+                  </Button>
+                  {migrationResult && (
+                    <div className="bg-white rounded-lg p-3 border border-purple-200 space-y-1">
+                      {migrationResult.map((r, i) => (
+                        <p key={i} className="text-xs font-mono text-gray-700">{r}</p>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

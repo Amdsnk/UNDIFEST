@@ -963,6 +963,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(getMidtransConfig());
   });
 
+  // Force run DB migration to add missing columns (admin only)
+  app.post("/api/admin/run-migration", requireAdmin, async (req, res) => {
+    try {
+      const { pool } = await import("./db");
+      const results: string[] = [];
+
+      const migrations = [
+        `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_bank_name VARCHAR(100)`,
+        `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_account_number VARCHAR(50)`,
+      ];
+
+      for (const migration of migrations) {
+        try {
+          await pool.query(migration);
+          results.push(`✅ ${migration}`);
+        } catch (err: any) {
+          results.push(`⚠️ ${migration}: ${err.message}`);
+        }
+      }
+
+      res.json({ success: true, results });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Midtrans Payment Endpoints
   // Create Midtrans Virtual Account payment
   app.post("/api/transactions/midtrans/va", optionalAuth, async (req, res) => {
