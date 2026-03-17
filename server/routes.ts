@@ -1190,35 +1190,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } else {
-        // QRIS: Payment Link WITHOUT enabled_payments filter
-        // Sending ['qris'] causes "no payment channels available" — must send all channels
-        console.log("[Midtrans QRIS] Production mode - QRIS via Payment Link (no channel filter)");
+        // QRIS: Core API — generate QR code directly, display inline (no redirect, no double form)
+        console.log("[Midtrans QRIS] Production mode - QRIS via Core API (inline QR)");
         try {
-          const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-          const linkResult = await createPaymentLink({
+          const qrisResult = await createMidtransQRIS({
             orderId: transaction.id,
             grossAmount: amount,
             customerName: userName,
             customerEmail: userEmail,
             customerPhone: phoneNumber,
             itemName: `Tiket ${eventName}`,
-            enabledPayments: [], // no filter = all active channels shown (VA + QRIS)
-            finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
-            errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
-            pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           });
-          console.log("[Midtrans QRIS] Payment link created:", linkResult.paymentUrl);
+          console.log("[Midtrans QRIS] QR code URL:", qrisResult.qrCodeUrl);
           await storage.updateTransaction(transaction.id, {
-            paymentId: transaction.id,
-            paymentUrl: linkResult.paymentUrl,
+            paymentId: qrisResult.transactionId,
+            paymentUrl: qrisResult.qrCodeUrl,
           });
+          const expiryDate = new Date(qrisResult.expiryTime);
           return res.status(201).json({
             ...transaction,
-            redirectUrl: linkResult.paymentUrl,
+            qrImage: qrisResult.qrCodeUrl,
+            total: amount,
+            fee: 0,
+            expired: expiryDate.toISOString(),
+            via: "QRIS",
             channel: "QRIS",
           });
         } catch (paymentError: any) {
-          console.error("[Midtrans QRIS] Payment Link exception:", paymentError);
+          console.error("[Midtrans QRIS] Core API exception:", paymentError);
           return res.status(201).json({
             ...transaction,
             paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
