@@ -1292,9 +1292,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customerPhone: phoneNumber,
             itemName: `Tiket ${eventName}`,
             // Tidak ada enabledPayments — tampilkan semua metode aktif di akun Midtrans
-            finishUrl: `https://undifest.com/`,
-            errorUrl: `https://undifest.com/`,
-            pendingUrl: `https://undifest.com/`,
+            finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+            errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
+            pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           });
           console.log("[Midtrans QRIS] Dynamic payment link:", linkResult.paymentUrl);
           await storage.updateTransaction(transaction.id, {
