@@ -256,18 +256,7 @@ export default function AccountPage() {
                 Keluar
               </button>
 
-              {/* Delete Account Button */}
-              <button
-                onClick={handleDeleteAccount}
-                disabled={isLoading}
-                data-testid="button-delete-account"
-                className="w-full mt-6 h-12 rounded-xl text-base font-semibold border-2 border-red-500 text-red-500 hover:bg-red-500/10 disabled:opacity-50"
-              >
-                {isLoading ? "Menghapus..." : "Hapus Akun"}
-              </button>
-              <p className="text-gray-500 text-xs text-center mt-2">
-                Menghapus akun akan menghapus semua data Anda secara permanen
-              </p>
+
             </div>)
           ) : (
             /* Login Form */
