@@ -1279,18 +1279,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } else {
-        // QRIS: redirect langsung ke payment link statis yang sudah dikonfigurasi di Midtrans dashboard
-        const QRIS_PAYMENT_LINK = process.env.QRIS_PAYMENT_LINK_URL || "https://app.midtrans.com/payment-links/4747449c-0c41-4d01-b915-d18734767dc9";
-        console.log("[Midtrans QRIS] Production mode - redirect ke payment link statis:", QRIS_PAYMENT_LINK);
-        await storage.updateTransaction(transaction.id, {
-          paymentId: transaction.id,
-          paymentUrl: QRIS_PAYMENT_LINK,
-        });
-        return res.status(201).json({
-          ...transaction,
-          redirectUrl: QRIS_PAYMENT_LINK,
-          channel: "QRIS",
-        });
+        // QRIS: gunakan dynamic payment link tanpa filter enabled_payments
+        // agar semua metode aktif tampil (termasuk QRIS) dan transaksi ter-track via order ID
+        console.log("[Midtrans QRIS] Production mode - QRIS via dynamic payment link (no payment filter)");
+        try {
+          const baseUrl = process.env.APP_URL || "https://undifest.com";
+          const linkResult = await createPaymentLink({
+            orderId: transaction.id,
+            grossAmount: amount,
+            customerName: userName,
+            customerEmail: userEmail,
+            customerPhone: phoneNumber,
+            itemName: `Tiket ${eventName}`,
+            // Tidak ada enabledPayments — tampilkan semua metode aktif di akun Midtrans
+            finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+            errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
+            pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+          });
+          console.log("[Midtrans QRIS] Dynamic payment link:", linkResult.paymentUrl);
+          await storage.updateTransaction(transaction.id, {
+            paymentId: transaction.id,
+            paymentUrl: linkResult.paymentUrl,
+          });
+          return res.status(201).json({
+            ...transaction,
+            redirectUrl: linkResult.paymentUrl,
+            channel: "QRIS",
+          });
+        } catch (paymentError: any) {
+          console.error("[Midtrans QRIS] Dynamic payment link exception:", paymentError);
+          return res.status(201).json({
+            ...transaction,
+            paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
+          });
+        }
       }
     } catch (error) {
       console.error("[Midtrans QRIS] Error:", error);
