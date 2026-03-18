@@ -351,6 +351,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } else if (transactionStatus === "expire") {
                 await storage.updateTransaction(t.id, { paymentStatus: "expired" });
                 t.paymentStatus = "expired";
+              } else if (transactionStatus === "not_found") {
+                const hoursSinceCreation = (Date.now() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60);
+                if (hoursSinceCreation > 24) {
+                  await storage.updateTransaction(t.id, { paymentStatus: "expired" });
+                  t.paymentStatus = "expired";
+                }
               }
             } catch {
               // non-fatal: just skip this transaction's Midtrans check
@@ -498,6 +504,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } else if (transactionStatus === "expire") {
                 await storage.updateTransaction(t.id, { paymentStatus: "expired" });
                 t.paymentStatus = "expired";
+              } else if (transactionStatus === "not_found") {
+                const hoursSinceCreation = (Date.now() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60);
+                if (hoursSinceCreation > 24) {
+                  await storage.updateTransaction(t.id, { paymentStatus: "expired" });
+                  t.paymentStatus = "expired";
+                }
               }
             } catch {
               // non-fatal: skip if Midtrans check fails for this transaction
@@ -527,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pendingWithPaymentId.map(async (t) => {
           try {
             const midtransStatus = await checkMidtransTransactionStatus(t.id);
-            if (!midtransStatus) return;
+            if (!midtransStatus) return; // null = error koneksi, skip
 
             const { transactionStatus, fraudStatus } = midtransStatus;
             if (
@@ -546,6 +558,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.updateTransaction(t.id, { paymentStatus: "expired" });
               results.push({ id: t.id, from: "pending", to: "expired" });
               updated++;
+            } else if (transactionStatus === "not_found") {
+              // Order tidak ada di Midtrans → auto-expire jika sudah > 24 jam
+              const hoursSinceCreation = (Date.now() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60);
+              if (hoursSinceCreation > 24) {
+                await storage.updateTransaction(t.id, { paymentStatus: "expired" });
+                results.push({ id: t.id, from: "pending", to: "expired" });
+                updated++;
+              }
             }
           } catch (e) {
             console.error("[Sync Pending] Error checking transaction:", t.id, e);
@@ -993,13 +1013,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let currentStatus = transaction.paymentStatus;
+      // midtransRawStatus: status asli dari Midtrans, untuk info di admin panel
+      // "not_checked" = tidak ada paymentId, tidak dicek
+      // "api_error"   = Midtrans tidak bisa dihubungi
+      // "not_found"   = order tidak ada di Midtrans (belum/tidak jadi dibayar)
+      // lainnya       = status langsung dari Midtrans (pending, settlement, dll)
+      let midtransRawStatus: string = "not_checked";
 
       // If still pending, check Midtrans API directly (handles webhook delay)
       if (currentStatus === "pending" && transaction.paymentId) {
         try {
           const midtransStatus = await checkMidtransTransactionStatus(transactionId);
-          if (midtransStatus) {
+          if (!midtransStatus) {
+            // null = gagal koneksi ke Midtrans
+            midtransRawStatus = "api_error";
+          } else {
             const { transactionStatus, fraudStatus } = midtransStatus;
+            midtransRawStatus = transactionStatus;
+
             if (transactionStatus === "settlement" || (transactionStatus === "capture" && fraudStatus === "accept")) {
               currentStatus = "paid";
               await storage.updateTransaction(transactionId, {
@@ -1028,9 +1059,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } else if (transactionStatus === "expire") {
               currentStatus = "expired";
               await storage.updateTransaction(transactionId, { paymentStatus: "expired" });
+            } else if (transactionStatus === "not_found") {
+              // Order tidak ada di Midtrans → payment link dibuat tapi belum/tidak jadi dibayar
+              // Auto-expire jika sudah lebih dari 24 jam
+              const hoursSinceCreation = (Date.now() - new Date(transaction.createdAt).getTime()) / (1000 * 60 * 60);
+              if (hoursSinceCreation > 24) {
+                currentStatus = "expired";
+                await storage.updateTransaction(transactionId, { paymentStatus: "expired" });
+                console.log("[Payment Status] Auto-expired (not found in Midtrans, >24h):", transactionId);
+              }
             }
           }
         } catch (midtransErr) {
+          midtransRawStatus = "api_error";
           console.error("[Payment Status] Midtrans check failed (non-fatal):", midtransErr);
         }
       }
@@ -1041,6 +1082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         id: transaction.id,
         paymentStatus: currentStatus,
+        midtransRawStatus,
         paymentUrl: transaction.paymentUrl,
         paidAt: transaction.paidAt,
         eventName: event?.name || "",
@@ -2479,6 +2521,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } else if (transactionStatus === "expire") {
                 await storage.updateTransaction(t.id, { paymentStatus: "expired" });
                 t.paymentStatus = "expired";
+              } else if (transactionStatus === "not_found") {
+                const hoursSinceCreation = (Date.now() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60);
+                if (hoursSinceCreation > 24) {
+                  await storage.updateTransaction(t.id, { paymentStatus: "expired" });
+                  t.paymentStatus = "expired";
+                }
               }
             } catch {
               // non-fatal: just skip this transaction's Midtrans check

@@ -55,8 +55,18 @@ export default function TransactionsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       if (data?.paymentStatus === "paid") {
         toast({ title: "✅ Sudah Lunas — status diperbarui otomatis!" });
+      } else if (data?.paymentStatus === "expired") {
+        toast({ title: "⌛ Transaksi kadaluarsa — tidak ada pembayaran di Midtrans >24 jam" });
+      } else if (data?.midtransRawStatus === "not_found") {
+        toast({ title: "⚠️ Tidak ditemukan di Midtrans — pembeli belum menyelesaikan pembayaran" });
+      } else if (data?.midtransRawStatus === "api_error") {
+        toast({ variant: "destructive", title: "❌ Gagal terhubung ke Midtrans — coba lagi nanti" });
+      } else if (data?.midtransRawStatus === "not_checked") {
+        toast({ title: "ℹ️ Transaksi belum mencapai tahap pembayaran Midtrans" });
+      } else if (data?.midtransRawStatus === "pending") {
+        toast({ title: "⏳ Midtrans: menunggu pembayaran — pembeli belum menyelesaikan" });
       } else {
-        toast({ title: `Status Midtrans: ${data?.paymentStatus ?? "tidak diketahui"}` });
+        toast({ title: `Status Midtrans: ${data?.midtransRawStatus ?? data?.paymentStatus ?? "tidak diketahui"}` });
       }
     },
     onError: () => {

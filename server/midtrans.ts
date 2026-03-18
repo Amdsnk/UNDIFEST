@@ -380,6 +380,12 @@ export async function createPaymentLink(params: {
 /**
  * Check Midtrans transaction status directly from Midtrans API
  * Used to verify payment status when webhook hasn't arrived yet
+ *
+ * Returns:
+ *   - { transactionStatus: 'not_found', ... }  → order tidak ada di Midtrans (belum pernah dibayar)
+ *   - { transactionStatus: 'pending', ... }     → order ada, menunggu pembayaran
+ *   - { transactionStatus: 'settlement', ... }  → lunas
+ *   - null                                       → gagal koneksi ke Midtrans (error jaringan / auth)
  */
 export async function checkMidtransTransactionStatus(orderId: string): Promise<{
   transactionStatus: string;
@@ -396,6 +402,12 @@ export async function checkMidtransTransactionStatus(orderId: string): Promise<{
       },
     });
 
+    // HTTP 404 → order tidak pernah dibuat/dibayar di Midtrans
+    if (response.status === 404) {
+      console.log(`[Midtrans Status] Order not found (HTTP 404) for orderId: ${orderId}`);
+      return { transactionStatus: 'not_found' };
+    }
+
     if (!response.ok) {
       console.error(`[Midtrans Status] HTTP error ${response.status} for order ${orderId}`);
       return null;
@@ -409,8 +421,10 @@ export async function checkMidtransTransactionStatus(orderId: string): Promise<{
       status_code?: string;
     };
 
+    // Midtrans kadang kembalikan HTTP 200 tapi dengan status_code '404' di body
     if (result.status_code === '404') {
-      return null;
+      console.log(`[Midtrans Status] Order not found (body 404) for orderId: ${orderId}`);
+      return { transactionStatus: 'not_found' };
     }
 
     return {
