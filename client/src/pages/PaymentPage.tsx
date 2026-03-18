@@ -153,7 +153,12 @@ export default function PaymentPage() {
       }
 
       if (responseData.redirectUrl) {
-        // Production mode: redirect to Midtrans Snap hosted page
+        // Production mode: redirect to Midtrans Snap/Payment Link hosted page
+        // Simpan transaction ID di sessionStorage sebelum redirect
+        // agar success page bisa menemukan transaksi meski Midtrans tidak mengirim ?trx= di URL redirect
+        if (responseData.id) {
+          sessionStorage.setItem("pending_transaction_id", responseData.id);
+        }
         toast({
           title: "Mengarahkan ke Halaman Pembayaran",
           description: "Anda akan diarahkan ke halaman pembayaran Midtrans...",

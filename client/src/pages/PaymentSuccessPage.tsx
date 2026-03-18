@@ -90,7 +90,11 @@ export default function PaymentSuccessPage() {
     // Midtrans mengirim kembali order_id (= transaction.id kita) sebagai query param
     // Gunakan trx sebagai primary, order_id sebagai fallback
     // Midtrans juga bisa mengirim transaction_status=settlement langsung di URL
-    const trxId = params.get("trx") || params.get("order_id");
+    // Fallback terakhir: cek sessionStorage yang disimpan sebelum redirect ke Midtrans
+    const trxId =
+      params.get("trx") ||
+      params.get("order_id") ||
+      sessionStorage.getItem("pending_transaction_id");
     const midtransStatus = params.get("transaction_status");
     const midtransStatusCode = params.get("status_code");
 
@@ -98,6 +102,9 @@ export default function PaymentSuccessPage() {
       setStatus("error");
       return;
     }
+
+    // Bersihkan sessionStorage setelah berhasil dibaca
+    sessionStorage.removeItem("pending_transaction_id");
 
     setTransactionId(trxId);
 
