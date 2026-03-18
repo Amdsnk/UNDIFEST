@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { Search, Download, FileText, Package, AlertCircle, CheckCircle } from "lucide-react";
+import { Search, Download, FileText, Package, AlertCircle, CheckCircle, ShieldCheck } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface OrderResult {
@@ -13,13 +13,18 @@ interface OrderResult {
   hasEbook: boolean;
 }
 
+type GuestStep = "phone" | "otp";
+
 export default function CheckOrderPage() {
   const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [guestStep, setGuestStep] = useState<GuestStep>("phone");
   const [orders, setOrders] = useState<OrderResult[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [loggedInUser, setLoggedInUser] = useState<{ name?: string; phoneNumber?: string } | null>(null);
+  const [otpCooldown, setOtpCooldown] = useState(0);
 
   // Auto-load orders if user is logged in
   useEffect(() => {
@@ -34,9 +39,7 @@ export default function CheckOrderPage() {
           apiRequest(`/api/orders/lookup?phone=${encodeURIComponent(user.phoneNumber)}`)
             .then((result) => {
               setOrders(result);
-              if (result.length === 0) {
-                setError("Belum ada pesanan yang ditemukan.");
-              }
+              if (result.length === 0) setError("Belum ada pesanan yang ditemukan.");
             })
             .catch(() => setError("Gagal memuat pesanan. Coba lagi."))
             .finally(() => setLoading(false));
@@ -47,7 +50,14 @@ export default function CheckOrderPage() {
     }
   }, []);
 
-  const handleSearch = async (e: React.FormEvent) => {
+  // Countdown timer for OTP cooldown
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setTimeout(() => setOtpCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [otpCooldown]);
+
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone.trim() || phone.trim().length < 8) {
       setError("Masukkan nomor telepon yang valid (minimal 8 digit)");
@@ -55,15 +65,40 @@ export default function CheckOrderPage() {
     }
     setLoading(true);
     setError(null);
+    try {
+      await apiRequest("/api/users/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: phone.trim() }),
+      });
+      setGuestStep("otp");
+      setOtpCooldown(60);
+    } catch {
+      setError("Gagal mengirim OTP. Coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp.trim() || otp.trim().length < 4) {
+      setError("Masukkan kode OTP yang valid");
+      return;
+    }
+    setLoading(true);
+    setError(null);
     setOrders(null);
     try {
-      const result = await apiRequest(`/api/orders/lookup?phone=${encodeURIComponent(phone.trim())}`);
+      const result = await apiRequest("/api/orders/verify-otp-and-lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: phone.trim(), otp: otp.trim() }),
+      });
       setOrders(result);
-      if (result.length === 0) {
-        setError("Tidak ada pesanan ditemukan untuk nomor telepon ini.");
-      }
-    } catch {
-      setError("Gagal mencari pesanan. Coba lagi.");
+      if (result.length === 0) setError("Tidak ada pesanan ditemukan untuk nomor telepon ini.");
+    } catch (err: any) {
+      setError(err?.message || "Kode OTP tidak valid atau sudah kadaluarsa.");
     } finally {
       setLoading(false);
     }
@@ -124,13 +159,19 @@ export default function CheckOrderPage() {
         <div className="p-6">
           <div className="mb-8 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#00D4FF]/10 flex items-center justify-center">
-              <Package className="w-8 h-8 text-[#00D4FF]" />
+              {!loggedInUser && guestStep === "otp" ? (
+                <ShieldCheck className="w-8 h-8 text-[#00D4FF]" />
+              ) : (
+                <Package className="w-8 h-8 text-[#00D4FF]" />
+              )}
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Cek Pesanan</h1>
             <p className="text-gray-400 text-sm">
               {loggedInUser
                 ? `Menampilkan pesanan untuk ${loggedInUser.name || loggedInUser.phoneNumber}`
-                : "Masukkan nomor telepon yang digunakan saat pembelian untuk melihat pesanan Anda"}
+                : guestStep === "otp"
+                ? `Kode OTP telah dikirim ke WhatsApp ${phone}`
+                : "Masukkan nomor telepon yang digunakan saat pembelian"}
             </p>
           </div>
 
@@ -140,8 +181,9 @@ export default function CheckOrderPage() {
             </div>
           )}
 
-          {!loggedInUser && (
-            <form onSubmit={handleSearch} className="mb-6">
+          {/* Step 1: Phone number input (guest only) */}
+          {!loggedInUser && guestStep === "phone" && (
+            <form onSubmit={handleSendOtp} className="mb-6">
               <div className="flex gap-2">
                 <input
                   type="tel"
@@ -160,8 +202,58 @@ export default function CheckOrderPage() {
                   ) : (
                     <Search className="w-4 h-4" />
                   )}
-                  Cari
+                  Kirim OTP
                 </button>
+              </div>
+            </form>
+          )}
+
+          {/* Step 2: OTP verification (guest only) */}
+          {!loggedInUser && guestStep === "otp" && !orders && (
+            <form onSubmit={handleVerifyOtp} className="mb-6 space-y-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Masukkan 6 digit OTP"
+                  className="flex-1 bg-[#1a2332] border border-[#8B2FC9]/40 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#00D4FF] transition-colors tracking-widest text-center text-lg font-bold"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex items-center gap-2 px-5 py-3 bg-[#00D4FF] hover:bg-[#00b8d9] disabled:opacity-60 text-[#0a1621] font-bold rounded-lg text-sm transition-colors"
+                >
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-[#0a1621] border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4" />
+                  )}
+                  Verifikasi
+                </button>
+              </div>
+              <div className="flex items-center justify-between text-xs text-gray-400">
+                <button
+                  type="button"
+                  onClick={() => { setGuestStep("phone"); setOtp(""); setError(null); }}
+                  className="underline hover:text-gray-200"
+                >
+                  Ganti nomor
+                </button>
+                {otpCooldown > 0 ? (
+                  <span>Kirim ulang dalam {otpCooldown}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => { setOtp(""); handleSendOtp(e as any); }}
+                    className="underline hover:text-gray-200"
+                  >
+                    Kirim ulang OTP
+                  </button>
+                )}
               </div>
             </form>
           )}

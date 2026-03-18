@@ -2335,6 +2335,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Verify OTP and return orders for guest user (no login/account creation)
+  app.post("/api/orders/verify-otp-and-lookup", async (req, res) => {
+    try {
+      const { phoneNumber, otp } = req.body;
+      if (!phoneNumber || !otp) {
+        return res.status(400).json({ error: "Nomor telepon dan OTP wajib diisi" });
+      }
+
+      // Check OTP exists
+      const otpData = otpStorage.get(otp);
+      if (!otpData) {
+        return res.status(400).json({ error: "Kode OTP tidak valid atau sudah kadaluarsa" });
+      }
+
+      // Check expiry
+      if (Date.now() > otpData.expiresAt) {
+        otpStorage.delete(otp);
+        return res.status(400).json({ error: "Kode OTP sudah kadaluarsa" });
+      }
+
+      // Normalize and compare phone numbers
+      const normalizePhone = (p: string) => {
+        let n = p.replace(/[\s\-\+\(\)]/g, "");
+        if (n.startsWith("62")) n = "0" + n.slice(2);
+        return n;
+      };
+      if (normalizePhone(otpData.phoneNumber) !== normalizePhone(phoneNumber)) {
+        return res.status(400).json({ error: "OTP tidak sesuai dengan nomor telepon ini" });
+      }
+
+      // OTP valid - delete immediately to prevent reuse
+      otpStorage.delete(otp);
+
+      // Lookup paid orders for this phone
+      const allTransactions = await storage.getAllTransactions();
+      const phoneMatched = allTransactions.filter(
+        (t) => normalizePhone(t.phoneNumber) === normalizePhone(phoneNumber)
+      );
+      const paidTransactions = phoneMatched.filter((t) => t.paymentStatus === "paid");
+
+      const orders = await Promise.all(
+        paidTransactions.map(async (t) => {
+          const event = await storage.getEvent(t.eventId).catch(() => null);
+          return {
+            transactionId: t.id,
+            eventName: t.eventName,
+            ticketCount: t.ticketCount,
+            amount: t.amount,
+            paidAt: t.paidAt,
+            hasEbook: !!(event?.ebookFile),
+          };
+        })
+      );
+
+      res.json(orders);
+    } catch (error) {
+      console.error("[Orders OTP Lookup] Error:", error);
+      res.status(500).json({ error: "Gagal memuat pesanan" });
+    }
+  });
+
   // Update user profile
   app.put("/api/users/profile", requireUser, async (req, res) => {
     try {
