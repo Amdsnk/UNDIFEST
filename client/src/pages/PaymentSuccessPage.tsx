@@ -89,7 +89,10 @@ export default function PaymentSuccessPage() {
     const params = new URLSearchParams(window.location.search);
     // Midtrans mengirim kembali order_id (= transaction.id kita) sebagai query param
     // Gunakan trx sebagai primary, order_id sebagai fallback
+    // Midtrans juga bisa mengirim transaction_status=settlement langsung di URL
     const trxId = params.get("trx") || params.get("order_id");
+    const midtransStatus = params.get("transaction_status");
+    const midtransStatusCode = params.get("status_code");
 
     if (!trxId) {
       setStatus("error");
@@ -97,6 +100,16 @@ export default function PaymentSuccessPage() {
     }
 
     setTransactionId(trxId);
+
+    // Jika Midtrans sudah konfirmasi settlement via URL params, set success awal
+    // sambil tetap polling server untuk dapat link ebook
+    if (
+      midtransStatus === "settlement" ||
+      midtransStatus === "capture" ||
+      midtransStatusCode === "200"
+    ) {
+      setStatus("success");
+    }
 
     const checkStatus = async (attempt: number) => {
       try {
@@ -121,21 +134,55 @@ export default function PaymentSuccessPage() {
           response.paymentStatus === "pending" &&
           attempt < MAX_POLL_ATTEMPTS
         ) {
-          // Still pending — keep polling
-          setStatus("pending");
+          // Still pending — keep polling (jangan reset ke pending jika Midtrans URL sudah confirm)
+          if (
+            midtransStatus !== "settlement" &&
+            midtransStatus !== "capture" &&
+            midtransStatusCode !== "200"
+          ) {
+            setStatus("pending");
+          }
           pollTimerRef.current = setTimeout(() => checkStatus(attempt + 1), POLL_INTERVAL_MS);
         } else if (response.paymentStatus === "pending") {
-          // Timed out
-          setStatus("pending");
-        } else {
+          // Timed out — jika Midtrans URL sudah confirm, tetap tampilkan success
+          if (
+            midtransStatus === "settlement" ||
+            midtransStatus === "capture" ||
+            midtransStatusCode === "200"
+          ) {
+            setStatus("success");
+          } else {
+            setStatus("pending");
+          }
+        } else if (
+          response.paymentStatus === "failed" ||
+          response.paymentStatus === "expired" ||
+          response.paymentStatus === "cancel"
+        ) {
           setStatus("error");
+        } else {
+          // Unknown status — tetap poll jika masih dalam batas
+          if (attempt < MAX_POLL_ATTEMPTS) {
+            pollTimerRef.current = setTimeout(() => checkStatus(attempt + 1), POLL_INTERVAL_MS);
+          } else {
+            setStatus("error");
+          }
         }
       } catch (error) {
         console.error("Error checking payment status:", error);
         if (attempt < MAX_POLL_ATTEMPTS) {
           pollTimerRef.current = setTimeout(() => checkStatus(attempt + 1), POLL_INTERVAL_MS);
         } else {
-          setStatus("error");
+          // Jika Midtrans URL sudah confirm tapi server tidak respond, tetap tampilkan success
+          if (
+            midtransStatus === "settlement" ||
+            midtransStatus === "capture" ||
+            midtransStatusCode === "200"
+          ) {
+            setStatus("success");
+          } else {
+            setStatus("error");
+          }
         }
       }
     };
@@ -247,16 +294,25 @@ export default function PaymentSuccessPage() {
 
           {status === "error" && (
             <>
-              <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
-                <span className="text-4xl">❌</span>
+              <div className="w-20 h-20 rounded-full bg-yellow-500/20 flex items-center justify-center mb-6">
+                <span className="text-4xl">⚠️</span>
               </div>
-              <h1 className="text-2xl font-bold text-white mb-2">Terjadi Kesalahan</h1>
+              <h1 className="text-2xl font-bold text-white mb-2">Tidak Dapat Verifikasi</h1>
+              <p className="text-gray-400 mb-2">
+                Halaman ini tidak dapat menemukan data transaksi Anda secara otomatis.
+              </p>
               <p className="text-gray-400 mb-6">
-                Tidak dapat memverifikasi pembayaran. Silakan cek riwayat transaksi Anda.
+                Jika Anda sudah bayar, gunakan <strong className="text-[#00D4FF]">Cek Pesanan</strong> dengan nomor HP Anda untuk melihat status dan link download e-book.
               </p>
               <button
+                onClick={() => navigate("/cek-pesanan")}
+                className="holographic-btn px-8 py-3 rounded-lg font-bold mb-3"
+              >
+                Cek Pesanan Saya
+              </button>
+              <button
                 onClick={() => navigate("/history")}
-                className="holographic-btn px-8 py-3 rounded-lg font-bold"
+                className="text-gray-400 underline text-sm"
               >
                 Lihat Riwayat Transaksi
               </button>
