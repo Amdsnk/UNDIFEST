@@ -47,6 +47,22 @@ export default function MembersPage() {
     },
   });
 
+  const markPaidMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      return apiRequest(`/api/transactions/${transactionId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ paymentStatus: "paid" }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      toast({ title: "✅ Transaksi berhasil ditandai Lunas" });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Gagal memperbarui status transaksi" });
+    },
+  });
+
   const handleDelete = (id: string, phoneNumber: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus member ${phoneNumber}?`)) {
       deleteMutation.mutate(id);
@@ -291,6 +307,7 @@ export default function MembersPage() {
                           <TableHead className="font-semibold text-gray-900">Total Bayar</TableHead>
                           <TableHead className="font-semibold text-gray-900">Status</TableHead>
                           <TableHead className="font-semibold text-gray-900">Tanggal</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -334,11 +351,30 @@ export default function MembersPage() {
                                   year: 'numeric'
                                 })}
                               </TableCell>
+                              <TableCell>
+                                {t.paymentStatus === "pending" ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      if (confirm(`Tandai transaksi ${t.buyerName || t.phoneNumber} sebagai LUNAS?`)) {
+                                        markPaidMutation.mutate(t.id);
+                                      }
+                                    }}
+                                    disabled={markPaidMutation.isPending}
+                                    className="bg-green-600 hover:bg-green-700 text-white font-semibold text-xs px-3 py-1"
+                                  >
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Tandai Lunas
+                                  </Button>
+                                ) : (
+                                  <span className="text-gray-400 text-xs">-</span>
+                                )}
+                              </TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={8} className="text-center py-12">
+                            <TableCell colSpan={9} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
                                   <UserX className="w-8 h-8 text-gray-400" />
