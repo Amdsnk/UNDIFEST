@@ -47,19 +47,38 @@ export default function MembersPage() {
     },
   });
 
-  const markPaidMutation = useMutation({
+  // Sync a single transaction status with Midtrans
+  const syncOneMutation = useMutation({
     mutationFn: async (transactionId: string) => {
-      return apiRequest(`/api/transactions/${transactionId}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ paymentStatus: "paid" }),
-      });
+      // Re-use the public payment status endpoint — it already calls Midtrans and updates DB
+      return apiRequest(`/api/payments/status/${transactionId}`);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      toast({ title: "✅ Transaksi berhasil ditandai Lunas" });
+      if (data?.paymentStatus === "paid") {
+        toast({ title: "✅ Sudah Lunas — status diperbarui otomatis!" });
+      } else {
+        toast({ title: `Status: ${data?.paymentStatus ?? "tidak diketahui"}` });
+      }
     },
     onError: () => {
-      toast({ variant: "destructive", title: "Gagal memperbarui status transaksi" });
+      toast({ variant: "destructive", title: "Gagal mengecek status ke Midtrans" });
+    },
+  });
+
+  // Sync ALL pending transactions with Midtrans at once
+  const syncAllMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/admin/transactions/sync-pending", { method: "POST" });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      toast({
+        title: `✅ Sinkron selesai: ${data?.updated ?? 0} transaksi diperbarui dari ${data?.checked ?? 0} pending`,
+      });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Gagal sinkron status dari Midtrans" });
     },
   });
 
@@ -289,7 +308,18 @@ export default function MembersPage() {
                       <h2 className="text-lg font-semibold text-gray-900">Guest Buyers</h2>
                       <p className="text-sm text-gray-500">Pembeli yang tidak login saat melakukan transaksi</p>
                     </div>
-                    <span className="ml-auto text-sm text-gray-600">{guestBuyers.length} pembeli</span>
+                    <div className="ml-auto flex items-center gap-3">
+                      <span className="text-sm text-gray-600">{guestBuyers.length} pembeli</span>
+                      <Button
+                        size="sm"
+                        onClick={() => syncAllMutation.mutate()}
+                        disabled={syncAllMutation.isPending}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-3 py-1"
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        {syncAllMutation.isPending ? "Mengecek..." : "Sinkron Status Midtrans"}
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto">
@@ -355,16 +385,12 @@ export default function MembersPage() {
                                 {t.paymentStatus === "pending" ? (
                                   <Button
                                     size="sm"
-                                    onClick={() => {
-                                      if (confirm(`Tandai transaksi ${t.buyerName || t.phoneNumber} sebagai LUNAS?`)) {
-                                        markPaidMutation.mutate(t.id);
-                                      }
-                                    }}
-                                    disabled={markPaidMutation.isPending}
-                                    className="bg-green-600 hover:bg-green-700 text-white font-semibold text-xs px-3 py-1"
+                                    onClick={() => syncOneMutation.mutate(t.id)}
+                                    disabled={syncOneMutation.isPending}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-3 py-1"
                                   >
                                     <CheckCircle className="w-3 h-3 mr-1" />
-                                    Tandai Lunas
+                                    Cek Midtrans
                                   </Button>
                                 ) : (
                                   <span className="text-gray-400 text-xs">-</span>

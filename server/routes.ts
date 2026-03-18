@@ -477,6 +477,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync all pending transactions with Midtrans status (admin only)
+  app.post("/api/admin/transactions/sync-pending", requireAdmin, async (req, res) => {
+    try {
+      const transactions = await storage.getAllTransactions();
+      const pendingWithPaymentId = transactions.filter(
+        (t) => t.paymentStatus === "pending" && t.paymentId
+      );
+
+      let updated = 0;
+      const results: { id: string; from: string; to: string }[] = [];
+
+      await Promise.all(
+        pendingWithPaymentId.map(async (t) => {
+          try {
+            const midtransStatus = await checkMidtransTransactionStatus(t.id);
+            if (!midtransStatus) return;
+
+            const { transactionStatus, fraudStatus } = midtransStatus;
+            if (
+              transactionStatus === "settlement" ||
+              (transactionStatus === "capture" && fraudStatus === "accept")
+            ) {
+              await storage.updateTransaction(t.id, { paymentStatus: "paid", paidAt: new Date() });
+              await storage.incrementEventTickets(t.eventId).catch(() => {});
+              results.push({ id: t.id, from: "pending", to: "paid" });
+              updated++;
+            } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
+              await storage.updateTransaction(t.id, { paymentStatus: "failed" });
+              results.push({ id: t.id, from: "pending", to: "failed" });
+              updated++;
+            } else if (transactionStatus === "expire") {
+              await storage.updateTransaction(t.id, { paymentStatus: "expired" });
+              results.push({ id: t.id, from: "pending", to: "expired" });
+              updated++;
+            }
+          } catch (e) {
+            console.error("[Sync Pending] Error checking transaction:", t.id, e);
+          }
+        })
+      );
+
+      console.log(`[Sync Pending] Checked ${pendingWithPaymentId.length} transactions, updated ${updated}`);
+      res.json({ checked: pendingWithPaymentId.length, updated, results });
+    } catch (error) {
+      console.error("[Sync Pending] Error:", error);
+      res.status(500).json({ error: "Failed to sync pending transactions" });
+    }
+  });
+
   // Delete transaction (admin only - superadmin role)
   app.delete("/api/transactions/:id", requireAdmin, requireRole("superadmin"), async (req, res) => {
     try {
