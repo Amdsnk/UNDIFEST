@@ -467,10 +467,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Transactions API (admin - all transactions)
+  // Transactions API (admin - all transactions, auto-sync pending with Midtrans)
   app.get("/api/transactions", requireAdmin, async (req, res) => {
     try {
       const transactions = await storage.getAllTransactions();
+
+      // Auto-sync all pending transactions with Midtrans in real-time
+      // This ensures admin always sees the true payment status without manual intervention
+      const pendingWithPaymentId = transactions.filter(
+        (t) => t.paymentStatus === "pending" && t.paymentId
+      );
+
+      if (pendingWithPaymentId.length > 0) {
+        await Promise.all(
+          pendingWithPaymentId.map(async (t) => {
+            try {
+              const midtransStatus = await checkMidtransTransactionStatus(t.id);
+              if (!midtransStatus) return;
+              const { transactionStatus, fraudStatus } = midtransStatus;
+              if (
+                transactionStatus === "settlement" ||
+                (transactionStatus === "capture" && fraudStatus === "accept")
+              ) {
+                await storage.updateTransaction(t.id, { paymentStatus: "paid", paidAt: new Date() });
+                t.paymentStatus = "paid";
+                await storage.incrementEventTickets(t.eventId).catch(() => {});
+              } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
+                await storage.updateTransaction(t.id, { paymentStatus: "failed" });
+                t.paymentStatus = "failed";
+              } else if (transactionStatus === "expire") {
+                await storage.updateTransaction(t.id, { paymentStatus: "expired" });
+                t.paymentStatus = "expired";
+              }
+            } catch {
+              // non-fatal: skip if Midtrans check fails for this transaction
+            }
+          })
+        );
+      }
+
       res.json(transactions);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch transactions" });
