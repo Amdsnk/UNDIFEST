@@ -1120,7 +1120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'CIMB': ['cimb_va'],
         };
         const enabledPayments = enabledPaymentsMap[paymentChannel.toUpperCase()] || ['bni_va', 'bri_va', 'mandiri_va', 'permata_va', 'cimb_va'];
-        const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+        const baseUrl = process.env.APP_URL || "https://undifest.com";
 
         const snapResult = await createSnapTransaction({
           orderId: transaction.id,
@@ -1247,7 +1247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Snap langsung ke QR GoPay tanpa form customer
         console.log("[Midtrans QRIS] Production mode - GoPay via Snap (no customer form)");
         try {
-          const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+          const baseUrl = process.env.APP_URL || "https://undifest.com";
           const snapResult = await createSnapTransaction({
             orderId: transaction.id,
             grossAmount: amount,
