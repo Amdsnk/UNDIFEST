@@ -152,8 +152,8 @@ export default function CheckOrderPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a1621]">
-      <div className="max-w-undifest mx-auto pb-28 bg-[#16202a]">
+    <div className="min-h-screen bg-[#16202a]">
+      <div className="max-w-undifest mx-auto min-h-screen pb-28 bg-[#16202a]">
         <MobileHeader />
 
         <div className="p-6">
