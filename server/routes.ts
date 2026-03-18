@@ -1279,12 +1279,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } else {
-        // QRIS: gunakan Snap Transaction dengan enabled_payments=['qris']
-        // Sama seperti GoPay agar callbacks.finish berfungsi dan redirect kembali ke undifest.com
-        console.log("[Midtrans QRIS] Production mode - QRIS via Snap");
+        // QRIS: gunakan Payment Link agar menghasilkan URL format payment-links dan redirect balik ke undifest.com
+        console.log("[Midtrans QRIS] Production mode - QRIS via Payment Link");
         try {
           const baseUrl = process.env.APP_URL || "https://undifest.com";
-          const snapResult = await createSnapTransaction({
+          const linkResult = await createPaymentLink({
             orderId: transaction.id,
             grossAmount: amount,
             customerName: userName,
@@ -1296,19 +1295,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
             pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           });
-          console.log("[Midtrans QRIS] QRIS Snap token:", snapResult.token, "url:", snapResult.redirectUrl);
+          console.log("[Midtrans QRIS] Payment Link URL:", linkResult.paymentUrl);
           await storage.updateTransaction(transaction.id, {
-            paymentId: snapResult.token,
-            paymentUrl: snapResult.redirectUrl,
+            paymentId: transaction.id,
+            paymentUrl: linkResult.paymentUrl,
           });
           return res.status(201).json({
             ...transaction,
-            snapToken: snapResult.token,
-            redirectUrl: snapResult.redirectUrl,
+            redirectUrl: linkResult.paymentUrl,
             channel: "QRIS",
           });
         } catch (paymentError: any) {
-          console.error("[Midtrans QRIS] QRIS Snap exception:", paymentError);
+          console.error("[Midtrans QRIS] QRIS Payment Link exception:", paymentError);
           return res.status(201).json({
             ...transaction,
             paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
