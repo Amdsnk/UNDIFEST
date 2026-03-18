@@ -16,6 +16,9 @@ export default function PaymentSuccessPage() {
   const [transactionId, setTransactionId] = useState<string>("");
   const [pollAttempt, setPollAttempt] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [txAmount, setTxAmount] = useState<number>(0);
+  const [txTicketCount, setTxTicketCount] = useState<number>(1);
+  const [txDate, setTxDate] = useState<string>("");
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasDownloadedRef = useRef(false);
 
@@ -127,6 +130,12 @@ export default function PaymentSuccessPage() {
         const response = await apiRequest(`/api/payments/status/${trxId}`, { headers });
 
         setEventName(response.eventName || "");
+        if (response.amount) setTxAmount(response.amount);
+        if (response.ticketCount) setTxTicketCount(response.ticketCount);
+        if (response.createdAt) {
+          const d = new Date(response.createdAt);
+          setTxDate(d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }));
+        }
         setPollAttempt(attempt);
 
         if (response.paymentStatus === "paid") {
@@ -217,45 +226,59 @@ export default function PaymentSuccessPage() {
 
           {status === "success" && (
             <>
-              <CheckCircle className="w-20 h-20 text-green-500 mb-6" />
-              <h1 className="text-2xl font-bold text-white mb-2">Pembayaran Berhasil!</h1>
-              <p className="text-gray-400 mb-4">Tiket Anda telah berhasil dibeli.</p>
-
-              {/* E-book Download Section - Only show if E-book is available */}
-              {ebookData && (
-                <div className="w-full max-w-md bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg p-6 mb-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <FileText className="w-8 h-8 text-purple-400" />
-                    <div className="text-left">
-                      <h3 className="text-lg font-bold text-white">E-book Anda Siap!</h3>
-                      <p className="text-sm text-gray-400">{ebookData.title}</p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => downloadFileUrl(ebookData.file, ebookData.title)}
-                    className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105"
-                  >
-                    <Download className="w-5 h-5" />
-                    Download E-book
-                  </button>
-
-                  <p className="text-xs text-gray-400 mt-3 text-center">
-                    Download otomatis dimulai. Klik tombol di atas jika belum terunduh.
-                  </p>
-                </div>
-              )}
-
-              {/* Save Download Link Box - for guests without account */}
-              <div className="w-full max-w-md bg-[#1a2332] border border-[#00D4FF]/30 rounded-lg p-4 mb-4">
+              {/* Main success card */}
+              <div className="w-full max-w-md bg-[#1a2332] border border-green-500/30 rounded-2xl p-6 mb-6 text-left">
+                {/* Header */}
                 <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span className="text-green-400 font-semibold text-sm">Pembayaran Berhasil</span>
+                </div>
+
+                {/* Event name */}
+                <h1 className="text-xl font-bold text-white mb-3 leading-snug">
+                  {eventName || "Tiket Event"}
+                </h1>
+
+                {/* Transaction details */}
+                <div className="text-sm text-gray-400 space-y-1 mb-5">
+                  {txTicketCount > 0 && txAmount > 0 && (
+                    <p>{txTicketCount} tiket · Rp {txAmount.toLocaleString("id-ID")}</p>
+                  )}
+                  {txDate && <p>{txDate}</p>}
+                </div>
+
+                {/* E-book download button — only if ebook available */}
+                {ebookData ? (
+                  <>
+                    <button
+                      onClick={() => downloadFileUrl(ebookData.file, ebookData.title)}
+                      className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] text-base"
+                    >
+                      <Download className="w-5 h-5" />
+                      Download E-book
+                    </button>
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      Download otomatis dimulai. Klik tombol jika belum terunduh.
+                    </p>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2 text-gray-400 text-sm">
+                    <FileText className="w-4 h-4" />
+                    <span>Tiket Anda sudah aktif</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Save Download Link Box */}
+              <div className="w-full max-w-md bg-[#0f1923] border border-[#00D4FF]/20 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
                   <Link2 className="w-4 h-4 text-[#00D4FF]" />
-                  <p className="text-sm font-semibold text-[#00D4FF]">Simpan Link Download Anda</p>
+                  <p className="text-sm font-semibold text-[#00D4FF]">Simpan Link Download</p>
                 </div>
                 <p className="text-xs text-gray-400 mb-3">
-                  Belum punya akun? Simpan link ini — buka kapan saja untuk download ulang e-book Anda.
+                  Simpan link ini — buka kapan saja untuk download ulang e-book Anda tanpa perlu login.
                 </p>
-                <div className="flex items-center gap-2 bg-[#0a1621] rounded-md p-2">
+                <div className="flex items-center gap-2 bg-[#0a1621] rounded-lg p-2">
                   <span className="text-xs text-gray-300 flex-1 truncate">{successPageUrl}</span>
                   <button
                     onClick={handleCopyLink}
@@ -265,13 +288,6 @@ export default function PaymentSuccessPage() {
                     {copied ? "Tersalin!" : "Salin"}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  Atau gunakan{" "}
-                  <a href="/cek-pesanan" className="text-[#00D4FF] underline">
-                    Cek Pesanan
-                  </a>{" "}
-                  dengan nomor telepon Anda
-                </p>
               </div>
 
               <button

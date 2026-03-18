@@ -1085,7 +1085,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         midtransRawStatus,
         paymentUrl: transaction.paymentUrl,
         paidAt: transaction.paidAt,
-        eventName: event?.name || "",
+        createdAt: transaction.createdAt,
+        amount: transaction.amount,
+        ticketCount: transaction.ticketCount,
+        eventName: event?.name || transaction.eventName || "",
         hasEbook: !!(event?.ebookFile),
       });
     } catch (error) {
@@ -1418,10 +1421,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customerPhone: phoneNumber,
             itemName: `Tiket ${eventName}`,
             // Tidak ada enabledPayments — tampilkan semua metode aktif di akun Midtrans
-            // Redirect ke /cek-pesanan agar user bisa verifikasi dan lihat link download
-            finishUrl: `${baseUrl}/cek-pesanan`,
-            errorUrl: `${baseUrl}/cek-pesanan`,
-            pendingUrl: `${baseUrl}/cek-pesanan`,
+            // Redirect ke /payment/success agar user langsung melihat halaman download setelah bayar
+            finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+            errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
+            pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           });
           console.log("[Midtrans QRIS] Dynamic payment link:", linkResult.paymentUrl);
           await storage.updateTransaction(transaction.id, {
