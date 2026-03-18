@@ -5,7 +5,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { CheckCircle, Loader2, Download, FileText, Link2, Copy, Check } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
-const MAX_POLL_ATTEMPTS = 40; // 40 × 3s = 2 minutes
+const MAX_POLL_ATTEMPTS = 40; // 40 × 3s = 2 minutes (only used for non-redirect flow)
 const POLL_INTERVAL_MS = 3000;
 
 export default function PaymentSuccessPage() {
@@ -90,10 +90,6 @@ export default function PaymentSuccessPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    // Midtrans mengirim kembali order_id (= transaction.id kita) sebagai query param
-    // Gunakan trx sebagai primary, order_id sebagai fallback
-    // Midtrans juga bisa mengirim transaction_status=settlement langsung di URL
-    // Fallback terakhir: cek sessionStorage yang disimpan sebelum redirect ke Midtrans
     const trxId =
       params.get("trx") ||
       params.get("order_id") ||
@@ -106,21 +102,61 @@ export default function PaymentSuccessPage() {
       return;
     }
 
-    // Bersihkan sessionStorage setelah berhasil dibaca
     sessionStorage.removeItem("pending_transaction_id");
-
     setTransactionId(trxId);
 
-    // Jika Midtrans sudah konfirmasi settlement via URL params, set success awal
-    // sambil tetap polling server untuk dapat link ebook
-    if (
+    // ─────────────────────────────────────────────────────────────
+    // ALUR 1: Redirect dari Midtrans dengan konfirmasi pembayaran
+    // Midtrans hanya redirect ke finishUrl dengan status_code=200
+    // atau transaction_status=settlement/capture setelah user BENAR-BENAR bayar.
+    // Tidak perlu verifikasi ulang — langsung tandai lunas & tampilkan download.
+    // ─────────────────────────────────────────────────────────────
+    const isConfirmedByMidtrans =
       midtransStatus === "settlement" ||
       midtransStatus === "capture" ||
-      midtransStatusCode === "200"
-    ) {
+      midtransStatusCode === "200";
+
+    if (isConfirmedByMidtrans) {
+      // Tampilkan halaman sukses SEKETIKA — tanpa loading
       setStatus("success");
+
+      // Di background: tandai lunas di DB + ambil info event & ebook
+      const confirmAndFetch = async () => {
+        try {
+          const confirmResp = await apiRequest(`/api/payments/confirm-paid/${trxId}`, {
+            method: "POST",
+          });
+          if (confirmResp.eventName) setEventName(confirmResp.eventName);
+          if (confirmResp.amount) setTxAmount(confirmResp.amount);
+          if (confirmResp.ticketCount) setTxTicketCount(confirmResp.ticketCount);
+          if (confirmResp.createdAt) {
+            const d = new Date(confirmResp.createdAt);
+            setTxDate(d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }));
+          }
+        } catch (e) {
+          console.error("[PaymentSuccess] confirm-paid failed (non-fatal):", e);
+        }
+
+        // Ambil file ebook
+        try {
+          const ebook = await fetchEbook(trxId);
+          if (ebook) {
+            setEbookData(ebook);
+            triggerAutoDownload(ebook.file, ebook.title);
+          }
+        } catch (e) {
+          console.error("[PaymentSuccess] ebook fetch failed (non-fatal):", e);
+        }
+      };
+
+      confirmAndFetch();
+      return;
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // ALUR 2: User membuka link tersimpan (tanpa param Midtrans)
+    // Polling untuk cek apakah transaksi sudah dibayar sebelumnya
+    // ─────────────────────────────────────────────────────────────
     const checkStatus = async (attempt: number) => {
       try {
         const userToken = localStorage.getItem("user_token");
@@ -139,66 +175,24 @@ export default function PaymentSuccessPage() {
         setPollAttempt(attempt);
 
         if (response.paymentStatus === "paid") {
-          // Payment confirmed — fetch ebook and auto-download
           const ebook = await fetchEbook(trxId);
           setEbookData(ebook);
           setStatus("success");
-          if (ebook) {
-            triggerAutoDownload(ebook.file, ebook.title);
-          }
-        } else if (
-          response.paymentStatus === "pending" &&
-          attempt < MAX_POLL_ATTEMPTS
-        ) {
-          // Still pending — keep polling (jangan reset ke pending jika Midtrans URL sudah confirm)
-          if (
-            midtransStatus !== "settlement" &&
-            midtransStatus !== "capture" &&
-            midtransStatusCode !== "200"
-          ) {
-            setStatus("pending");
-          }
+          if (ebook) triggerAutoDownload(ebook.file, ebook.title);
+        } else if (response.paymentStatus === "pending" && attempt < MAX_POLL_ATTEMPTS) {
+          setStatus("pending");
           pollTimerRef.current = setTimeout(() => checkStatus(attempt + 1), POLL_INTERVAL_MS);
-        } else if (response.paymentStatus === "pending") {
-          // Timed out — jika Midtrans URL sudah confirm, tetap tampilkan success
-          if (
-            midtransStatus === "settlement" ||
-            midtransStatus === "capture" ||
-            midtransStatusCode === "200"
-          ) {
-            setStatus("success");
-          } else {
-            setStatus("pending");
-          }
-        } else if (
-          response.paymentStatus === "failed" ||
-          response.paymentStatus === "expired" ||
-          response.paymentStatus === "cancel"
-        ) {
+        } else if (response.paymentStatus === "failed" || response.paymentStatus === "expired") {
           setStatus("error");
         } else {
-          // Unknown status — tetap poll jika masih dalam batas
-          if (attempt < MAX_POLL_ATTEMPTS) {
-            pollTimerRef.current = setTimeout(() => checkStatus(attempt + 1), POLL_INTERVAL_MS);
-          } else {
-            setStatus("error");
-          }
+          setStatus("pending");
         }
       } catch (error) {
         console.error("Error checking payment status:", error);
         if (attempt < MAX_POLL_ATTEMPTS) {
           pollTimerRef.current = setTimeout(() => checkStatus(attempt + 1), POLL_INTERVAL_MS);
         } else {
-          // Jika Midtrans URL sudah confirm tapi server tidak respond, tetap tampilkan success
-          if (
-            midtransStatus === "settlement" ||
-            midtransStatus === "capture" ||
-            midtransStatusCode === "200"
-          ) {
-            setStatus("success");
-          } else {
-            setStatus("error");
-          }
+          setStatus("error");
         }
       }
     };

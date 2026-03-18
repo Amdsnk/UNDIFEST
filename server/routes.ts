@@ -1097,6 +1097,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Confirm payment from Midtrans redirect (no Midtrans API check needed)
+  // Called by PaymentSuccessPage when status_code=200 is in the URL
+  // Midtrans only redirects with status_code=200 on successful payment — trust it directly
+  app.post("/api/payments/confirm-paid/:transactionId", async (req, res) => {
+    try {
+      const { transactionId } = req.params;
+
+      const transaction = await storage.getTransaction(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+
+      // Mark as paid if still pending (idempotent - safe to call multiple times)
+      if (transaction.paymentStatus === "pending") {
+        await storage.updateTransaction(transactionId, {
+          paymentStatus: "paid",
+          paidAt: new Date(),
+        });
+        transaction.paymentStatus = "paid";
+        await storage.incrementEventTickets(transaction.eventId).catch(() => {});
+
+        // WhatsApp notification
+        if (transaction.phoneNumber) {
+          const baseUrl = process.env.APP_URL || "https://undifest.com";
+          const downloadLink = `${baseUrl}/payment/success?trx=${transaction.id}`;
+          const ev = await storage.getEvent(transaction.eventId).catch(() => null);
+          const hasEbook = !!(ev?.ebookFile);
+          const waMsg = hasEbook
+            ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n📥 Klik link berikut untuk mendownload e-book Anda:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
+            : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\nTiket Anda sudah aktif. Klik link berikut untuk melihat detail:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+          sendWhatsAppMessage(transaction.phoneNumber, waMsg).catch(() => {});
+        }
+
+        console.log("[Confirm Paid] Transaction marked as paid from redirect:", transactionId);
+      }
+
+      const event = await storage.getEvent(transaction.eventId);
+
+      res.json({
+        paymentStatus: "paid",
+        eventName: event?.name || transaction.eventName || "",
+        amount: transaction.amount,
+        ticketCount: transaction.ticketCount,
+        createdAt: transaction.createdAt,
+        hasEbook: !!(event?.ebookFile),
+      });
+    } catch (error) {
+      console.error("[Confirm Paid] Error:", error);
+      res.status(500).json({ error: "Failed to confirm payment" });
+    }
+  });
+
   // Get iPaymu config status (admin only)
   app.get("/api/admin/payment-config", requireAdmin, async (req, res) => {
     res.json(getIPaymuConfig());
