@@ -1279,39 +1279,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } else {
-        // QRIS: gunakan Payment Link agar menghasilkan URL format payment-links dan redirect balik ke undifest.com
-        console.log("[Midtrans QRIS] Production mode - QRIS via Payment Link");
-        try {
-          const baseUrl = process.env.APP_URL || "https://undifest.com";
-          const linkResult = await createPaymentLink({
-            orderId: transaction.id,
-            grossAmount: amount,
-            customerName: userName,
-            customerEmail: userEmail,
-            customerPhone: phoneNumber,
-            itemName: `Tiket ${eventName}`,
-            enabledPayments: ['qris'],
-            finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
-            errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
-            pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
-          });
-          console.log("[Midtrans QRIS] Payment Link URL:", linkResult.paymentUrl);
-          await storage.updateTransaction(transaction.id, {
-            paymentId: transaction.id,
-            paymentUrl: linkResult.paymentUrl,
-          });
-          return res.status(201).json({
-            ...transaction,
-            redirectUrl: linkResult.paymentUrl,
-            channel: "QRIS",
-          });
-        } catch (paymentError: any) {
-          console.error("[Midtrans QRIS] QRIS Payment Link exception:", paymentError);
-          return res.status(201).json({
-            ...transaction,
-            paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
-          });
-        }
+        // QRIS: redirect langsung ke payment link statis yang sudah dikonfigurasi di Midtrans dashboard
+        const QRIS_PAYMENT_LINK = process.env.QRIS_PAYMENT_LINK_URL || "https://app.midtrans.com/payment-links/4747449c-0c41-4d01-b915-d18734767dc9";
+        console.log("[Midtrans QRIS] Production mode - redirect ke payment link statis:", QRIS_PAYMENT_LINK);
+        await storage.updateTransaction(transaction.id, {
+          paymentId: transaction.id,
+          paymentUrl: QRIS_PAYMENT_LINK,
+        });
+        return res.status(201).json({
+          ...transaction,
+          redirectUrl: QRIS_PAYMENT_LINK,
+          channel: "QRIS",
+        });
       }
     } catch (error) {
       console.error("[Midtrans QRIS] Error:", error);
