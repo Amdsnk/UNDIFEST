@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Search, Download, FileText, Package, AlertCircle, CheckCircle } from "lucide-react";
@@ -19,6 +19,33 @@ export default function CheckOrderPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [loggedInUser, setLoggedInUser] = useState<{ name?: string; phoneNumber?: string } | null>(null);
+
+  // Auto-load orders if user is logged in
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem("user_data");
+      const userToken = localStorage.getItem("user_token");
+      if (userData && userToken) {
+        const user = JSON.parse(userData);
+        if (user.phoneNumber) {
+          setLoggedInUser(user);
+          setLoading(true);
+          apiRequest(`/api/orders/lookup?phone=${encodeURIComponent(user.phoneNumber)}`)
+            .then((result) => {
+              setOrders(result);
+              if (result.length === 0) {
+                setError("Belum ada pesanan yang ditemukan.");
+              }
+            })
+            .catch(() => setError("Gagal memuat pesanan. Coba lagi."))
+            .finally(() => setLoading(false));
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,33 +128,43 @@ export default function CheckOrderPage() {
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Cek Pesanan</h1>
             <p className="text-gray-400 text-sm">
-              Masukkan nomor telepon yang digunakan saat pembelian untuk melihat pesanan Anda
+              {loggedInUser
+                ? `Menampilkan pesanan untuk ${loggedInUser.name || loggedInUser.phoneNumber}`
+                : "Masukkan nomor telepon yang digunakan saat pembelian untuk melihat pesanan Anda"}
             </p>
           </div>
 
-          <form onSubmit={handleSearch} className="mb-6">
-            <div className="flex gap-2">
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Contoh: 08123456789"
-                className="flex-1 bg-[#1a2332] border border-[#8B2FC9]/40 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#00D4FF] transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex items-center gap-2 px-5 py-3 bg-[#00D4FF] hover:bg-[#00b8d9] disabled:opacity-60 text-[#0a1621] font-bold rounded-lg text-sm transition-colors"
-              >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-[#0a1621] border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Search className="w-4 h-4" />
-                )}
-                Cari
-              </button>
+          {loading && !orders && (
+            <div className="flex justify-center py-8">
+              <div className="w-8 h-8 border-2 border-[#00D4FF] border-t-transparent rounded-full animate-spin" />
             </div>
-          </form>
+          )}
+
+          {!loggedInUser && (
+            <form onSubmit={handleSearch} className="mb-6">
+              <div className="flex gap-2">
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Contoh: 08123456789"
+                  className="flex-1 bg-[#1a2332] border border-[#8B2FC9]/40 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[#00D4FF] transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex items-center gap-2 px-5 py-3 bg-[#00D4FF] hover:bg-[#00b8d9] disabled:opacity-60 text-[#0a1621] font-bold rounded-lg text-sm transition-colors"
+                >
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-[#0a1621] border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4" />
+                  )}
+                  Cari
+                </button>
+              </div>
+            </form>
+          )}
 
           {error && !loading && (
             <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
