@@ -90,12 +90,24 @@ export default function PaymentSuccessPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const trxId =
+
+    // PENTING: Midtrans terkadang menambahkan ?status_code=200 dengan tanda tanya GANDA
+    // Contoh: /payment/success?trx=xxx?status_code=200 (seharusnya &status_code=200)
+    // Akibatnya params.get("trx") menjadi "xxx?status_code=200" dan status_code = null
+    // Fix: bersihkan trxId dari suffix ?... dan cek status_code dari full URL
+    let trxId =
       params.get("trx") ||
       params.get("order_id") ||
       sessionStorage.getItem("pending_transaction_id");
+    // Bersihkan jika ada ?status_code=200 yang nempel di trxId
+    if (trxId) trxId = trxId.split("?")[0];
+
+    const fullHref = window.location.href;
     const midtransStatus = params.get("transaction_status");
-    const midtransStatusCode = params.get("status_code");
+    // Cek status_code dari URLSearchParams ATAU dari full URL (handle double-? bug)
+    const midtransStatusCode =
+      params.get("status_code") ||
+      (fullHref.includes("status_code=200") ? "200" : null);
 
     if (!trxId) {
       setStatus("error");
