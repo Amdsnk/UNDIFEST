@@ -87,7 +87,9 @@ export default function PaymentSuccessPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const trxId = params.get("trx");
+    // Midtrans mengirim kembali order_id (= transaction.id kita) sebagai query param
+    // Gunakan trx sebagai primary, order_id sebagai fallback
+    const trxId = params.get("trx") || params.get("order_id");
 
     if (!trxId) {
       setStatus("error");

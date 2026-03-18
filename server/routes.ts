@@ -1279,18 +1279,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } else {
-        // QRIS: gunakan static Payment Link
-        const staticQrisUrl = "https://app.midtrans.com/payment-links/f33b94e1-5675-4279-bf7b-dae61ddedf50";
-        console.log("[Midtrans QRIS] Production mode - using static QRIS payment link:", staticQrisUrl);
-        await storage.updateTransaction(transaction.id, {
-          paymentId: transaction.id,
-          paymentUrl: staticQrisUrl,
-        });
-        return res.status(201).json({
-          ...transaction,
-          redirectUrl: staticQrisUrl,
-          channel: "QRIS",
-        });
+        // QRIS: gunakan Snap Transaction dengan enabled_payments=['qris']
+        // Sama seperti GoPay agar callbacks.finish berfungsi dan redirect kembali ke undifest.com
+        console.log("[Midtrans QRIS] Production mode - QRIS via Snap");
+        try {
+          const baseUrl = process.env.APP_URL || "https://undifest.com";
+          const snapResult = await createSnapTransaction({
+            orderId: transaction.id,
+            grossAmount: amount,
+            customerName: userName,
+            customerEmail: userEmail,
+            customerPhone: phoneNumber,
+            itemName: `Tiket ${eventName}`,
+            enabledPayments: ['qris'],
+            finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+            errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
+            pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
+          });
+          console.log("[Midtrans QRIS] QRIS Snap token:", snapResult.token, "url:", snapResult.redirectUrl);
+          await storage.updateTransaction(transaction.id, {
+            paymentId: snapResult.token,
+            paymentUrl: snapResult.redirectUrl,
+          });
+          return res.status(201).json({
+            ...transaction,
+            snapToken: snapResult.token,
+            redirectUrl: snapResult.redirectUrl,
+            channel: "QRIS",
+          });
+        } catch (paymentError: any) {
+          console.error("[Midtrans QRIS] QRIS Snap exception:", paymentError);
+          return res.status(201).json({
+            ...transaction,
+            paymentError: paymentError.message || "Failed to connect to Midtrans payment gateway",
+          });
+        }
       }
     } catch (error) {
       console.error("[Midtrans QRIS] Error:", error);
