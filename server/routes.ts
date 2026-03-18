@@ -2417,11 +2417,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // OTP valid - delete immediately to prevent reuse
       otpStorage.delete(otp);
 
-      // Lookup paid orders for this phone
+      // Lookup all transactions for this phone
       const allTransactions = await storage.getAllTransactions();
       const phoneMatched = allTransactions.filter(
         (t) => normalizePhone(t.phoneNumber) === normalizePhone(phoneNumber)
       );
+
+      // For pending transactions, check Midtrans directly and update status in real-time
+      // This ensures that if the user just paid and the webhook hasn't arrived yet,
+      // we still detect the payment and return the correct status.
+      await Promise.all(
+        phoneMatched
+          .filter((t) => t.paymentStatus === "pending" && t.paymentId)
+          .map(async (t) => {
+            try {
+              const midtransStatus = await checkMidtransTransactionStatus(t.id);
+              if (!midtransStatus) return;
+              const { transactionStatus, fraudStatus } = midtransStatus;
+              if (transactionStatus === "settlement" || (transactionStatus === "capture" && fraudStatus === "accept")) {
+                await storage.updateTransaction(t.id, { paymentStatus: "paid", paidAt: new Date() });
+                t.paymentStatus = "paid";
+                await storage.incrementEventTickets(t.eventId).catch(() => {});
+              } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
+                await storage.updateTransaction(t.id, { paymentStatus: "failed" });
+                t.paymentStatus = "failed";
+              } else if (transactionStatus === "expire") {
+                await storage.updateTransaction(t.id, { paymentStatus: "expired" });
+                t.paymentStatus = "expired";
+              }
+            } catch {
+              // non-fatal: just skip this transaction's Midtrans check
+            }
+          })
+      );
+
       const paidTransactions = phoneMatched.filter((t) => t.paymentStatus === "paid");
 
       const orders = await Promise.all(
