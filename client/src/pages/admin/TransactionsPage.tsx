@@ -31,7 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Search, DollarSign, TrendingUp, Calendar, Receipt, Eye, Trash2, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
+import { Search, DollarSign, TrendingUp, Calendar, Receipt, Eye, Trash2, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -44,6 +44,40 @@ export default function TransactionsPage() {
 
   const { data: transactions, isLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
+  });
+
+  // Sync a single pending transaction with Midtrans
+  const syncOneMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      return apiRequest(`/api/payments/status/${transactionId}`);
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      if (data?.paymentStatus === "paid") {
+        toast({ title: "✅ Sudah Lunas — status diperbarui otomatis!" });
+      } else {
+        toast({ title: `Status Midtrans: ${data?.paymentStatus ?? "tidak diketahui"}` });
+      }
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Gagal mengecek status ke Midtrans" });
+    },
+  });
+
+  // Sync ALL pending transactions with Midtrans at once
+  const syncAllMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/admin/transactions/sync-pending", { method: "POST" });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      toast({
+        title: `✅ Sinkron selesai: ${data?.updated ?? 0} transaksi diperbarui dari ${data?.checked ?? 0} pending`,
+      });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Gagal sinkron status dari Midtrans" });
+    },
   });
 
   const deleteTransactionMutation = useMutation({
@@ -224,6 +258,14 @@ export default function TransactionsPage() {
                         className="pl-12 h-12 border-2 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-xl text-base"
                       />
                     </div>
+                    <Button
+                      onClick={() => syncAllMutation.mutate()}
+                      disabled={syncAllMutation.isPending}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 h-12 rounded-xl shadow"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${syncAllMutation.isPending ? "animate-spin" : ""}`} />
+                      {syncAllMutation.isPending ? "Sinkronisasi..." : "Sinkron Semua"}
+                    </Button>
                     <div className="bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 rounded-xl border border-purple-200">
                       <span className="text-sm font-semibold text-gray-700">
                         <span className="text-purple-600">{filteredTransactions.length}</span> transaksi ditemukan
@@ -302,16 +344,30 @@ export default function TransactionsPage() {
                               <TableCell className="text-center">
                                 <div className="flex items-center justify-center gap-1">
                                   {transaction.paymentStatus === "pending" && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => updateStatusMutation.mutate({ id: transaction.id, status: "paid" })}
-                                      disabled={updateStatusMutation.isPending}
-                                      className="bg-green-500 text-white border-0 hover:bg-green-600 shadow-md text-xs px-2"
-                                    >
-                                      <CheckCircle className="w-3 h-3 mr-1" />
-                                      Konfirmasi
-                                    </Button>
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => syncOneMutation.mutate(transaction.id)}
+                                        disabled={syncOneMutation.isPending}
+                                        className="bg-blue-500 text-white border-0 hover:bg-blue-600 shadow-md text-xs px-2"
+                                        title="Cek status ke Midtrans dan perbarui otomatis"
+                                      >
+                                        <RefreshCw className="w-3 h-3 mr-1" />
+                                        Cek
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => updateStatusMutation.mutate({ id: transaction.id, status: "paid" })}
+                                        disabled={updateStatusMutation.isPending}
+                                        className="bg-green-500 text-white border-0 hover:bg-green-600 shadow-md text-xs px-2"
+                                        title="Konfirmasi lunas secara manual"
+                                      >
+                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                        Konfirmasi
+                                      </Button>
+                                    </>
                                   )}
                                   <Dialog>
                                     <DialogTrigger asChild>
