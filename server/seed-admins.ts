@@ -6,71 +6,53 @@ import { eq } from "drizzle-orm";
 async function seedAdmins() {
   console.log("🌱 Seeding admin accounts...");
 
-  const testAdmins = [
-    {
-      username: "superadmin",
-      password: "admin123",
-      name: "Super Administrator",
-      role: "superadmin" as const,
-      isActive: true,
-    },
-    {
-      username: "qscustom",
-      password: "admin123",
-      name: "QS Custom Admin",
-      role: "qs_custom" as const,
-      isActive: true,
-    },
-    {
-      username: "viewer",
-      password: "admin123",
-      name: "Viewer Admin",
-      role: "viewer" as const,
-      isActive: true,
-    },
-  ];
+  const mainAdmin = {
+    username: "goodlake",
+    password: "best88",
+    name: "Super Administrator",
+    role: "superadmin" as const,
+    isActive: true,
+  };
 
-  for (const admin of testAdmins) {
-    try {
-      // Check if admin already exists
-      const existing = await db
-        .select()
-        .from(adminUsers)
-        .where(eq(adminUsers.username, admin.username))
-        .limit(1);
+  try {
+    const hashedPassword = await bcrypt.hash(mainAdmin.password, 10);
 
-      if (existing.length > 0) {
-        console.log(`⏭️  Admin "${admin.username}" already exists, skipping...`);
-        continue;
-      }
+    // Check if admin already exists
+    const existing = await db
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.username, mainAdmin.username))
+      .limit(1);
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(admin.password, 10);
-
-      // Create admin
+    if (existing.length > 0) {
+      // Update existing admin password
+      await db
+        .update(adminUsers)
+        .set({ password: hashedPassword, isActive: true })
+        .where(eq(adminUsers.username, mainAdmin.username));
+      console.log(`🔄 Updated admin: ${mainAdmin.username}`);
+    } else {
+      // Create new admin
       await db.insert(adminUsers).values({
-        username: admin.username,
+        username: mainAdmin.username,
         password: hashedPassword,
-        name: admin.name,
-        role: admin.role,
-        isActive: admin.isActive,
+        name: mainAdmin.name,
+        role: mainAdmin.role,
+        isActive: mainAdmin.isActive,
       });
-
-      console.log(`✅ Created admin: ${admin.username} (${admin.role})`);
-    } catch (error) {
-      console.error(`❌ Failed to create admin "${admin.username}":`, error);
+      console.log(`✅ Created admin: ${mainAdmin.username} (${mainAdmin.role})`);
     }
+  } catch (error) {
+    console.error(`❌ Failed to seed admin "${mainAdmin.username}":`, error);
   }
 
   console.log("\n🎉 Admin seeding completed!");
-  console.log("\n📋 Test Admin Accounts:");
-  console.log("┌─────────────┬──────────┬─────────────┐");
-  console.log("│ Username    │ Password │ Role        │");
-  console.log("├─────────────┼──────────┼─────────────┤");
-  console.log("│ superadmin  │ admin123 │ Superadmin  │");
-  console.log("│ qscustom    │ admin123 │ QS Custom   │");
-  console.log("│ viewer      │ admin123 │ Viewer      │");
-  console.log("└─────────────┴──────────┴─────────────┘");
+  console.log("\n📋 Admin Account:");
+  console.log("┌──────────┬──────────┬─────────────┐");
+  console.log("│ Username │ Password │ Role        │");
+  console.log("├──────────┼──────────┼─────────────┤");
+  console.log("│ goodlake │ best88   │ Superadmin  │");
+  console.log("└──────────┴──────────┴─────────────┘");
   console.log("\n🔐 You can now login with these credentials!");
 }
 

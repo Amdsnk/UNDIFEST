@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
         title: "Login Berhasil",
         description: `Selamat datang, ${response.admin.username}! (${response.admin.role})`,
       });
-      setLocation("/admin/events");
+      setLocation("/admin-panel-7x9k/events");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -122,14 +122,7 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-xs text-center text-gray-600 font-medium">
-              Demo Credentials
-            </p>
-            <p className="text-sm text-center text-gray-700 font-mono mt-1">
-              admin / admin123
-            </p>
-          </div>
+
         </CardContent>
       </Card>
     </div>

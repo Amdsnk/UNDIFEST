@@ -38,35 +38,35 @@ import { getCurrentRole } from "@/lib/roleUtils";
 import { useMemo } from "react";
 
 const mainMenuItems = [
-  { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard, id: "dashboard" },
-  { title: "Daftar Event", url: "/admin/events", icon: Calendar, id: "events" },
-  { title: "Event Manager", url: "/admin/event-manager", icon: Settings, id: "events" },
-  { title: "Member", url: "/admin/members", icon: Users, id: "members" },
-  { title: "Nominasi Winner", url: "/admin/winners", icon: Trophy, id: "winners" },
-  { title: "Daftar Transaksi", url: "/admin/transactions", icon: CreditCard, id: "transactions" },
-  { title: "Daftar Transfer", url: "/admin/daftar-transfer", icon: CreditCard, id: "daftar-transfer" },
-  { title: "Laporan", url: "/admin/reports", icon: FileText, id: "reports" },
+  { title: "Dashboard", url: "/admin-panel-7x9k/dashboard", icon: LayoutDashboard, id: "dashboard" },
+  { title: "Daftar Event", url: "/admin-panel-7x9k/events", icon: Calendar, id: "events" },
+  { title: "Event Manager", url: "/admin-panel-7x9k/event-manager", icon: Settings, id: "events" },
+  { title: "Member", url: "/admin-panel-7x9k/members", icon: Users, id: "members" },
+  { title: "Nominasi Winner", url: "/admin-panel-7x9k/winners", icon: Trophy, id: "winners" },
+  { title: "Daftar Transaksi", url: "/admin-panel-7x9k/transactions", icon: CreditCard, id: "transactions" },
+  { title: "Daftar Transfer", url: "/admin-panel-7x9k/daftar-transfer", icon: CreditCard, id: "daftar-transfer" },
+  { title: "Laporan", url: "/admin-panel-7x9k/reports", icon: FileText, id: "reports" },
 ];
 
 const contentMenuItems = [
-  { title: "Slideshow / Banner", url: "/admin/banners", icon: Image, id: "banners" },
-  { title: "Videos", url: "/admin/videos", icon: Video, id: "videos" },
-  { title: "Partner", url: "/admin/partners", icon: Handshake, id: "partners" },
-  { title: "How it Works", url: "/admin/how-it-works", icon: Wrench, id: "how-it-works" },
-  { title: "Syarat & Ketentuan", url: "/admin/terms-conditions", icon: FileText, id: "terms-conditions" },
-  { title: "Footer", url: "/admin/footer", icon: Archive, id: "footer" },
+  { title: "Slideshow / Banner", url: "/admin-panel-7x9k/banners", icon: Image, id: "banners" },
+  { title: "Videos", url: "/admin-panel-7x9k/videos", icon: Video, id: "videos" },
+  { title: "Partner", url: "/admin-panel-7x9k/partners", icon: Handshake, id: "partners" },
+  { title: "How it Works", url: "/admin-panel-7x9k/how-it-works", icon: Wrench, id: "how-it-works" },
+  { title: "Syarat & Ketentuan", url: "/admin-panel-7x9k/terms-conditions", icon: FileText, id: "terms-conditions" },
+  { title: "Footer", url: "/admin-panel-7x9k/footer", icon: Archive, id: "footer" },
 ];
 
 const settingsMenuItems = [
-  { title: "Admin Management", url: "/admin/admin-management", icon: Shield, id: "admin-management" },
-  { title: "Settings", url: "/admin/settings", icon: Save, id: "settings" },
-  { title: "Edit Lain-Lain", url: "/admin/edit-lain2", icon: Settings, id: "edit-lain2" },
-  { title: "IP Whitelist", url: "/admin/ip-whitelist", icon: Shield, id: "ip-whitelist" },
-  { title: "Bank", url: "/admin/banks", icon: Landmark, id: "banks" },
-  { title: "Akun Method", url: "/admin/account-method", icon: Settings, id: "payment-methods" },
-  { title: "Kebijakan", url: "/admin/policy", icon: FileQuestion, id: "pages" },
-  { title: "Tentang Kami", url: "/admin/about", icon: Info, id: "pages" },
-  { title: "Konfirmasi Website", url: "/admin/website-confirm", icon: CheckSquare, id: "website-confirm" },
+  { title: "Admin Management", url: "/admin-panel-7x9k/admin-management", icon: Shield, id: "admin-management" },
+  { title: "Settings", url: "/admin-panel-7x9k/settings", icon: Save, id: "settings" },
+  { title: "Edit Lain-Lain", url: "/admin-panel-7x9k/edit-lain2", icon: Settings, id: "edit-lain2" },
+  { title: "IP Whitelist", url: "/admin-panel-7x9k/ip-whitelist", icon: Shield, id: "ip-whitelist" },
+  { title: "Bank", url: "/admin-panel-7x9k/banks", icon: Landmark, id: "banks" },
+  { title: "Akun Method", url: "/admin-panel-7x9k/account-method", icon: Settings, id: "payment-methods" },
+  { title: "Kebijakan", url: "/admin-panel-7x9k/policy", icon: FileQuestion, id: "pages" },
+  { title: "Tentang Kami", url: "/admin-panel-7x9k/about", icon: Info, id: "pages" },
+  { title: "Konfirmasi Website", url: "/admin-panel-7x9k/website-confirm", icon: CheckSquare, id: "website-confirm" },
 ];
 
 export function AdminSidebar() {
@@ -77,7 +77,7 @@ export function AdminSidebar() {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_user");
     localStorage.removeItem("admin_info");
-    setLocation("/admin");
+    setLocation("/admin-panel-7x9k");
   };
 
   const isActive = (url: string) => location === url;

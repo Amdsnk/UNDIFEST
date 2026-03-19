@@ -11,7 +11,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
   useEffect(() => {
     const adminToken = localStorage.getItem("admin_token");
     if (!adminToken) {
-      setLocation("/admin");
+      setLocation("/admin-panel-7x9k");
     }
   }, [setLocation]);
 

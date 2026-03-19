@@ -82,84 +82,84 @@ function Router() {
       <Route path="/brand" component={BrandPage} />
 
       {/* Admin Routes */}
-      <Route path="/admin" component={AdminLoginPage} />
-      <Route path="/admin/login" component={AdminLoginPage} />
-      <Route path="/admin/dashboard">
+      <Route path="/admin-panel-7x9k" component={AdminLoginPage} />
+      <Route path="/admin-panel-7x9k/login" component={AdminLoginPage} />
+      <Route path="/admin-panel-7x9k/dashboard">
         <AdminRoute><DashboardPage /></AdminRoute>
       </Route>
-      <Route path="/admin/events">
+      <Route path="/admin-panel-7x9k/events">
         <AdminRoute><EventsListPage /></AdminRoute>
       </Route>
-      <Route path="/admin/events/create">
+      <Route path="/admin-panel-7x9k/events/create">
         <AdminRoute><CreateEventPage /></AdminRoute>
       </Route>
-      <Route path="/admin/events/:id/edit">
+      <Route path="/admin-panel-7x9k/events/:id/edit">
         <AdminRoute><EditEventPage /></AdminRoute>
       </Route>
-      <Route path="/admin/events/:id/participants">
+      <Route path="/admin-panel-7x9k/events/:id/participants">
         <AdminRoute><EventParticipantsPage /></AdminRoute>
       </Route>
-      <Route path="/admin/event-manager">
+      <Route path="/admin-panel-7x9k/event-manager">
         <AdminRoute><EventManagerPage /></AdminRoute>
       </Route>
-      <Route path="/admin/banners">
+      <Route path="/admin-panel-7x9k/banners">
         <AdminRoute><BannersPage /></AdminRoute>
       </Route>
-      <Route path="/admin/members">
+      <Route path="/admin-panel-7x9k/members">
         <AdminRoute><MembersPage /></AdminRoute>
       </Route>
-      <Route path="/admin/transactions">
+      <Route path="/admin-panel-7x9k/transactions">
         <AdminRoute><TransactionsPage /></AdminRoute>
       </Route>
-      <Route path="/admin/winners">
+      <Route path="/admin-panel-7x9k/winners">
         <AdminRoute><WinnersPage /></AdminRoute>
       </Route>
-      <Route path="/admin/videos">
+      <Route path="/admin-panel-7x9k/videos">
         <AdminRoute><VideosPage /></AdminRoute>
       </Route>
-      <Route path="/admin/reports">
+      <Route path="/admin-panel-7x9k/reports">
         <AdminRoute><ReportsPage /></AdminRoute>
       </Route>
-      <Route path="/admin/partners">
+      <Route path="/admin-panel-7x9k/partners">
         <AdminRoute><PartnersPage /></AdminRoute>
       </Route>
-      <Route path="/admin/how-it-works">
+      <Route path="/admin-panel-7x9k/how-it-works">
         <AdminRoute><HowItWorksPage /></AdminRoute>
       </Route>
-      <Route path="/admin/terms-conditions">
+      <Route path="/admin-panel-7x9k/terms-conditions">
         <AdminRoute><TermsConditionsPage /></AdminRoute>
       </Route>
-      <Route path="/admin/banks">
+      <Route path="/admin-panel-7x9k/banks">
         <AdminRoute><BanksPage /></AdminRoute>
       </Route>
-      <Route path="/admin/settings">
+      <Route path="/admin-panel-7x9k/settings">
         <AdminRoute><SettingsPage /></AdminRoute>
       </Route>
-      <Route path="/admin/footer">
+      <Route path="/admin-panel-7x9k/footer">
         <AdminRoute><FooterPage /></AdminRoute>
       </Route>
-      <Route path="/admin/ip-whitelist">
+      <Route path="/admin-panel-7x9k/ip-whitelist">
         <AdminRoute><IpWhitelistPage /></AdminRoute>
       </Route>
-      <Route path="/admin/account-method">
+      <Route path="/admin-panel-7x9k/account-method">
         <AdminRoute><PaymentMethodsPage /></AdminRoute>
       </Route>
-      <Route path="/admin/policy">
+      <Route path="/admin-panel-7x9k/policy">
         <AdminRoute><PagesPage /></AdminRoute>
       </Route>
-      <Route path="/admin/about">
+      <Route path="/admin-panel-7x9k/about">
         <AdminRoute><PagesPage /></AdminRoute>
       </Route>
-      <Route path="/admin/website-confirm">
+      <Route path="/admin-panel-7x9k/website-confirm">
         <AdminRoute><WebsiteConfirmPage /></AdminRoute>
       </Route>
-      <Route path="/admin/edit-lain2">
+      <Route path="/admin-panel-7x9k/edit-lain2">
         <AdminRoute><EditLain2Page /></AdminRoute>
       </Route>
-      <Route path="/admin/admin-management">
+      <Route path="/admin-panel-7x9k/admin-management">
         <AdminRoute><AdminManagementPage /></AdminRoute>
       </Route>
-      <Route path="/admin/daftar-transfer">
+      <Route path="/admin-panel-7x9k/daftar-transfer">
         <AdminRoute><DaftarTransferPage /></AdminRoute>
       </Route>
 

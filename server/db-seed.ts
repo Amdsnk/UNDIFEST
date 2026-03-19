@@ -21,12 +21,12 @@ export async function seedDatabase() {
     }
 
     // Create admin user with hashed password
-    const hashedPassword = await hashPassword("admin123");
+    const hashedPassword = await hashPassword("best88");
     const [admin] = await db.insert(adminUsers).values({
-      username: "admin",
+      username: "goodlake",
       password: hashedPassword,
     }).returning();
-    console.log("✓ Created admin user (username: admin, password: admin123)");
+    console.log("✓ Created admin user (username: goodlake)");
 
     // Create banners
     await db.insert(banners).values([
