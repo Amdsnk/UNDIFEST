@@ -34,7 +34,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function EditEventPage() {
-  const [, params] = useRoute("/admin/events/:id/edit");
+  const [, params] = useRoute("/admin-panel-7x9k/events/:id/edit");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [bannerHomepageFile, setBannerHomepageFile] = useState<File | null>(null);
@@ -151,7 +151,7 @@ export default function EditEventPage() {
         title: "Event Berhasil Diupdate",
         description: "Perubahan event telah disimpan",
       });
-      setLocation("/admin/events");
+      setLocation("/admin-panel-7x9k/events");
     },
     onError: (error: Error) => {
       toast({
@@ -175,8 +175,8 @@ export default function EditEventPage() {
             title="Edit Event"
             description="Loading..."
             breadcrumbs={[
-              { label: "Home", href: "/admin/dashboard" },
-              { label: "Events", href: "/admin/events" },
+              { label: "Home", href: "/admin-panel-7x9k/dashboard" },
+              { label: "Events", href: "/admin-panel-7x9k/events" },
               { label: "Edit Event" },
             ]}
           />
@@ -196,8 +196,8 @@ export default function EditEventPage() {
           title="Edit Event"
           description="Edit event yang sudah ada"
           breadcrumbs={[
-            { label: "Home", href: "/admin/dashboard" },
-            { label: "Events", href: "/admin/events" },
+            { label: "Home", href: "/admin-panel-7x9k/dashboard" },
+            { label: "Events", href: "/admin-panel-7x9k/events" },
             { label: "Edit Event" },
           ]}
         />
@@ -510,7 +510,7 @@ export default function EditEventPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setLocation("/admin/events")}
+                      onClick={() => setLocation("/admin-panel-7x9k/events")}
                     >
                       Batal
                     </Button>

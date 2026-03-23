@@ -31,7 +31,7 @@ import type { User, Transaction, Event, Winner } from "@shared/schema";
 type SortField = "name" | "phone" | "city" | "email" | "totalTickets" | "totalAmount" | "status" | "ip" | "createdAt";
 
 export default function EventParticipantsPage() {
-  const [, params] = useRoute("/admin/events/:id/participants");
+  const [, params] = useRoute("/admin-panel-7x9k/events/:id/participants");
   const [, setLocation] = useLocation();
   const eventId = params?.id;
   const { toast } = useToast();
@@ -326,7 +326,7 @@ export default function EventParticipantsPage() {
               </div>
               <Button
                 variant="outline"
-                onClick={() => setLocation("/admin/events")}
+                onClick={() => setLocation("/admin-panel-7x9k/events")}
                 className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 transition-all"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />

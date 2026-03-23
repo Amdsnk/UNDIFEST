@@ -78,7 +78,7 @@ export default function DashboardPage() {
           title="Dashboard"
           description="Selamat datang di Admin Panel Undifest"
           breadcrumbs={[
-            { label: "Home", href: "/admin/dashboard" },
+            { label: "Home", href: "/admin-panel-7x9k/dashboard" },
             { label: "Dashboard" }
           ]}
         />
@@ -145,7 +145,7 @@ export default function DashboardPage() {
                           <Calendar className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                           <p className="text-gray-500 font-medium">Belum ada event</p>
                           <p className="text-sm text-gray-400 mt-1">Buat event pertama Anda</p>
-                          <Link href="/admin/events/create">
+                          <Link href="/admin-panel-7x9k/events/create">
                             <Button className="mt-4 bg-blue-600 hover:bg-blue-700">
                               Buat Event
                             </Button>
@@ -154,7 +154,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                     {events && events.length > 5 && (
-                      <Link href="/admin/events">
+                      <Link href="/admin-panel-7x9k/events">
                         <Button variant="outline" className="w-full mt-4 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200">
                           Lihat Semua Event
                         </Button>
@@ -194,7 +194,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                     {transactions && transactions.length > 5 && (
-                      <Link href="/admin/transactions">
+                      <Link href="/admin-panel-7x9k/transactions">
                         <Button variant="outline" className="w-full mt-4 hover:bg-green-50 hover:text-green-600 hover:border-green-200">
                           Lihat Semua Transaksi
                         </Button>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                     <Users className="w-12 h-12 mb-4 opacity-80" />
                     <h3 className="text-2xl font-bold mb-2">Member Management</h3>
                     <p className="text-white/80 text-sm mb-4">Kelola data member platform</p>
-                    <Link href="/admin/members">
+                    <Link href="/admin-panel-7x9k/members">
                       <Button variant="secondary" className="w-full">
                         Lihat Member
                       </Button>
@@ -223,7 +223,7 @@ export default function DashboardPage() {
                     <Trophy className="w-12 h-12 mb-4 opacity-80" />
                     <h3 className="text-2xl font-bold mb-2">Winners</h3>
                     <p className="text-white/80 text-sm mb-4">Nominasikan dan umumkan pemenang</p>
-                    <Link href="/admin/winners">
+                    <Link href="/admin-panel-7x9k/winners">
                       <Button variant="secondary" className="w-full">
                         Kelola Pemenang
                       </Button>
@@ -236,7 +236,7 @@ export default function DashboardPage() {
                     <Activity className="w-12 h-12 mb-4 opacity-80" />
                     <h3 className="text-2xl font-bold mb-2">Reports</h3>
                     <p className="text-white/80 text-sm mb-4">Lihat laporan dan statistik</p>
-                    <Link href="/admin/reports">
+                    <Link href="/admin-panel-7x9k/reports">
                       <Button variant="secondary" className="w-full">
                         Lihat Laporan
                       </Button>

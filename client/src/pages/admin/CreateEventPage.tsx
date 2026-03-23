@@ -136,7 +136,7 @@ export default function CreateEventPage() {
       if (createAnother) {
         window.location.reload();
       } else {
-        setLocation("/admin/events");
+        setLocation("/admin-panel-7x9k/events");
       }
     },
     onError: (error: Error) => {
@@ -160,8 +160,8 @@ export default function CreateEventPage() {
           title="Event Manager"
           description="Buat event baru untuk undian"
           breadcrumbs={[
-            { label: "Home", href: "/admin/dashboard" },
-            { label: "Events", href: "/admin/events" },
+            { label: "Home", href: "/admin-panel-7x9k/dashboard" },
+            { label: "Events", href: "/admin-panel-7x9k/events" },
             { label: "Buat Event Baru" },
           ]}
         />
@@ -420,7 +420,7 @@ export default function CreateEventPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setLocation("/admin/events")}
+                      onClick={() => setLocation("/admin-panel-7x9k/events")}
                     >
                       Batal
                     </Button>

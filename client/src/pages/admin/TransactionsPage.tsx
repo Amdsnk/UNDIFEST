@@ -189,7 +189,7 @@ export default function TransactionsPage() {
             title="Daftar Transaksi"
             description="Riwayat seluruh transaksi pembelian tiket"
             breadcrumbs={[
-              { label: "Home", href: "/admin/dashboard" },
+              { label: "Home", href: "/admin-panel-7x9k/dashboard" },
               { label: "Transaksi" }
             ]}
           />

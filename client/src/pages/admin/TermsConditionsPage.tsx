@@ -157,7 +157,7 @@ export default function TermsConditionsPage() {
           title="Syarat & Ketentuan"
           description="Kelola syarat dan ketentuan untuk setiap event"
           breadcrumbs={[
-            { label: "Home", href: "/admin/dashboard" },
+            { label: "Home", href: "/admin-panel-7x9k/dashboard" },
             { label: "Syarat & Ketentuan" }
           ]}
         />

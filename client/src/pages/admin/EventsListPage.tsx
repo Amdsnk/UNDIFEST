@@ -113,12 +113,12 @@ export default function EventsListPage() {
             title="Daftar Event"
             description="Kelola semua event undian dan pilih pemenang"
             breadcrumbs={[
-              { label: "Home", href: "/admin/dashboard" },
-              { label: "Events", href: "/admin/events" },
+              { label: "Home", href: "/admin-panel-7x9k/dashboard" },
+              { label: "Events", href: "/admin-panel-7x9k/events" },
               { label: "Daftar Event" }
             ]}
             actions={
-              <Link href="/admin/events/create">
+              <Link href="/admin-panel-7x9k/events/create">
                 <Button data-testid="button-create-event" className="bg-[#2e5feb] hover:bg-blue-700 text-white shadow-lg">
                   <Plus className="w-4 h-4 mr-2" />
                   Buat Event Baru
@@ -190,7 +190,7 @@ export default function EventsListPage() {
                         filteredEvents.map((event) => (
                           <TableRow key={event.id} data-testid={`row-event-${event.id}`} className="hover:bg-purple-50/50 transition-colors">
                             <TableCell>
-                              <Link href={`/admin/events/${event.id}/participants`}>
+                              <Link href={`/admin-panel-7x9k/events/${event.id}/participants`}>
                                 <span className="font-semibold text-gray-900 hover:text-purple-600 hover:underline transition-colors cursor-pointer">
                                   {event.name}
                                 </span>
@@ -235,7 +235,7 @@ export default function EventsListPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2 justify-end">
-                                <Link href={`/admin/events/${event.id}/participants`}>
+                                <Link href={`/admin-panel-7x9k/events/${event.id}/participants`}>
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -246,7 +246,7 @@ export default function EventsListPage() {
                                     Detail
                                   </Button>
                                 </Link>
-                                <Link href={`/admin/events/${event.id}/edit`}>
+                                <Link href={`/admin-panel-7x9k/events/${event.id}/edit`}>
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -287,7 +287,7 @@ export default function EventsListPage() {
                                 </p>
                               </div>
                               {!searchQuery && (
-                                <Link href="/admin/events/create">
+                                <Link href="/admin-panel-7x9k/events/create">
                                   <Button className="mt-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg">
                                     <Plus className="w-4 h-4 mr-2" />
                                     Buat Event Baru

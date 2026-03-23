@@ -121,7 +121,7 @@ export default function BannersPage() {
           title="Slideshow / Banner"
           description="Kelola banner slideshow untuk halaman utama"
           breadcrumbs={[
-            { label: "Home", href: "/admin/dashboard" },
+            { label: "Home", href: "/admin-panel-7x9k/dashboard" },
             { label: "Content", href: "#" },
             { label: "Banners" }
           ]}

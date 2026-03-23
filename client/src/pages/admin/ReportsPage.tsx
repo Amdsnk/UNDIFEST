@@ -255,7 +255,7 @@ export default function ReportsPage() {
           title="Laporan"
           description="Statistik dan laporan lengkap platform"
           breadcrumbs={[
-            { label: "Home", href: "/admin/dashboard" },
+            { label: "Home", href: "/admin-panel-7x9k/dashboard" },
             { label: "Laporan" }
           ]}
         />

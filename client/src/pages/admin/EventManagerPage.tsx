@@ -191,7 +191,7 @@ export default function EventManagerPage() {
           title="Event Manager"
           description="Kelola event, monitor peserta, dan analisis performa event"
           breadcrumbs={[
-            { label: "Home", href: "/admin/dashboard" },
+            { label: "Home", href: "/admin-panel-7x9k/dashboard" },
             { label: "Event Manager" },
           ]}
         />

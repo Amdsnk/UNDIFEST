@@ -235,7 +235,7 @@ export default function VideosPage() {
           title="Video Management"
           description="Kelola video dan live streaming"
           breadcrumbs={[
-            { label: "Home", href: "/admin/dashboard" },
+            { label: "Home", href: "/admin-panel-7x9k/dashboard" },
             { label: "Videos" },
           ]}
         />
