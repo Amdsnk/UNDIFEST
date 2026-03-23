@@ -245,6 +245,17 @@ export default function PaymentSuccessPage() {
                   {eventName || "Tiket Event"}
                 </h1>
 
+                {/* Nomor Undian — ditampilkan langsung di web */}
+                {transactionId && (
+                  <div className="bg-[#0a1621] border border-[#00D4FF]/30 rounded-lg px-4 py-3 mb-4">
+                    <p className="text-xs text-gray-500 mb-1">🎟️ Nomor Undian / Order ID</p>
+                    <p className="text-base font-mono font-bold text-[#00D4FF] tracking-wider">
+                      UND-{transactionId.slice(0, 8).toUpperCase()}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Simpan nomor ini sebagai bukti keikutsertaan undian</p>
+                  </div>
+                )}
+
                 {/* Transaction details */}
                 <div className="text-sm text-gray-400 space-y-1 mb-5">
                   {txTicketCount > 0 && txAmount > 0 && (

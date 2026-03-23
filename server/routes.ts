@@ -628,11 +628,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (transaction.phoneNumber) {
           const baseUrl = process.env.APP_URL || "https://undifest.com";
           const downloadLink = `${baseUrl}/payment/success?trx=${transaction.id}`;
+          const nomorUndian = `UND-${transaction.id.slice(0, 8).toUpperCase()}`;
           const event = await storage.getEvent(transaction.eventId).catch(() => null);
           const hasEbook = !!(event?.ebookFile);
           const waMessage = hasEbook
-            ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n📥 Klik link berikut untuk mendownload e-book Anda:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
-            : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\nTiket Anda sudah aktif. Klik link berikut untuk melihat detail:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+            ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
+            : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
           sendWhatsAppMessage(transaction.phoneNumber, waMessage).catch(e =>
             console.error("[Admin Status] Failed to send WA notification:", e)
           );
@@ -1045,11 +1046,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (transaction.phoneNumber) {
                 const baseUrl = process.env.APP_URL || "https://undifest.com";
                 const downloadLink = `${baseUrl}/payment/success?trx=${transaction.id}`;
+                const nomorUndian = `UND-${transaction.id.slice(0, 8).toUpperCase()}`;
                 const ev = await storage.getEvent(transaction.eventId).catch(() => null);
                 const hasEbook = !!(ev?.ebookFile);
                 const waMsg = hasEbook
-                  ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n📥 Klik link berikut untuk mendownload e-book Anda:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
-                  : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\nTiket Anda sudah aktif. Klik link berikut untuk melihat detail:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+                  ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
+                  : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
                 sendWhatsAppMessage(transaction.phoneNumber, waMsg).catch(() => {});
               }
               console.log("[Payment Status] Updated to paid via direct Midtrans check:", transactionId);
@@ -1122,11 +1124,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (transaction.phoneNumber) {
           const baseUrl = process.env.APP_URL || "https://undifest.com";
           const downloadLink = `${baseUrl}/payment/success?trx=${transaction.id}`;
+          const nomorUndian = `UND-${transaction.id.slice(0, 8).toUpperCase()}`;
           const ev = await storage.getEvent(transaction.eventId).catch(() => null);
           const hasEbook = !!(ev?.ebookFile);
           const waMsg = hasEbook
-            ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n📥 Klik link berikut untuk mendownload e-book Anda:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
-            : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\nTiket Anda sudah aktif. Klik link berikut untuk melihat detail:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+            ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
+            : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
           sendWhatsAppMessage(transaction.phoneNumber, waMsg).catch(() => {});
         }
 
@@ -1563,15 +1566,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("[Midtrans Notification] Failed to increment event tickets:", ticketErr);
         }
 
-        // Send WhatsApp notification with download link
+        // Send WhatsApp notification with download link + nomor undian (1 pesan gabungan)
         if (dbTransaction.phoneNumber) {
           const baseUrl = process.env.APP_URL || "https://undifest.com";
           const downloadLink = `${baseUrl}/payment/success?trx=${dbTransaction.id}`;
+          const nomorUndian = `UND-${dbTransaction.id.slice(0, 8).toUpperCase()}`;
           const event = await storage.getEvent(dbTransaction.eventId).catch(() => null);
           const hasEbook = !!(event?.ebookFile);
           const waMessage = hasEbook
-            ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${dbTransaction.eventName}* telah dikonfirmasi.\n\n📥 Klik link berikut untuk mendownload e-book Anda:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
-            : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${dbTransaction.eventName}* telah dikonfirmasi.\n\nTiket Anda sudah aktif. Klik link berikut untuk melihat detail:\n${downloadLink}\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+            ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${dbTransaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
+            : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${dbTransaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
           sendWhatsAppMessage(dbTransaction.phoneNumber, waMessage).catch(e =>
             console.error("[Midtrans Notification] Failed to send WA notification:", e)
           );
