@@ -1238,7 +1238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paidTransactions = eventTransactions.filter(t => t.paymentStatus === "paid");
 
       // 4. Get all users and build lookup maps
-      const allUsers = await storage.getUsers();
+      const allUsers = await storage.getAllUsers();
       const userById = new Map(allUsers.map(u => [u.id, u]));
       const normalizePhone = (p: string) => {
         if (!p) return "";
