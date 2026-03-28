@@ -1206,6 +1206,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dedicated endpoint: get ALL paid participants for a specific event (server-side join)
+  // This is the authoritative source - no client-side filtering, nothing can fall through.
+  app.get("/api/admin/events/:eventId/participants", requireAdmin, async (req, res) => {
+    try {
+      const { eventId } = req.params;
+
+      // 1. Get ALL transactions for this event and sync pending ones first
+      const allTransactions = await storage.getAllTransactions();
+      const eventTransactions = allTransactions.filter(t => t.eventId === eventId);
+
+      // 2. Auto-sync any pending transactions with Midtrans
+      const pendingWithId = eventTransactions.filter(t => t.paymentStatus === "pending" && t.paymentId);
+      await Promise.all(pendingWithId.map(async (t) => {
+        try {
+          const midtransStatus = await checkMidtransTransactionStatus(t.id);
+          if (!midtransStatus) return;
+          const { transactionStatus, fraudStatus } = midtransStatus;
+          if (transactionStatus === "settlement" || (transactionStatus === "capture" && fraudStatus === "accept")) {
+            await storage.updateTransaction(t.id, { paymentStatus: "paid", paidAt: new Date() });
+            t.paymentStatus = "paid";
+          } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
+            await storage.updateTransaction(t.id, { paymentStatus: "failed" }); t.paymentStatus = "failed";
+          } else if (transactionStatus === "expire") {
+            await storage.updateTransaction(t.id, { paymentStatus: "expired" }); t.paymentStatus = "expired";
+          }
+        } catch { /* skip */ }
+      }));
+
+      // 3. Get only paid transactions for this event
+      const paidTransactions = eventTransactions.filter(t => t.paymentStatus === "paid");
+
+      // 4. Get all users and build lookup maps
+      const allUsers = await storage.getUsers();
+      const userById = new Map(allUsers.map(u => [u.id, u]));
+      const normalizePhone = (p: string) => {
+        if (!p) return "";
+        const d = p.replace(/\D/g, "");
+        if (d.startsWith("62")) return "0" + d.slice(2);
+        return d.startsWith("0") ? d : d;
+      };
+      const userByPhone = new Map(allUsers.map(u => [normalizePhone(u.phoneNumber), u]));
+
+      // 5. Categorize every paid transaction - no exceptions
+      const registeredUserIds = new Set<string>();
+      paidTransactions.forEach(t => {
+        if (t.userId && userById.has(t.userId)) {
+          registeredUserIds.add(t.userId);
+        } else {
+          const matched = userByPhone.get(normalizePhone(t.phoneNumber));
+          if (matched) registeredUserIds.add(matched.id);
+        }
+      });
+
+      const registeredParticipants = allUsers.filter(u => registeredUserIds.has(u.id));
+      const guestTransactions = paidTransactions.filter(t => {
+        if (t.userId && userById.has(t.userId)) return false;
+        if (userByPhone.has(normalizePhone(t.phoneNumber))) return false;
+        return true;
+      });
+
+      // 6. Aggregate guest stats by normalized phone
+      const guestMap = new Map<string, { transaction: typeof guestTransactions[0]; totalTickets: number; totalAmount: number }>();
+      guestTransactions.forEach(t => {
+        const key = normalizePhone(t.phoneNumber);
+        if (!guestMap.has(key)) {
+          guestMap.set(key, { transaction: t, totalTickets: 0, totalAmount: 0 });
+        }
+        const entry = guestMap.get(key)!;
+        entry.totalTickets += t.ticketCount;
+        entry.totalAmount += t.amount;
+      });
+
+      res.json({
+        registeredParticipants,
+        guestParticipants: Array.from(guestMap.values()),
+        paidTransactions,
+        totalPaid: paidTransactions.length,
+      });
+    } catch (error: any) {
+      console.error("participants endpoint error:", error);
+      res.status(500).json({ error: "Failed to fetch participants" });
+    }
+  });
+
   // Force sync a specific pending transaction with Midtrans (admin only)
   app.post("/api/admin/transactions/:id/sync", requireAdmin, async (req, res) => {
     try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, Search, Trophy, FileDown, RefreshCw } from "lucide-react";
@@ -47,50 +47,71 @@ export default function EventParticipantsPage() {
   const { data: event, isLoading: isLoadingEvent } = useQuery<Event>({
     queryKey: [`/api/events/${eventId}`],
     enabled: !!eventId,
+    staleTime: 0,
   });
 
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery<User[]>({
-    queryKey: ["/api/users"],
+  // ── Dedicated server-side participants endpoint ────────────────────────────
+  // Returns registeredParticipants, guestParticipants, paidTransactions from server.
+  // The server does ALL filtering - the client just renders.
+  type ParticipantsResponse = {
+    registeredParticipants: User[];
+    guestParticipants: { transaction: Transaction; totalTickets: number; totalAmount: number }[];
+    paidTransactions: Transaction[];
+    totalPaid: number;
+  };
+
+  const {
+    data: participantsData,
+    isLoading: isLoadingParticipants,
+    refetch: refetchParticipants,
+  } = useQuery<ParticipantsResponse>({
+    queryKey: [`/api/admin/events/${eventId}/participants`],
+    enabled: !!eventId,
+    staleTime: 0,      // Always treat as stale → always fetches fresh
+    gcTime: 0,         // Don't cache
   });
 
+  // Still fetch full transaction list for the "pending" section and CSV export
   const { data: transactions = [], isLoading: isLoadingTransactions } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
+    staleTime: 0,
   });
 
   const { data: winners = [], isLoading: isLoadingWinners } = useQuery<Winner[]>({
     queryKey: ["/api/winners"],
+    staleTime: 0,
   });
 
-  const isLoading = isLoadingEvent || isLoadingUsers || isLoadingTransactions || isLoadingWinners;
+  const isLoading = isLoadingEvent || isLoadingParticipants || isLoadingTransactions || isLoadingWinners;
+
+  // Derive participant data from the server response
+  const users: User[] = participantsData?.registeredParticipants ?? [];
+  const serverGuestParticipants = participantsData?.guestParticipants ?? [];
 
   // Normalize phone numbers for comparison (handles +62, 62, 08 formats)
   const normalizePhone = (phone: string): string => {
     if (!phone) return "";
-    const digits = phone.replace(/\D/g, ""); // strip non-digits
+    const digits = phone.replace(/\D/g, "");
     if (digits.startsWith("62")) return "0" + digits.slice(2);
     if (digits.startsWith("0")) return digits;
     return digits;
   };
 
-  // Force refresh: use refetchQueries for immediate network request
-  const forceRefetch = () => {
+  // Hard refresh: remove cache entry then re-fetch immediately
+  const handleRefresh = useCallback(() => {
+    queryClient.removeQueries({ queryKey: [`/api/admin/events/${eventId}/participants`] });
+    queryClient.removeQueries({ queryKey: ["/api/transactions"] });
+    queryClient.removeQueries({ queryKey: ["/api/winners"] });
+    refetchParticipants();
     queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
-    queryClient.refetchQueries({ queryKey: ["/api/users"] });
     queryClient.refetchQueries({ queryKey: ["/api/winners"] });
-    if (eventId) {
-      queryClient.refetchQueries({ queryKey: [`/api/events/${eventId}`] });
-    }
-  };
+  }, [eventId, refetchParticipants]);
 
-  // Invalidate cached data when this page is opened so we always see the latest transactions
+  // Auto-refresh when first opening the page
   useEffect(() => {
-    forceRefetch();
+    if (eventId) handleRefresh();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
-
-  const handleRefresh = () => {
-    forceRefetch();
-  };
 
   const nominateWinnerMutation = useMutation({
     mutationFn: async ({ userId, eventId: evId }: { userId: string; eventId: string }) => {
@@ -201,65 +222,31 @@ export default function EventParticipantsPage() {
     setCurrentPage(1);
   };
 
-  // ── BULLETPROOF APPROACH ──────────────────────────────────────────────────
-  // Start from ALL paid transactions for this event so nothing can fall through.
-  // Build fast lookup maps first.
-  const userById = new Map(users.map(u => [u.id, u]));
-  const userByPhone = new Map(users.map(u => [normalizePhone(u.phoneNumber), u]));
+  // ── DATA FROM SERVER (authoritative — no client-side filtering) ─────────────
+  // `users` (registered participants) and `serverGuestParticipants` are already
+  // computed server-side from the dedicated /api/admin/events/:id/participants endpoint.
+  const eventParticipants = users; // already filtered by server
 
-  const allPaidTransactions = transactions.filter(
-    t => t.eventId === eventId && t.paymentStatus === "paid"
-  );
+  // Guest participants come pre-aggregated from the server
+  const guestParticipants = serverGuestParticipants;
 
-  // Collect unique user IDs that have at least one paid transaction for this event
-  const participantUserIds = new Set<string>();
-  allPaidTransactions.forEach(t => {
-    if (t.userId && userById.has(t.userId)) {
-      // Transaction is linked to a valid user account
-      participantUserIds.add(t.userId);
-    } else {
-      // Try matching by normalized phone number
-      const matchedUser = userByPhone.get(normalizePhone(t.phoneNumber));
-      if (matchedUser) {
-        participantUserIds.add(matchedUser.id);
-      }
-    }
-  });
-
-  // Registered participants = users whose ID is in the matched set above
-  const eventParticipants = users.filter(u => participantUserIds.has(u.id));
-
-  // Guest transactions = paid transactions that could NOT be matched to any user
-  const guestTransactions = allPaidTransactions.filter(t => {
-    if (t.userId && userById.has(t.userId)) return false; // linked to valid user
-    if (userByPhone.has(normalizePhone(t.phoneNumber))) return false; // phone matches a user
-    return true; // genuinely unmatched → show as guest
-  });
-
-  // Pending transactions for this event (last 24 hours) - help admin see recent payments awaiting confirmation
+  // Pending transactions for this event (last 24 hours) - from the full transaction list
   const now = Date.now();
   const pendingTransactions = transactions.filter(
     t => t.eventId === eventId &&
          t.paymentStatus === "pending" &&
          (now - new Date(t.createdAt).getTime()) < 24 * 60 * 60 * 1000
   );
-  // Deduplicate guests by normalized phone number (handles +62 vs 08 etc.)
-  const guestParticipantsMap = new Map<string, typeof guestTransactions[0]>();
-  guestTransactions.forEach(t => {
-    const key = normalizePhone(t.phoneNumber);
-    if (!guestParticipantsMap.has(key)) {
-      guestParticipantsMap.set(key, t);
-    }
-  });
-  const guestParticipants = Array.from(guestParticipantsMap.values());
 
+  // Stats helper for registered users (uses paidTransactions from server)
   const getGuestStats = (phone: string) => {
-    const gt = transactions.filter(
-      t => t.phoneNumber === phone && t.eventId === eventId && t.paymentStatus === "paid"
+    // Already aggregated server-side; look it up from serverGuestParticipants
+    const entry = serverGuestParticipants.find(
+      g => normalizePhone(g.transaction.phoneNumber) === normalizePhone(phone)
     );
     return {
-      totalTickets: gt.reduce((sum, t) => sum + t.ticketCount, 0),
-      totalAmount: gt.reduce((sum, t) => sum + t.amount, 0),
+      totalTickets: entry?.totalTickets ?? 0,
+      totalAmount: entry?.totalAmount ?? 0,
     };
   };
 
@@ -386,8 +373,7 @@ export default function EventParticipantsPage() {
     });
 
     // Guest participants
-    guestParticipants.forEach(t => {
-      const gs = getGuestStats(t.phoneNumber);
+    guestParticipants.forEach(({ transaction: t, totalAmount }) => {
       const lotteryCode = `UND-${t.id.slice(0, 8).toUpperCase()}`;
       const joinTime = new Date(t.createdAt).toLocaleString("id-ID");
       const noRek = t.buyerAccountNumber
@@ -404,7 +390,7 @@ export default function EventParticipantsPage() {
         joinTime,
         "-",
         t.buyerIp || "-",
-        String(gs.totalAmount),
+        String(totalAmount),
         "Guest (Tanpa Akun)",
       ]);
     });
@@ -969,11 +955,10 @@ export default function EventParticipantsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {guestParticipants.map((t, index) => {
-                          const gs = getGuestStats(t.phoneNumber);
+                        {guestParticipants.map(({ transaction: t, totalTickets, totalAmount }, index) => {
                           const isGuestWinner = winners.some(w => w.transactionId === t.id && w.eventId === eventId);
                           return (
-                            <TableRow key={t.phoneNumber} className="hover:bg-orange-50/50 transition-colors">
+                            <TableRow key={t.id} className="hover:bg-orange-50/50 transition-colors">
                               <TableCell className="font-semibold text-gray-700">{index + 1}</TableCell>
                               <TableCell className="font-semibold">
                                 <div className="flex flex-col gap-1">
@@ -1003,12 +988,12 @@ export default function EventParticipantsPage() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
-                                  {gs.totalTickets}
+                                  {totalTickets}
                                 </span>
                               </TableCell>
                               <TableCell className="text-right">
                                 <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
-                                  {new Intl.NumberFormat("id-ID").format(gs.totalAmount)}
+                                  {new Intl.NumberFormat("id-ID").format(totalAmount)}
                                 </span>
                               </TableCell>
                               <TableCell>
