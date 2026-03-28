@@ -201,8 +201,9 @@ export default function EventParticipantsPage() {
     setCurrentPage(1);
   };
 
-  // Build normalized phone set for quick lookup
+  // Build normalized phone set and valid userId set for quick lookup
   const registeredPhonesNorm = new Set(users.map(u => normalizePhone(u.phoneNumber)));
+  const validUserIds = new Set(users.map(u => u.id));
 
   const eventParticipants = users.filter(user =>
     transactions.some(
@@ -212,11 +213,13 @@ export default function EventParticipantsPage() {
     )
   );
 
-  // Guest participants: paid transactions without a matching registered user
+  // Guest participants: paid transactions where:
+  // - userId is null (pure guest), OR userId exists but not found in users table (orphaned/deleted account)
+  // - AND phone is not a registered user's phone
   const guestTransactions = transactions.filter(
     t => t.eventId === eventId &&
          t.paymentStatus === "paid" &&
-         !t.userId &&
+         (!t.userId || !validUserIds.has(t.userId)) &&
          !registeredPhonesNorm.has(normalizePhone(t.phoneNumber))
   );
 
