@@ -63,23 +63,33 @@ export default function EventParticipantsPage() {
 
   const isLoading = isLoadingEvent || isLoadingUsers || isLoadingTransactions || isLoadingWinners;
 
+  // Normalize phone numbers for comparison (handles +62, 62, 08 formats)
+  const normalizePhone = (phone: string): string => {
+    if (!phone) return "";
+    const digits = phone.replace(/\D/g, ""); // strip non-digits
+    if (digits.startsWith("62")) return "0" + digits.slice(2);
+    if (digits.startsWith("0")) return digits;
+    return digits;
+  };
+
+  // Force refresh: use refetchQueries for immediate network request
+  const forceRefetch = () => {
+    queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
+    queryClient.refetchQueries({ queryKey: ["/api/users"] });
+    queryClient.refetchQueries({ queryKey: ["/api/winners"] });
+    if (eventId) {
+      queryClient.refetchQueries({ queryKey: [`/api/events/${eventId}`] });
+    }
+  };
+
   // Invalidate cached data when this page is opened so we always see the latest transactions
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/winners"] });
-    if (eventId) {
-      queryClient.invalidateQueries({ queryKey: [`/api/events/${eventId}`] });
-    }
+    forceRefetch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
   const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/winners"] });
-    if (eventId) {
-      queryClient.invalidateQueries({ queryKey: [`/api/events/${eventId}`] });
-    }
+    forceRefetch();
   };
 
   const nominateWinnerMutation = useMutation({
@@ -191,21 +201,31 @@ export default function EventParticipantsPage() {
     setCurrentPage(1);
   };
 
+  // Build normalized phone set for quick lookup
+  const registeredPhonesNorm = new Set(users.map(u => normalizePhone(u.phoneNumber)));
+
   const eventParticipants = users.filter(user =>
     transactions.some(
       t => t.eventId === eventId &&
            t.paymentStatus === "paid" &&
-           (t.userId === user.id || t.phoneNumber === user.phoneNumber)
+           (t.userId === user.id || normalizePhone(t.phoneNumber) === normalizePhone(user.phoneNumber))
     )
   );
 
   // Guest participants: paid transactions without a matching registered user
-  const registeredPhones = new Set(users.map(u => u.phoneNumber));
   const guestTransactions = transactions.filter(
     t => t.eventId === eventId &&
          t.paymentStatus === "paid" &&
          !t.userId &&
-         !registeredPhones.has(t.phoneNumber)
+         !registeredPhonesNorm.has(normalizePhone(t.phoneNumber))
+  );
+
+  // Pending transactions for this event (last 24 hours) - help admin see recent payments awaiting confirmation
+  const now = Date.now();
+  const pendingTransactions = transactions.filter(
+    t => t.eventId === eventId &&
+         t.paymentStatus === "pending" &&
+         (now - new Date(t.createdAt).getTime()) < 24 * 60 * 60 * 1000
   );
   // Deduplicate guests by phone number
   const guestParticipantsMap = new Map<string, typeof guestTransactions[0]>();
@@ -1005,6 +1025,87 @@ export default function EventParticipantsPage() {
                 </CardContent>
               </Card>
             )}
+            {/* Pending Transactions Section — last 24 hours */}
+            {pendingTransactions.length > 0 && (
+              <Card className="bg-white shadow-lg border-0 rounded-xl">
+                <CardHeader className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white p-6 rounded-t-xl">
+                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Menunggu Konfirmasi Pembayaran ({pendingTransactions.length})
+                  </CardTitle>
+                  <p className="text-yellow-100 text-sm mt-1">
+                    Transaksi pending 24 jam terakhir. Klik "Sync" untuk cek status terbaru dari Midtrans secara manual.
+                  </p>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="rounded-xl border-2 border-yellow-200 overflow-x-auto">
+                    <Table className="min-w-[750px]">
+                      <TableHeader>
+                        <TableRow className="bg-yellow-50">
+                          <TableHead className="font-bold text-gray-700">No</TableHead>
+                          <TableHead className="font-bold text-gray-700">Nama</TableHead>
+                          <TableHead className="font-bold text-gray-700">No WA</TableHead>
+                          <TableHead className="font-bold text-gray-700">Metode</TableHead>
+                          <TableHead className="font-bold text-gray-700">IP</TableHead>
+                          <TableHead className="font-bold text-right text-gray-700">Nominal</TableHead>
+                          <TableHead className="font-bold text-gray-700">Dibuat</TableHead>
+                          <TableHead className="font-bold text-gray-700">Aksi</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingTransactions.map((t, index) => (
+                          <TableRow key={t.id} className="hover:bg-yellow-50/50 transition-colors">
+                            <TableCell className="font-semibold text-gray-700">{index + 1}</TableCell>
+                            <TableCell className="font-semibold text-gray-900">{t.buyerName || "-"}</TableCell>
+                            <TableCell>
+                              <span className="font-mono bg-yellow-50 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                                {t.phoneNumber}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-gray-700 capitalize">{t.paymentMethod || "-"} {t.paymentChannel || ""}</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{(t as any).buyerIp || "-"}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="font-bold text-gray-900">
+                                Rp {new Intl.NumberFormat("id-ID").format(t.amount)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">
+                              {new Date(t.createdAt).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  try {
+                                    const result = await apiRequest(`/api/admin/transactions/${t.id}/sync`, { method: "POST" });
+                                    toast({ title: `Status: ${result.newStatus || result.midtransStatus}`, description: result.message || "Sync selesai" });
+                                    forceRefetch();
+                                  } catch (e: any) {
+                                    toast({ variant: "destructive", title: "Gagal sync", description: e.message });
+                                  }
+                                }}
+                                className="border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+                              >
+                                <RefreshCw className="w-3 h-3 mr-1" />
+                                Sync
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
           </div>
         </div>
       </div>

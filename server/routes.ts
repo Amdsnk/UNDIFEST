@@ -1206,6 +1206,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Force sync a specific pending transaction with Midtrans (admin only)
+  app.post("/api/admin/transactions/:id/sync", requireAdmin, async (req, res) => {
+    try {
+      const transaction = await storage.getTransaction(req.params.id);
+      if (!transaction) return res.status(404).json({ error: "Transaction not found" });
+
+      if (!transaction.paymentId) {
+        return res.json({ success: false, message: "No payment ID to sync", status: transaction.paymentStatus });
+      }
+
+      const midtransStatus = await checkMidtransTransactionStatus(transaction.id);
+      if (!midtransStatus) {
+        return res.json({ success: false, message: "Could not reach Midtrans", status: transaction.paymentStatus });
+      }
+
+      const { transactionStatus, fraudStatus } = midtransStatus;
+      let newStatus = transaction.paymentStatus;
+
+      if (transactionStatus === "settlement" || (transactionStatus === "capture" && fraudStatus === "accept")) {
+        await storage.updateTransaction(transaction.id, { paymentStatus: "paid", paidAt: new Date() });
+        await storage.incrementEventTickets(transaction.eventId).catch(() => {});
+        newStatus = "paid";
+      } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
+        await storage.updateTransaction(transaction.id, { paymentStatus: "failed" });
+        newStatus = "failed";
+      } else if (transactionStatus === "expire") {
+        await storage.updateTransaction(transaction.id, { paymentStatus: "expired" });
+        newStatus = "expired";
+      }
+
+      res.json({ success: true, midtransStatus: transactionStatus, newStatus });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Midtrans Payment Endpoints
   // Create Midtrans Virtual Account payment
   app.post("/api/transactions/midtrans/va", optionalAuth, async (req, res) => {
