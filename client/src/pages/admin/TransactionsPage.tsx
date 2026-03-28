@@ -173,7 +173,8 @@ export default function TransactionsPage() {
 
   const filteredTransactions = transactions?.filter(transaction =>
     transaction.eventName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    transaction.phoneNumber.toLowerCase().includes(searchQuery.toLowerCase())
+    transaction.phoneNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (transaction.buyerIp || "").toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
   const totalRevenue = filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -293,6 +294,7 @@ export default function TransactionsPage() {
                           <TableHead className="font-bold text-gray-700">Nomor Telepon</TableHead>
                           <TableHead className="font-bold text-gray-700">Jumlah</TableHead>
                           <TableHead className="font-bold text-gray-700">Status</TableHead>
+                          <TableHead className="font-bold text-gray-700">IP</TableHead>
                           <TableHead className="font-bold text-gray-700">Tanggal</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Aksi</TableHead>
                         </TableRow>
@@ -300,7 +302,7 @@ export default function TransactionsPage() {
                       <TableBody>
                         {isLoading ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-12">
+                            <TableCell colSpan={8} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                                 <p className="text-gray-500 font-medium">Memuat data transaksi...</p>
@@ -333,6 +335,11 @@ export default function TransactionsPage() {
                               </TableCell>
                               <TableCell className="py-3">
                                 {getStatusBadge(transaction.paymentStatus)}
+                              </TableCell>
+                              <TableCell className="py-3">
+                                <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                                  {transaction.buyerIp || "-"}
+                                </span>
                               </TableCell>
                               <TableCell className="py-3">
                                 <div className="flex flex-col gap-0.5">
@@ -445,6 +452,22 @@ export default function TransactionsPage() {
                                           </div>
                                         </div>
 
+                                        {/* IP & Event ID */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div className="bg-gray-50 p-4 rounded-lg">
+                                            <p className="text-sm text-gray-500 font-medium mb-1">IP Address Pembeli</p>
+                                            <p className="font-mono text-sm text-gray-900 bg-white px-3 py-2 rounded border border-gray-200">
+                                              {transaction.buyerIp || "-"}
+                                            </p>
+                                          </div>
+                                          <div className="bg-gray-50 p-4 rounded-lg">
+                                            <p className="text-sm text-gray-500 font-medium mb-1">Event ID</p>
+                                            <p className="font-mono text-xs text-gray-700 bg-white px-3 py-2 rounded border border-gray-200 break-all">
+                                              {transaction.eventId}
+                                            </p>
+                                          </div>
+                                        </div>
+
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                           <p className="text-sm text-gray-500 font-medium mb-1">Waktu Transaksi</p>
                                           <div className="flex items-center gap-2 text-gray-900">
@@ -536,7 +559,7 @@ export default function TransactionsPage() {
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-12">
+                            <TableCell colSpan={8} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="bg-gray-100 rounded-full p-4">
                                   <Receipt className="w-12 h-12 text-gray-400" />
