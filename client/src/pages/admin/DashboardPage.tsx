@@ -1,14 +1,39 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, CreditCard, Trophy, TrendingUp, ArrowUpRight, Users, DollarSign, Activity } from "lucide-react";
+import { Calendar, CreditCard, Trophy, TrendingUp, ArrowUpRight, Users, DollarSign, Activity, Database } from "lucide-react";
 import type { Event, Transaction, Winner } from "@shared/schema";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function DashboardPage() {
+  const { toast } = useToast();
+
+  const migrationMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/admin/run-migration", {
+        method: "POST",
+      });
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "✅ Migrasi Berhasil",
+        description: `${data.results?.length || 0} perintah dijalankan`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Gagal Migrasi",
+        description: error.message,
+      });
+    },
+  });
+
   const { data: events } = useQuery<Event[]>({
     queryKey: ["/api/admin/events"],
   });
@@ -241,6 +266,22 @@ export default function DashboardPage() {
                         Lihat Laporan
                       </Button>
                     </Link>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-600 to-gray-700 text-white">
+                  <CardContent className="p-6">
+                    <Database className="w-12 h-12 mb-4 opacity-80" />
+                    <h3 className="text-2xl font-bold mb-2">Migrasi DB</h3>
+                    <p className="text-white/80 text-sm mb-4">Tambah kolom baru ke database (jalankan 1x setelah update)</p>
+                    <Button
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => migrationMutation.mutate()}
+                      disabled={migrationMutation.isPending}
+                    >
+                      {migrationMutation.isPending ? "Menjalankan..." : "Jalankan Migrasi"}
+                    </Button>
                   </CardContent>
                 </Card>
               </div>

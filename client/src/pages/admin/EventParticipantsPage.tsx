@@ -347,7 +347,7 @@ export default function EventParticipantsPage() {
         lotteryCode,
         joinTime,
         "-",
-        "-",
+        t.buyerIp || "-",
         String(gs.totalAmount),
         "Guest (Tanpa Akun)",
       ]);
@@ -897,6 +897,7 @@ export default function EventParticipantsPage() {
                           <TableHead className="font-bold text-gray-700">Email</TableHead>
                           <TableHead className="font-bold text-gray-700">Bank</TableHead>
                           <TableHead className="font-bold text-gray-700">No. Rekening</TableHead>
+                          <TableHead className="font-bold text-gray-700">IP</TableHead>
                           <TableHead className="font-bold text-right text-gray-700">Total Tiket</TableHead>
                           <TableHead className="font-bold text-right text-gray-700">Total Rp</TableHead>
                           <TableHead className="font-bold text-gray-700">Aksi</TableHead>
@@ -931,6 +932,9 @@ export default function EventParticipantsPage() {
                               </TableCell>
                               <TableCell>
                                 <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-700">{t.buyerAccountNumber || "-"}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">{t.buyerIp || "-"}</span>
                               </TableCell>
                               <TableCell className="text-right">
                                 <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">

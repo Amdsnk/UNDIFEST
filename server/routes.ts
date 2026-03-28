@@ -43,6 +43,16 @@ const upload = multer({
   },
 });
 
+// Helper: extract real client IP (handles proxies / Railway / Cloudflare)
+function getClientIp(req: Request): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) {
+    const first = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(",")[0];
+    return first.trim();
+  }
+  return req.ip || req.socket?.remoteAddress || "";
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files
   app.use("/uploads", express.static(uploadDir));
@@ -720,6 +730,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phoneNumber,
         eventName,
         paymentStatus: "pending",
+        buyerIp: getClientIp(req) || null,
       });
 
       // Check if iPaymu is configured
@@ -869,6 +880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentStatus: "pending",
         paymentMethod,
         paymentChannel,
+        buyerIp: getClientIp(req) || null,
       });
 
       // Check if iPaymu is configured
@@ -1176,6 +1188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_email VARCHAR(200)`,
         `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_bank_name VARCHAR(100)`,
         `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_account_number VARCHAR(50)`,
+        `ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_ip VARCHAR(45)`,
       ];
 
       for (const migration of migrations) {
@@ -1256,6 +1269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentStatus: "pending",
         paymentMethod: "va",
         paymentChannel: paymentChannel.toUpperCase(),
+        buyerIp: getClientIp(req) || null,
       });
 
       // SIMULATION MODE
@@ -1404,6 +1418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentStatus: "pending",
         paymentMethod: isGopay ? "gopay" : "qris",
         paymentChannel: isGopay ? "GOPAY" : "QRIS",
+        buyerIp: getClientIp(req) || null,
       });
 
       // SIMULATION MODE
@@ -2503,9 +2518,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // OTP is valid, create or get user
+      const clientIp = getClientIp(req);
       let user = await storage.getUserByPhoneNumber(phoneNumber);
       if (!user) {
-        user = await storage.createUser({ phoneNumber });
+        user = await storage.createUser({ phoneNumber, ip: clientIp || undefined });
+      } else {
+        // Update IP on every login so we always have the latest
+        if (clientIp) {
+          user = await storage.updateUser(user.id, { ip: clientIp }) || user;
+        }
       }
 
       // Clear the used OTP immediately to prevent reuse
