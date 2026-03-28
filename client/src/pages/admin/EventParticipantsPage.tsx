@@ -390,10 +390,10 @@ export default function EventParticipantsPage() {
   return (
     <SidebarProvider>
       <AdminSidebar />
-      <div className="flex flex-col flex-1 min-h-screen min-w-0 overflow-hidden admin-light bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/30">
+      <div className="flex flex-col flex-1 min-h-screen min-w-0 admin-light bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/30">
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
-          <div className="max-w-7xl mx-auto px-8 py-6">
-            <div className="flex items-center justify-between">
+          <div className="w-full px-6 py-6">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="bg-white/20 rounded-full p-2">
@@ -425,8 +425,8 @@ export default function EventParticipantsPage() {
           </div>
         </div>
 
-        <div className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden">
-          <div className="max-w-full space-y-6">
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
+          <div className="space-y-6">
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -495,8 +495,8 @@ export default function EventParticipantsPage() {
               </Card>
             </div>
 
-            <Card className="bg-white shadow-lg border-0 rounded-xl overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+            <Card className="bg-white shadow-lg border-0 rounded-xl">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-xl">
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -504,7 +504,7 @@ export default function EventParticipantsPage() {
                   Daftar Peserta
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-4">
                 <div className="flex flex-col gap-6 mb-6">
                   {/* Search Bar */}
                   <div className="relative">
@@ -877,8 +877,8 @@ export default function EventParticipantsPage() {
 
             {/* Guest Participants Section */}
             {guestParticipants.length > 0 && (
-              <Card className="bg-white shadow-lg border-0 rounded-xl overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6">
+              <Card className="bg-white shadow-lg border-0 rounded-xl">
+                <CardHeader className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 rounded-t-xl">
                   <CardTitle className="text-2xl font-bold flex items-center gap-2">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -886,7 +886,7 @@ export default function EventParticipantsPage() {
                     Peserta Guest ({guestParticipants.length})
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-4">
                   <div className="rounded-xl border-2 border-gray-200 overflow-x-auto">
                     <Table className="min-w-[800px]">
                       <TableHeader>
