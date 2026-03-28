@@ -390,7 +390,7 @@ export default function EventParticipantsPage() {
   return (
     <SidebarProvider>
       <AdminSidebar />
-      <div className="flex flex-col flex-1 min-h-screen admin-light bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/30">
+      <div className="flex flex-col flex-1 min-h-screen min-w-0 overflow-hidden admin-light bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/30">
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-8 py-6">
             <div className="flex items-center justify-between">
@@ -425,8 +425,8 @@ export default function EventParticipantsPage() {
           </div>
         </div>
 
-        <div className="flex-1 p-8 overflow-y-auto">
-          <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden">
+          <div className="max-w-full space-y-6">
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -584,8 +584,8 @@ export default function EventParticipantsPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border-2 border-gray-200 overflow-hidden">
-                  <Table>
+                <div className="rounded-xl border-2 border-gray-200 overflow-x-auto">
+                  <Table className="min-w-[900px]">
                     <TableHeader>
                       <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-50">
                         <TableHead className="font-bold text-gray-700">ID</TableHead>
@@ -887,8 +887,8 @@ export default function EventParticipantsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="rounded-xl border-2 border-gray-200 overflow-hidden">
-                    <Table>
+                  <div className="rounded-xl border-2 border-gray-200 overflow-x-auto">
+                    <Table className="min-w-[800px]">
                       <TableHeader>
                         <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
                           <TableHead className="font-bold text-gray-700">No</TableHead>
