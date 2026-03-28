@@ -1266,21 +1266,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return true;
       });
 
-      // 6. Aggregate guest stats by normalized phone
-      const guestMap = new Map<string, { transaction: typeof guestTransactions[0]; totalTickets: number; totalAmount: number }>();
-      guestTransactions.forEach(t => {
-        const key = normalizePhone(t.phoneNumber);
-        if (!guestMap.has(key)) {
-          guestMap.set(key, { transaction: t, totalTickets: 0, totalAmount: 0 });
-        }
-        const entry = guestMap.get(key)!;
-        entry.totalTickets += t.ticketCount;
-        entry.totalAmount += t.amount;
-      });
+      // 6. Return each guest transaction as a separate row (no deduplication)
+      // This ensures every purchase is recorded even if same phone/name is used multiple times.
+      const guestParticipantRows = guestTransactions.map(t => ({
+        transaction: t,
+        totalTickets: t.ticketCount,
+        totalAmount: t.amount,
+      }));
 
       res.json({
         registeredParticipants,
-        guestParticipants: Array.from(guestMap.values()),
+        guestParticipants: guestParticipantRows,
         paidTransactions,
         totalPaid: paidTransactions.length,
       });
