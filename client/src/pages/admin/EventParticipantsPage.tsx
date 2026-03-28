@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Search, Trophy, FileDown } from "lucide-react";
+import { ArrowLeft, Search, Trophy, FileDown, RefreshCw } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -62,6 +62,25 @@ export default function EventParticipantsPage() {
   });
 
   const isLoading = isLoadingEvent || isLoadingUsers || isLoadingTransactions || isLoadingWinners;
+
+  // Invalidate cached data when this page is opened so we always see the latest transactions
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/winners"] });
+    if (eventId) {
+      queryClient.invalidateQueries({ queryKey: [`/api/events/${eventId}`] });
+    }
+  }, [eventId]);
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/winners"] });
+    if (eventId) {
+      queryClient.invalidateQueries({ queryKey: [`/api/events/${eventId}`] });
+    }
+  };
 
   const nominateWinnerMutation = useMutation({
     mutationFn: async ({ userId, eventId: evId }: { userId: string; eventId: string }) => {
@@ -403,7 +422,16 @@ export default function EventParticipantsPage() {
                 </div>
                 <p className="text-blue-100 text-lg ml-11">{event?.name || "Loading..."}</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button
+                  variant="outline"
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="bg-blue-500/20 border-blue-300/50 text-white hover:bg-blue-500/40 hover:border-blue-300 transition-all"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                  Refresh Data
+                </Button>
                 <Button
                   variant="outline"
                   onClick={handleExportCSV}

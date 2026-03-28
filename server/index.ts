@@ -6,6 +6,9 @@ import { runMigrations } from "./db-migrate";
 
 const app = express();
 
+// Trust reverse proxy (Railway, Cloudflare) so req.ip and X-Forwarded-For work correctly
+app.set('trust proxy', 1);
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown

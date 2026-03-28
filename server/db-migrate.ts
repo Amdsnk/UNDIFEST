@@ -95,6 +95,7 @@ export async function runMigrations() {
           buyer_email VARCHAR(255),
           buyer_bank_name VARCHAR(100),
           buyer_account_number VARCHAR(50),
+          buyer_ip VARCHAR(45),
           payment_status VARCHAR(20) NOT NULL DEFAULT 'pending',
           payment_id VARCHAR(100),
           payment_method VARCHAR(50),
@@ -177,6 +178,11 @@ export async function runMigrations() {
         `);
         await db.execute(sql`
           ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_account_number VARCHAR(50);
+        `);
+
+        // Add IP address column for transactions
+        await db.execute(sql`
+          ALTER TABLE transactions ADD COLUMN IF NOT EXISTS buyer_ip VARCHAR(45);
         `);
 
         // Make user_id nullable for guest checkout
