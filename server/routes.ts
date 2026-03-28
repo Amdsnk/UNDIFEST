@@ -1260,10 +1260,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const registeredParticipants = allUsers.filter(u => registeredUserIds.has(u.id));
+      // Guest = transaction where userId is null/invalid (bought without logging in)
+      // We do NOT filter by phone - even if phone matches a registered account,
+      // if the person chose to buy as guest (no userId), show it as a guest transaction.
       const guestTransactions = paidTransactions.filter(t => {
-        if (t.userId && userById.has(t.userId)) return false;
-        if (userByPhone.has(normalizePhone(t.phoneNumber))) return false;
-        return true;
+        if (t.userId && userById.has(t.userId)) return false; // properly linked to valid account
+        return true; // no valid userId = guest, regardless of phone
       });
 
       // 6. Return each guest transaction as a separate row (no deduplication)
