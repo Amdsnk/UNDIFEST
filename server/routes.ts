@@ -364,7 +364,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
       );
 
-      const paid = phoneMatched.filter((t) => t.paymentStatus === "paid");
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const paid = phoneMatched.filter(
+        (t) => t.paymentStatus === "paid" && new Date(t.createdAt) >= thirtyDaysAgo
+      );
 
       // Return safe subset — no internal IDs exposed beyond what's needed
       const result = await Promise.all(
@@ -2593,7 +2596,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
       );
 
-      const paidTransactions = phoneMatched.filter((t) => t.paymentStatus === "paid");
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const paidTransactions = phoneMatched.filter(
+        (t) => t.paymentStatus === "paid" && new Date(t.createdAt) >= thirtyDaysAgo
+      );
 
       const orders = await Promise.all(
         paidTransactions.map(async (t) => {
@@ -2709,12 +2715,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const events = await storage.getAllEvents();
 
       // Join winner data with transaction, user, and event details
-      const winnersWithDetails = winners.map(winner => ({
-        ...winner,
-        transaction: transactions.find(t => t.id === winner.transactionId),
-        user: users.find(u => u.id === winner.userId),
-        event: events.find(e => e.id === winner.eventId),
-      }));
+      // For guest winners (userId is null), fall back to transaction buyerName/phoneNumber
+      const winnersWithDetails = winners.map(winner => {
+        const transaction = transactions.find(t => t.id === winner.transactionId);
+        const user = users.find(u => u.id === winner.userId);
+        return {
+          ...winner,
+          transaction,
+          user,
+          event: events.find(e => e.id === winner.eventId),
+          // Resolved display fields — used by frontend to show name & phone for both account and guest winners
+          displayName: user?.name || transaction?.buyerName || "-",
+          displayPhone: user?.phoneNumber || transaction?.phoneNumber || "-",
+        };
+      });
 
       res.json(winnersWithDetails);
     } catch (error) {

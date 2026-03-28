@@ -446,8 +446,10 @@ export default function WinnersPage() {
                       </TableHeader>
                       <TableBody>
                         {eventWinners.map((winner, index) => {
-                          const user = users?.find(u => u.id === winner.userId);
                           const event = events?.find(e => e.id === winner.eventId);
+                          // Use displayName/displayPhone from API (supports both account & guest winners)
+                          const displayName = (winner as any).displayName || "-";
+                          const displayPhone = (winner as any).displayPhone || "-";
                           return (
                             <TableRow
                               key={winner.id}
@@ -458,11 +460,11 @@ export default function WinnersPage() {
                                 {index + 1}
                               </TableCell>
                               <TableCell className="font-semibold text-gray-900">
-                                {user?.name || "-"}
+                                {displayName}
                               </TableCell>
                               <TableCell className="text-gray-700">
                                 <span className="font-mono bg-gray-100 px-3 py-1 rounded-full text-sm">
-                                  {user?.phoneNumber || "-"}
+                                  {displayPhone}
                                 </span>
                               </TableCell>
                               <TableCell>

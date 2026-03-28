@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Search, Trophy } from "lucide-react";
+import { ArrowLeft, Search, Trophy, FileDown } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -290,6 +290,85 @@ export default function EventParticipantsPage() {
     currentPage * itemsPerPage
   );
 
+  const handleExportCSV = () => {
+    const rows: string[][] = [];
+    rows.push([
+      "No", "Nama", "No WA", "Email", "No Rekening", "Kode Undian",
+      "Waktu Ikut", "Kota", "IP", "Nominal (Rp)", "Status Peserta",
+    ]);
+
+    let rowNum = 1;
+
+    // Registered users
+    eventParticipants.forEach(user => {
+      const stats = getUserStats(user.id, user.phoneNumber);
+      const userTx = transactions.find(
+        t => (t.userId === user.id || t.phoneNumber === user.phoneNumber) &&
+             t.eventId === eventId && t.paymentStatus === "paid"
+      );
+      const lotteryCode = userTx ? `UND-${userTx.id.slice(0, 8).toUpperCase()}` : "-";
+      const joinTime = userTx
+        ? new Date(userTx.createdAt).toLocaleString("id-ID")
+        : new Date(user.createdAt).toLocaleString("id-ID");
+      const noRek = user.accountNumber
+        ? `${user.bankName || ""} ${user.accountNumber}`.trim()
+        : "-";
+
+      rows.push([
+        String(rowNum++),
+        user.name || "-",
+        user.phoneNumber,
+        user.email || "-",
+        noRek,
+        lotteryCode,
+        joinTime,
+        user.city || "-",
+        user.ip || "-",
+        String(stats.totalAmount),
+        "Akun Terdaftar",
+      ]);
+    });
+
+    // Guest participants
+    guestParticipants.forEach(t => {
+      const gs = getGuestStats(t.phoneNumber);
+      const lotteryCode = `UND-${t.id.slice(0, 8).toUpperCase()}`;
+      const joinTime = new Date(t.createdAt).toLocaleString("id-ID");
+      const noRek = t.buyerAccountNumber
+        ? `${t.buyerBankName || ""} ${t.buyerAccountNumber}`.trim()
+        : "-";
+
+      rows.push([
+        String(rowNum++),
+        t.buyerName || "-",
+        t.phoneNumber,
+        t.buyerEmail || "-",
+        noRek,
+        lotteryCode,
+        joinTime,
+        "-",
+        "-",
+        String(gs.totalAmount),
+        "Guest (Tanpa Akun)",
+      ]);
+    });
+
+    const csv = rows.map(row =>
+      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ).join("\n");
+
+    const bom = "\uFEFF"; // BOM for Excel UTF-8 support
+    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `peserta-${event?.name || eventId}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
     if (totalPages <= 7) {
@@ -324,14 +403,24 @@ export default function EventParticipantsPage() {
                 </div>
                 <p className="text-blue-100 text-lg ml-11">{event?.name || "Loading..."}</p>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/admin-panel-7x9k/events")}
-                className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 transition-all"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Kembali ke Daftar Event
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleExportCSV}
+                  className="bg-green-500/20 border-green-300/50 text-white hover:bg-green-500/40 hover:border-green-300 transition-all"
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Export Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation("/admin-panel-7x9k/events")}
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 transition-all"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Kembali ke Daftar Event
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -524,6 +613,9 @@ export default function EventParticipantsPage() {
                         >
                           Email {sortField === "email" && (sortOrder === "asc" ? "↑" : "↓")}
                         </TableHead>
+                        <TableHead className="font-bold text-gray-700">
+                          No Rekening
+                        </TableHead>
                         <TableHead
                           className="font-bold cursor-pointer hover:bg-purple-50 text-right text-gray-700 transition-colors"
                           onClick={() => handleSort("totalTickets")}
@@ -562,7 +654,7 @@ export default function EventParticipantsPage() {
                     <TableBody>
                       {isLoading ? (
                         <TableRow>
-                          <TableCell colSpan={11} className="text-center py-12">
+                          <TableCell colSpan={12} className="text-center py-12">
                             <div className="flex flex-col items-center gap-3">
                               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                               <p className="text-gray-500 font-medium">Memuat data...</p>
@@ -571,7 +663,7 @@ export default function EventParticipantsPage() {
                         </TableRow>
                       ) : paginatedUsers.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={11} className="text-center py-12">
+                          <TableCell colSpan={12} className="text-center py-12">
                             <div className="flex flex-col items-center gap-3">
                               <div className="bg-gray-100 rounded-full p-4">
                                 <Search className="w-12 h-12 text-gray-400" />
@@ -610,6 +702,18 @@ export default function EventParticipantsPage() {
                               </TableCell>
                               <TableCell className="text-gray-700">{user.city || "-"}</TableCell>
                               <TableCell className="text-gray-700">{user.email || "-"}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-col text-sm">
+                                  {user.accountNumber ? (
+                                    <>
+                                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">{user.accountNumber}</span>
+                                      {user.bankName && <span className="text-xs text-gray-500 mt-0.5">{user.bankName}</span>}
+                                    </>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </div>
+                              </TableCell>
                               <TableCell className="text-right">
                                 <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
                                   {stats.totalTickets}

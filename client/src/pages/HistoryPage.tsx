@@ -10,6 +10,8 @@ interface WinnerWithDetails extends Winner {
   transaction?: Transaction;
   user?: User;
   event?: Event;
+  displayName?: string;
+  displayPhone?: string;
 }
 
 export default function HistoryPage() {
@@ -76,7 +78,7 @@ export default function HistoryPage() {
                       }).replace(/ /g, ' ')}
                     </div>
                     <div className="font-mono text-[9px] md:text-xs break-all">
-                      {maskPhoneNumber(winner.user?.phoneNumber || winner.transaction?.phoneNumber || '')}
+                      {maskPhoneNumber(winner.displayPhone || winner.user?.phoneNumber || winner.transaction?.phoneNumber || '')}
                     </div>
                     <div className="font-bold">
                       {(winner.transaction?.amount || 0).toLocaleString('id-ID')}
