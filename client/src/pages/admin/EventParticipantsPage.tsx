@@ -201,27 +201,40 @@ export default function EventParticipantsPage() {
     setCurrentPage(1);
   };
 
-  // Build normalized phone set and valid userId set for quick lookup
-  const registeredPhonesNorm = new Set(users.map(u => normalizePhone(u.phoneNumber)));
-  const validUserIds = new Set(users.map(u => u.id));
+  // ── BULLETPROOF APPROACH ──────────────────────────────────────────────────
+  // Start from ALL paid transactions for this event so nothing can fall through.
+  // Build fast lookup maps first.
+  const userById = new Map(users.map(u => [u.id, u]));
+  const userByPhone = new Map(users.map(u => [normalizePhone(u.phoneNumber), u]));
 
-  const eventParticipants = users.filter(user =>
-    transactions.some(
-      t => t.eventId === eventId &&
-           t.paymentStatus === "paid" &&
-           (t.userId === user.id || normalizePhone(t.phoneNumber) === normalizePhone(user.phoneNumber))
-    )
+  const allPaidTransactions = transactions.filter(
+    t => t.eventId === eventId && t.paymentStatus === "paid"
   );
 
-  // Guest participants: paid transactions where:
-  // - userId is null (pure guest), OR userId exists but not found in users table (orphaned/deleted account)
-  // - AND phone is not a registered user's phone
-  const guestTransactions = transactions.filter(
-    t => t.eventId === eventId &&
-         t.paymentStatus === "paid" &&
-         (!t.userId || !validUserIds.has(t.userId)) &&
-         !registeredPhonesNorm.has(normalizePhone(t.phoneNumber))
-  );
+  // Collect unique user IDs that have at least one paid transaction for this event
+  const participantUserIds = new Set<string>();
+  allPaidTransactions.forEach(t => {
+    if (t.userId && userById.has(t.userId)) {
+      // Transaction is linked to a valid user account
+      participantUserIds.add(t.userId);
+    } else {
+      // Try matching by normalized phone number
+      const matchedUser = userByPhone.get(normalizePhone(t.phoneNumber));
+      if (matchedUser) {
+        participantUserIds.add(matchedUser.id);
+      }
+    }
+  });
+
+  // Registered participants = users whose ID is in the matched set above
+  const eventParticipants = users.filter(u => participantUserIds.has(u.id));
+
+  // Guest transactions = paid transactions that could NOT be matched to any user
+  const guestTransactions = allPaidTransactions.filter(t => {
+    if (t.userId && userById.has(t.userId)) return false; // linked to valid user
+    if (userByPhone.has(normalizePhone(t.phoneNumber))) return false; // phone matches a user
+    return true; // genuinely unmatched → show as guest
+  });
 
   // Pending transactions for this event (last 24 hours) - help admin see recent payments awaiting confirmation
   const now = Date.now();
@@ -230,11 +243,12 @@ export default function EventParticipantsPage() {
          t.paymentStatus === "pending" &&
          (now - new Date(t.createdAt).getTime()) < 24 * 60 * 60 * 1000
   );
-  // Deduplicate guests by phone number
+  // Deduplicate guests by normalized phone number (handles +62 vs 08 etc.)
   const guestParticipantsMap = new Map<string, typeof guestTransactions[0]>();
   guestTransactions.forEach(t => {
-    if (!guestParticipantsMap.has(t.phoneNumber)) {
-      guestParticipantsMap.set(t.phoneNumber, t);
+    const key = normalizePhone(t.phoneNumber);
+    if (!guestParticipantsMap.has(key)) {
+      guestParticipantsMap.set(key, t);
     }
   });
   const guestParticipants = Array.from(guestParticipantsMap.values());
