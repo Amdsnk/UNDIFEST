@@ -15,6 +15,7 @@ import {
   paymentMethods,
   pages,
   termsConditions,
+  manualWinnerHistory,
   type AdminUser,
   type InsertAdminUser,
   type User,
@@ -47,6 +48,8 @@ import {
   type InsertPage,
   type TermsCondition,
   type InsertTermsCondition,
+  type ManualWinnerHistory,
+  type InsertManualWinnerHistory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -498,6 +501,26 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTermsCondition(id: string): Promise<boolean> {
     const result = await db.delete(termsConditions).where(eq(termsConditions.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Manual Winner History
+  async getAllManualWinnerHistory(): Promise<ManualWinnerHistory[]> {
+    return await db.select().from(manualWinnerHistory).orderBy(desc(manualWinnerHistory.winDate));
+  }
+
+  async createManualWinnerHistory(entry: InsertManualWinnerHistory): Promise<ManualWinnerHistory> {
+    const [record] = await db.insert(manualWinnerHistory).values(entry).returning();
+    return record;
+  }
+
+  async updateManualWinnerHistory(id: string, entry: Partial<InsertManualWinnerHistory>): Promise<ManualWinnerHistory | undefined> {
+    const [record] = await db.update(manualWinnerHistory).set(entry).where(eq(manualWinnerHistory.id, id)).returning();
+    return record || undefined;
+  }
+
+  async deleteManualWinnerHistory(id: string): Promise<boolean> {
+    const result = await db.delete(manualWinnerHistory).where(eq(manualWinnerHistory.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }

@@ -2,22 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Footer } from "@/components/Footer";
-import type { Winner, Transaction, User, Event } from "@shared/schema";
+import type { ManualWinnerHistory } from "@shared/schema";
 import historyPicUrl from "@assets/history pic_1763511883477.png";
 
-// Extended Winner type with joined data
-interface WinnerWithDetails extends Winner {
-  transaction?: Transaction;
-  user?: User;
-  event?: Event;
-  displayName?: string;
-  displayPhone?: string;
-}
-
 export default function HistoryPage() {
-  // Fetch winners data (public - no auth required)
-  const { data: winners, isLoading } = useQuery<WinnerWithDetails[]>({
-    queryKey: ["/api/winners"],
+  // Fetch manual winner history (admin-managed, shown publicly)
+  const { data: history, isLoading } = useQuery<ManualWinnerHistory[]>({
+    queryKey: ["/api/manual-winner-history"],
   });
 
   const maskPhoneNumber = (phone: string) => {
@@ -63,28 +54,28 @@ export default function HistoryPage() {
             <div className="divide-y divide-gray-800">
               {isLoading ? (
                 <div className="p-6 text-center text-gray-400">Loading...</div>
-              ) : winners && winners.length > 0 ? (
-                winners.map((winner) => (
+              ) : history && history.length > 0 ? (
+                history.map((entry) => (
                   <div
-                    key={winner.id}
-                    data-testid={`winner-${winner.id}`}
+                    key={entry.id}
+                    data-testid={`winner-${entry.id}`}
                     className="grid grid-cols-4 gap-1 md:gap-2 p-2 md:p-3 text-white text-[10px] md:text-sm bg-[#1a2332]/50 hover:bg-[#1a2332] transition-colors"
                   >
                     <div className="font-medium">
-                      {new Date(winner.announcedAt).toLocaleDateString("en-GB", {
+                      {new Date(entry.winDate).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "short",
                         year: "2-digit"
-                      }).replace(/ /g, ' ')}
+                      })}
                     </div>
                     <div className="font-mono text-[9px] md:text-xs break-all">
-                      {maskPhoneNumber(winner.displayPhone || winner.user?.phoneNumber || winner.transaction?.phoneNumber || '')}
+                      {maskPhoneNumber(entry.phoneNumber)}
                     </div>
                     <div className="font-bold">
-                      {(winner.transaction?.amount || 0).toLocaleString('id-ID')}
+                      {entry.amount.toLocaleString('id-ID')}
                     </div>
                     <div className="truncate text-[9px] md:text-sm">
-                      {winner.event?.name || winner.transaction?.eventName || 'Event'}
+                      {entry.eventName}
                     </div>
                   </div>
                 ))

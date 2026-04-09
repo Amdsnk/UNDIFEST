@@ -29,6 +29,8 @@ import {
   type InsertPage,
   type AdminUser,
   type InsertAdminUser,
+  type ManualWinnerHistory,
+  type InsertManualWinnerHistory,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -127,6 +129,12 @@ export interface IStorage {
   createPage(page: InsertPage): Promise<Page>;
   updatePage(id: string, page: Partial<InsertPage>): Promise<Page | undefined>;
   deletePage(id: string): Promise<boolean>;
+
+  // Manual Winner History
+  getAllManualWinnerHistory(): Promise<ManualWinnerHistory[]>;
+  createManualWinnerHistory(entry: InsertManualWinnerHistory): Promise<ManualWinnerHistory>;
+  updateManualWinnerHistory(id: string, entry: Partial<InsertManualWinnerHistory>): Promise<ManualWinnerHistory | undefined>;
+  deleteManualWinnerHistory(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -445,6 +453,15 @@ export class MemStorage implements IStorage {
   async deletePartner(id: string): Promise<boolean> {
     return this.partners.delete(id);
   }
+
+  // Manual Winner History (MemStorage stubs — DB version in DatabaseStorage)
+  async getAllManualWinnerHistory(): Promise<ManualWinnerHistory[]> { return []; }
+  async createManualWinnerHistory(entry: InsertManualWinnerHistory): Promise<ManualWinnerHistory> {
+    const record = { ...entry, id: randomUUID(), createdAt: new Date() } as ManualWinnerHistory;
+    return record;
+  }
+  async updateManualWinnerHistory(_id: string, _entry: Partial<InsertManualWinnerHistory>): Promise<ManualWinnerHistory | undefined> { return undefined; }
+  async deleteManualWinnerHistory(_id: string): Promise<boolean> { return false; }
 }
 
 // Use database storage instead of in-memory

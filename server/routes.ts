@@ -29,7 +29,7 @@ const storage_multer = multer.diskStorage({
 
 const upload = multer({
   storage: storage_multer,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for videos and PDFs (to fit in database as base64)
+  limits: { fileSize: 30 * 1024 * 1024 }, // 30MB limit for videos and PDFs (to fit in database as base64)
   fileFilter: (_req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|mov|avi|mkv|webm|pdf/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -203,6 +203,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         prize: `Hadiah Rp ${parseInt(req.body.hadiah || "1000000").toLocaleString("id-ID")}`,
         announcementDate: new Date(req.body.endDate),
         status: "aktif" as const,
+        scheduleType: req.body.scheduleType || "none",
+        scheduleTime: req.body.scheduleTime || null,
+        scheduleDay: (req.body.scheduleDay !== undefined && req.body.scheduleDay !== "") ? parseInt(req.body.scheduleDay) : null,
       };
 
       const validated = insertEventSchema.parse(data);
@@ -234,6 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...(req.body.endDate && { endDate: new Date(req.body.endDate) }),
         ...(req.body.announcementDate && { announcementDate: new Date(req.body.announcementDate) }),
         ...(req.body.isRefundable !== undefined && { isRefundable: req.body.isRefundable === "true" }),
+        ...(req.body.scheduleDay !== undefined && req.body.scheduleDay !== "" && { scheduleDay: parseInt(req.body.scheduleDay) }),
       };
 
       // Convert uploaded files to base64 for permanent storage
@@ -1846,13 +1850,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No video file uploaded" });
       }
 
-      // Check file size (max 10MB for base64 storage)
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      // Check file size (max 30MB for base64 storage)
+      const maxSize = 30 * 1024 * 1024; // 30MB
       if (req.file.size > maxSize) {
         // Delete the temporary file
         fs.unlinkSync(req.file.path);
         return res.status(400).json({
-          error: "Video terlalu besar. Maksimal 10MB untuk upload lokal. Gunakan YouTube/Vimeo URL untuk video lebih besar."
+          error: "Video terlalu besar. Maksimal 30MB untuk upload lokal. Gunakan YouTube/Vimeo URL untuk video lebih besar."
         });
       }
 
@@ -3170,6 +3174,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "Winner nomination cancelled" });
     } catch (error) {
       res.status(500).json({ error: "Failed to cancel winner nomination" });
+    }
+  });
+
+  // ── Manual Winner History API ──────────────────────────────────────────────
+  // Public: anyone can read the manual history (shown on /history page)
+  app.get("/api/manual-winner-history", async (_req, res) => {
+    try {
+      const history = await storage.getAllManualWinnerHistory();
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch manual winner history" });
+    }
+  });
+
+  // Admin: create a new manual entry
+  app.post("/api/manual-winner-history", requireAdmin, async (req, res) => {
+    try {
+      const entry = {
+        winDate: new Date(req.body.winDate),
+        phoneNumber: req.body.phoneNumber,
+        displayName: req.body.displayName || null,
+        amount: parseInt(req.body.amount),
+        eventName: req.body.eventName,
+        displayOrder: parseInt(req.body.displayOrder ?? "0"),
+      };
+      const record = await storage.createManualWinnerHistory(entry);
+      res.json(record);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to create entry" });
+    }
+  });
+
+  // Admin: update a manual entry
+  app.put("/api/manual-winner-history/:id", requireAdmin, async (req, res) => {
+    try {
+      const updateData: any = {};
+      if (req.body.winDate) updateData.winDate = new Date(req.body.winDate);
+      if (req.body.phoneNumber) updateData.phoneNumber = req.body.phoneNumber;
+      if (req.body.displayName !== undefined) updateData.displayName = req.body.displayName || null;
+      if (req.body.amount) updateData.amount = parseInt(req.body.amount);
+      if (req.body.eventName) updateData.eventName = req.body.eventName;
+      if (req.body.displayOrder !== undefined) updateData.displayOrder = parseInt(req.body.displayOrder);
+      const record = await storage.updateManualWinnerHistory(req.params.id, updateData);
+      if (!record) return res.status(404).json({ error: "Entry not found" });
+      res.json(record);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to update entry" });
+    }
+  });
+
+  // Admin: delete a manual entry
+  app.delete("/api/manual-winner-history/:id", requireAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteManualWinnerHistory(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Entry not found" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete entry" });
     }
   });
 

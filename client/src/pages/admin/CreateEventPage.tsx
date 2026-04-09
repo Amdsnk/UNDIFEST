@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Upload } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -40,6 +41,9 @@ export default function CreateEventPage() {
   const [bannerHomepageFile, setBannerHomepageFile] = useState<File | null>(null);
   const [bannerUndianFile, setBannerUndianFile] = useState<File | null>(null);
   const [ebookFile, setEbookFile] = useState<File | null>(null);
+  const [scheduleType, setScheduleType] = useState<string>("none");
+  const [scheduleTime, setScheduleTime] = useState<string>("19:00");
+  const [scheduleDay, setScheduleDay] = useState<string>("1");
   const homepageBannerRef = useRef<HTMLInputElement>(null);
   const undianBannerRef = useRef<HTMLInputElement>(null);
   const ebookFileRef = useRef<HTMLInputElement>(null);
@@ -87,6 +91,13 @@ export default function CreateEventPage() {
       formData.append("startDate", data.startDate);
       formData.append("endDate", data.endDate);
       formData.append("isRefundable", data.isRefundable.toString());
+      formData.append("scheduleType", scheduleType);
+      if (scheduleType !== "none") {
+        formData.append("scheduleTime", scheduleTime);
+        if (scheduleType === "weekly" || scheduleType === "monthly") {
+          formData.append("scheduleDay", scheduleDay);
+        }
+      }
 
       // Handle banner files (stored as base64 in database)
       if (bannerHomepageFile) {
@@ -324,6 +335,55 @@ export default function CreateEventPage() {
                           <p className="text-red-500 text-sm mt-1">{errors.endDate.message}</p>
                         )}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Recurring Schedule */}
+                  <div className="border rounded-lg p-4 bg-blue-50">
+                    <Label className="text-sm font-semibold mb-3 block text-blue-900">🔁 Pengulangan Otomatis (Opsional)</Label>
+                    <p className="text-xs text-blue-700 mb-3">Jika diaktifkan, event baru akan otomatis dibuat ulang setelah event selesai.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs mb-1 block">Tipe Pengulangan</Label>
+                        <Select value={scheduleType} onValueChange={setScheduleType}>
+                          <SelectTrigger><SelectValue placeholder="Pilih tipe" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Tidak berulang</SelectItem>
+                            <SelectItem value="daily">Harian</SelectItem>
+                            <SelectItem value="weekly">Mingguan</SelectItem>
+                            <SelectItem value="monthly">Bulanan</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {scheduleType !== "none" && (
+                        <div>
+                          <Label className="text-xs mb-1 block">Jam Mulai</Label>
+                          <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="w-full" />
+                        </div>
+                      )}
+                      {scheduleType === "weekly" && (
+                        <div>
+                          <Label className="text-xs mb-1 block">Hari</Label>
+                          <Select value={scheduleDay} onValueChange={setScheduleDay}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">Minggu</SelectItem>
+                              <SelectItem value="1">Senin</SelectItem>
+                              <SelectItem value="2">Selasa</SelectItem>
+                              <SelectItem value="3">Rabu</SelectItem>
+                              <SelectItem value="4">Kamis</SelectItem>
+                              <SelectItem value="5">Jumat</SelectItem>
+                              <SelectItem value="6">Sabtu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {scheduleType === "monthly" && (
+                        <div>
+                          <Label className="text-xs mb-1 block">Tanggal (1–28)</Label>
+                          <Input type="number" min={1} max={28} value={scheduleDay} onChange={e => setScheduleDay(e.target.value)} className="w-full" />
+                        </div>
+                      )}
                     </div>
                   </div>
 

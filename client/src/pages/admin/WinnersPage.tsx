@@ -37,12 +37,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Trophy, Users, RefreshCw, Sparkles } from "lucide-react";
+import { Trophy, Users, RefreshCw, Sparkles, Plus, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
-import type { Event, Transaction, Winner, User } from "@shared/schema";
+import type { Event, Transaction, Winner, User, ManualWinnerHistory } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 
 export default function WinnersPage() {
@@ -75,6 +75,64 @@ export default function WinnersPage() {
   const { data: users } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
+
+  // ── Manual Winner History ───────────────────────────────────────────────────
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
+  const [editingManual, setEditingManual] = useState<ManualWinnerHistory | null>(null);
+  const [manualForm, setManualForm] = useState({
+    winDate: "", phoneNumber: "", displayName: "", amount: "", eventName: "",
+  });
+
+  const { data: manualHistory, refetch: refetchManual } = useQuery<ManualWinnerHistory[]>({
+    queryKey: ["/api/manual-winner-history"],
+  });
+
+  const createManualMutation = useMutation({
+    mutationFn: (data: typeof manualForm) =>
+      apiRequest("/api/manual-winner-history", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/manual-winner-history"] }); setManualDialogOpen(false); toast({ title: "Entri ditambahkan" }); },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Gagal", description: e.message }),
+  });
+
+  const updateManualMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<typeof manualForm> }) =>
+      apiRequest(`/api/manual-winner-history/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/manual-winner-history"] }); setManualDialogOpen(false); setEditingManual(null); toast({ title: "Entri diperbarui" }); },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Gagal", description: e.message }),
+  });
+
+  const deleteManualMutation = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest(`/api/manual-winner-history/${id}`, { method: "DELETE" }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/manual-winner-history"] }); toast({ title: "Entri dihapus" }); },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Gagal", description: e.message }),
+  });
+
+  const openAddManual = () => {
+    setEditingManual(null);
+    setManualForm({ winDate: new Date().toISOString().slice(0, 10), phoneNumber: "", displayName: "", amount: "", eventName: "" });
+    setManualDialogOpen(true);
+  };
+
+  const openEditManual = (entry: ManualWinnerHistory) => {
+    setEditingManual(entry);
+    setManualForm({
+      winDate: new Date(entry.winDate).toISOString().slice(0, 10),
+      phoneNumber: entry.phoneNumber,
+      displayName: entry.displayName || "",
+      amount: String(entry.amount),
+      eventName: entry.eventName,
+    });
+    setManualDialogOpen(true);
+  };
+
+  const submitManualForm = () => {
+    if (editingManual) {
+      updateManualMutation.mutate({ id: editingManual.id, data: manualForm });
+    } else {
+      createManualMutation.mutate(manualForm);
+    }
+  };
 
   const activeEvents = events?.filter(e => e.status === "aktif" || e.status === "selesai") || [];
 
@@ -533,9 +591,97 @@ export default function WinnersPage() {
                 </Card>
               )}
             </div>
+
+            {/* ── Manual Riwayat Pemenang Section ────────────────────────────── */}
+            <div className="mt-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    Riwayat Pemenang Manual (Halaman /history)
+                  </CardTitle>
+                  <Button onClick={openAddManual} size="sm" className="bg-green-600 hover:bg-green-700">
+                    <Plus className="w-4 h-4 mr-1" /> Tambah Entri
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-500 mb-3">Data di bawah ini ditampilkan di halaman publik Riwayat Pemenang. Admin mengelola entri secara manual.</p>
+                  {!manualHistory || manualHistory.length === 0 ? (
+                    <div className="text-center text-gray-400 py-8">Belum ada entri. Klik "Tambah Entri" untuk menambah data.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Tanggal</TableHead>
+                            <TableHead>No. Telepon</TableHead>
+                            <TableHead>Nominal (Rp)</TableHead>
+                            <TableHead>Event</TableHead>
+                            <TableHead>Aksi</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {manualHistory.map(entry => (
+                            <TableRow key={entry.id}>
+                              <TableCell>{new Date(entry.winDate).toLocaleDateString("id-ID")}</TableCell>
+                              <TableCell>{entry.phoneNumber}</TableCell>
+                              <TableCell>{entry.amount.toLocaleString("id-ID")}</TableCell>
+                              <TableCell>{entry.eventName}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="outline" onClick={() => openEditManual(entry)}><Pencil className="w-3 h-3" /></Button>
+                                  <Button size="sm" variant="destructive" onClick={() => deleteManualMutation.mutate(entry.id)}><Trash2 className="w-3 h-3" /></Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </main>
         </div>
       </div>
+
+      {/* ── Manual Winner History Dialog ─────────────────────────────────── */}
+      <Dialog open={manualDialogOpen} onOpenChange={setManualDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingManual ? "Edit Entri Riwayat Pemenang" : "Tambah Entri Riwayat Pemenang"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <div>
+              <Label>Tanggal Menang</Label>
+              <Input type="date" value={manualForm.winDate} onChange={e => setManualForm(f => ({ ...f, winDate: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Nomor Telepon</Label>
+              <Input placeholder="08xxxxxxxxxx" value={manualForm.phoneNumber} onChange={e => setManualForm(f => ({ ...f, phoneNumber: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Nama (opsional)</Label>
+              <Input placeholder="Nama pemenang" value={manualForm.displayName} onChange={e => setManualForm(f => ({ ...f, displayName: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Nominal Hadiah (Rp)</Label>
+              <Input type="number" placeholder="10000" value={manualForm.amount} onChange={e => setManualForm(f => ({ ...f, amount: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Nama Event</Label>
+              <Input placeholder="Nama event" value={manualForm.eventName} onChange={e => setManualForm(f => ({ ...f, eventName: e.target.value }))} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={submitManualForm} disabled={createManualMutation.isPending || updateManualMutation.isPending} className="flex-1 bg-green-600 hover:bg-green-700">
+                {editingManual ? "Simpan Perubahan" : "Tambah"}
+              </Button>
+              <Button variant="outline" onClick={() => setManualDialogOpen(false)} className="flex-1">Batal</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <AlertDialogContent>

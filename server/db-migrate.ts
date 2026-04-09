@@ -204,6 +204,37 @@ export async function runMigrations() {
           ALTER TABLE videos ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
         `);
 
+        // Add recurring schedule fields to events table
+        await db.execute(sql`
+          ALTER TABLE events ADD COLUMN IF NOT EXISTS schedule_type VARCHAR(20) DEFAULT 'none';
+        `);
+        await db.execute(sql`
+          ALTER TABLE events ADD COLUMN IF NOT EXISTS schedule_time VARCHAR(5);
+        `);
+        await db.execute(sql`
+          ALTER TABLE events ADD COLUMN IF NOT EXISTS schedule_day INTEGER;
+        `);
+        await db.execute(sql`
+          ALTER TABLE events ADD COLUMN IF NOT EXISTS ebook_file TEXT;
+        `);
+        await db.execute(sql`
+          ALTER TABLE events ADD COLUMN IF NOT EXISTS ebook_title TEXT;
+        `);
+
+        // Create manual_winner_history table
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS manual_winner_history (
+            id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+            win_date TIMESTAMP NOT NULL,
+            phone_number VARCHAR(20) NOT NULL,
+            display_name VARCHAR(255),
+            amount INTEGER NOT NULL,
+            event_name TEXT NOT NULL,
+            display_order INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+          );
+        `);
+
         console.log('✅ Missing columns added successfully');
       } catch (alterError) {
         console.log('ℹ️ Columns may already exist or error:', alterError);

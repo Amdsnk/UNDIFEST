@@ -38,6 +38,10 @@ export const events = pgTable("events", {
   isRefundable: boolean("is_refundable").notNull().default(false),
   ebookFile: text("ebook_file"), // Path to uploaded E-book file
   ebookTitle: text("ebook_title"), // Title of the E-book
+  // Recurring schedule fields
+  scheduleType: varchar("schedule_type", { length: 20 }).default("none"), // none | daily | weekly | monthly
+  scheduleTime: varchar("schedule_time", { length: 5 }), // HH:MM e.g. "19:00"
+  scheduleDay: integer("schedule_day"), // 0-6 for weekly (Sun=0), 1-31 for monthly
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -96,6 +100,18 @@ export const winners = pgTable("winners", {
   eventId: varchar("event_id").notNull().references(() => events.id),
   userId: varchar("user_id").references(() => users.id),
   announcedAt: timestamp("announced_at").notNull().defaultNow(),
+});
+
+// Manual Winner History — admin-managed entries shown on the public /history page
+export const manualWinnerHistory = pgTable("manual_winner_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  winDate: timestamp("win_date").notNull(),
+  phoneNumber: varchar("phone_number", { length: 20 }).notNull(),
+  displayName: varchar("display_name", { length: 255 }),
+  amount: integer("amount").notNull(),
+  eventName: text("event_name").notNull(),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Terms & Conditions
@@ -281,6 +297,11 @@ export const insertWinnerSchema = createInsertSchema(winners).omit({
   announcedAt: true,
 });
 
+export const insertManualWinnerHistorySchema = createInsertSchema(manualWinnerHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertVideoSchema = createInsertSchema(videos).omit({
   id: true,
   createdAt: true,
@@ -385,3 +406,6 @@ export type InsertPage = z.infer<typeof insertPageSchema>;
 
 export type TermsCondition = typeof termsConditions.$inferSelect;
 export type InsertTermsCondition = z.infer<typeof insertTermsConditionSchema>;
+
+export type ManualWinnerHistory = typeof manualWinnerHistory.$inferSelect;
+export type InsertManualWinnerHistory = z.infer<typeof insertManualWinnerHistorySchema>;
