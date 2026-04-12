@@ -422,19 +422,15 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (video: 
                   </div>
                 </div>
               ) : videoSrc ? (
-                // No thumbnail: show first frame via preload="metadata" (no autoplay, no full download)
-                <div className="relative w-full h-40">
-                  <video
-                    src={videoSrc}
-                    className="w-full h-40 object-cover"
-                    preload="metadata"
-                    muted
-                    playsInline
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                    <Play className="w-8 h-8 text-white" />
-                  </div>
-                </div>
+                <video
+                  src={videoSrc}
+                  className="w-full h-40 object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                />
               ) : (
                 <div className="relative w-full h-40 bg-gray-800 flex items-center justify-center">
                   <Play className="w-12 h-12 text-white/40" />
