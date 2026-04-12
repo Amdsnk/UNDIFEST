@@ -46,8 +46,8 @@ export default function AdminLoginPage() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Login Gagal",
-        description: error.message || "Username atau password salah",
+        title: "Login Failed",
+        description: "Please check your username and password.",
       });
     } finally {
       setIsLoading(false);
