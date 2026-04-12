@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { seedDatabase } from "./db-seed";
+import { seedDatabase, seedManualWinnerHistory } from "./db-seed";
 import { runMigrations } from "./db-migrate";
 import { storage } from "./storage";
 
@@ -70,6 +70,11 @@ app.use((req, res, next) => {
   seedDatabase().catch((error) => {
     console.error("Failed to seed database:", error);
     console.log("App will continue running without seed data...");
+  });
+
+  // Seed manual winner history dummy data (independent — runs even if main seed skipped)
+  seedManualWinnerHistory().catch((error) => {
+    console.error("Failed to seed manual winner history:", error);
   });
 
   // ── Recurring Event Scheduler ────────────────────────────────────────────

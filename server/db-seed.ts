@@ -6,6 +6,7 @@ import {
   users,
   transactions,
   videos,
+  manualWinnerHistory,
 } from "@shared/schema";
 import { hashPassword } from "./auth";
 
@@ -235,5 +236,84 @@ export async function seedDatabase() {
   } catch (error) {
     console.error("Error seeding database:", error);
     throw error;
+  }
+}
+
+/**
+ * Seed dummy manual winner history for the past 6 months.
+ * Runs independently — safe to call even if main seed was skipped.
+ */
+export async function seedManualWinnerHistory() {
+  try {
+    const existing = await db.select().from(manualWinnerHistory).limit(1);
+    if (existing.length > 0) {
+      console.log("✓ Manual winner history already has data, skipping seed...");
+      return;
+    }
+
+    console.log("🌱 Seeding manual winner history (6 bulan terakhir)...");
+
+    // Helper: random element from array
+    const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+    const eventNames = [
+      "E-BOOK : Jadilah Miliarder",
+      "E-BOOK : Rahasia Sukses Bisnis",
+      "E-BOOK : Panduan Investasi Pemula",
+      "E-BOOK : 7 Kebiasaan Jutawan",
+      "Undian Spesial Lebaran",
+      "Undian Akhir Tahun 2025",
+    ];
+
+    const amounts = [10000, 10000, 10000, 25000, 25000, 50000, 100000];
+
+    const phonePrefixes = ["0812", "0813", "0851", "0852", "0853", "0856", "0857", "0858", "0877", "0878", "0881", "0882", "0888", "0895", "0896"];
+
+    const randomPhone = () => {
+      const prefix = pick(phonePrefixes);
+      const mid = String(Math.floor(Math.random() * 90000) + 10000);
+      const suffix = String(Math.floor(Math.random() * 900) + 100);
+      return `${prefix}${mid}${suffix}`;
+    };
+
+    // Generate ~3–4 winners per week for 26 weeks (6 months back from Apr 2026)
+    const entries: {
+      winDate: Date;
+      phoneNumber: string;
+      amount: number;
+      eventName: string;
+      displayOrder: number;
+    }[] = [];
+
+    const now = new Date("2026-04-12");
+    let order = 0;
+
+    for (let weekOffset = 26; weekOffset >= 0; weekOffset--) {
+      // 2–4 entries per week, spread across different days
+      const winnersThisWeek = Math.floor(Math.random() * 3) + 2;
+      for (let i = 0; i < winnersThisWeek; i++) {
+        const daysBack = weekOffset * 7 + Math.floor(Math.random() * 7);
+        const winDate = new Date(now);
+        winDate.setDate(now.getDate() - daysBack);
+        winDate.setHours(19, 0, 0, 0); // Pengundian jam 19.00
+
+        entries.push({
+          winDate,
+          phoneNumber: randomPhone(),
+          amount: pick(amounts),
+          eventName: pick(eventNames),
+          displayOrder: order++,
+        });
+      }
+    }
+
+    // Sort by date descending (newest first)
+    entries.sort((a, b) => b.winDate.getTime() - a.winDate.getTime());
+
+    await db.insert(manualWinnerHistory).values(entries);
+    console.log(`✓ Created ${entries.length} dummy manual winner history entries`);
+  } catch (error) {
+    console.error("Error seeding manual winner history:", error);
+    // Non-fatal — don't rethrow
   }
 }
