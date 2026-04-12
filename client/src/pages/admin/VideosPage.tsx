@@ -146,13 +146,13 @@ export default function VideosPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file size on client side (10MB limit)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Check file size on client side (30MB limit)
+    const maxSize = 30 * 1024 * 1024; // 30MB
     if (file.size > maxSize) {
       toast({
         variant: "destructive",
         title: "Video Terlalu Besar",
-        description: `Ukuran video ${(file.size / 1024 / 1024).toFixed(2)}MB. Maksimal 10MB untuk upload lokal. Gunakan YouTube/Vimeo URL untuk video lebih besar.`,
+        description: `Ukuran video ${(file.size / 1024 / 1024).toFixed(2)}MB. Maksimal 30MB untuk upload lokal. Gunakan YouTube/Vimeo URL untuk video lebih besar.`,
       });
       e.target.value = ''; // Reset input
       return;
@@ -289,11 +289,11 @@ export default function VideosPage() {
                       placeholder="https://youtube.com/watch?v=..."
                       className="h-12 border-2 border-gray-200 focus:border-purple-400"
                     />
-                    <p className="text-sm text-gray-500">Gunakan URL YouTube/Vimeo untuk video besar (&gt;10MB)</p>
+                    <p className="text-sm text-gray-500">Gunakan URL YouTube/Vimeo untuk video besar (&gt;30MB)</p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="videoFile" className="text-base font-semibold text-gray-700">Upload Video Lokal (Max 10MB)</Label>
+                    <Label htmlFor="videoFile" className="text-base font-semibold text-gray-700">Upload Video Lokal (Max 30MB)</Label>
                     <div className="flex items-center gap-3">
                       <Input
                         id="videoFile"
