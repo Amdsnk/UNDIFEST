@@ -262,8 +262,8 @@ export default function PaymentPage() {
   const cardImageUrl = getEventCardImage(event);
 
   return (
-    <div className="min-h-screen bg-[#16202a]">
-      <div className="max-w-undifest mx-auto pb-44 bg-[#16202a]">
+    <div className="min-h-screen bg-[#ffffff]">
+      <div className="max-w-undifest mx-auto min-h-screen pb-44 bg-[#16202a]">
         <MobileHeader />
 
         {/* Event Title - Only show if not in payment details view */}
@@ -299,47 +299,17 @@ export default function PaymentPage() {
                     />
                   </div>
 
-                  {/* Display terms from database if available, otherwise show default */}
-                  {terms.length > 0 ? (
-                    terms
-                      .filter(term => term.isActive && term.description.trim() !== '')
-                      .sort((a, b) => a.order - b.order)
-                      .map((term) => (
-                        <div key={term.id}>
-                          <p className="text-sm text-gray-400 mb-1">{term.title}</p>
-                          <p className="text-sm whitespace-pre-wrap">{term.description}</p>
-                        </div>
-                      ))
-                  ) : (
-                    <>
-                      <div>
-                        <p className="text-sm text-gray-400 mb-1">Harga Tiket</p>
-                        <p className="text-sm">Beli e-book senilai Rp {event.price.toLocaleString()} untuk mendapatkan 1 tiket undian.</p>
+                  {/* Display terms from database */}
+                  {terms
+                    .filter(term => term.isActive && term.description.trim() !== '')
+                    .sort((a, b) => a.order - b.order)
+                    .map((term) => (
+                      <div key={term.id}>
+                        <p className="text-sm text-gray-400 mb-1">{term.title}</p>
+                        <p className="text-sm whitespace-pre-wrap">{term.description}</p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-400 mb-1">Jaminan</p>
-                        <p className="text-sm">Jaminan uang kembali Rp {event.price.toLocaleString()}.</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-400 mb-1">Hadiah</p>
-                        <p className="text-sm">{event.prize}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-400 mb-1">Periode</p>
-                        <p className="text-sm">
-                          {new Date(event.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} -{" "}
-                          {new Date(event.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-400 mb-1">Pengumuman Pemenang</p>
-                        <p className="text-sm">
-                          {new Date(event.announcementDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}{" "}
-                          pukul 19.00 WIB melalui seluruh channel resmi kami.
-                        </p>
-                      </div>
-                    </>
-                  )}
+                    ))
+                  }
                 </div>
               )}
             </div>

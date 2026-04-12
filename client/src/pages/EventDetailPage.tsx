@@ -165,45 +165,17 @@ export default function EventDetailPage() {
             </button>
             {showTermsDropdown && (
               <div className="p-4 bg-[#1a2332]/50 space-y-4">
-                {terms.length > 0 ? (
-                  // Display custom terms from database
-                  terms.map((term) => (
+                {/* Display custom terms from database */}
+                {terms
+                  .filter(term => term.isActive && term.description.trim() !== '')
+                  .sort((a, b) => a.order - b.order)
+                  .map((term) => (
                     <div key={term.id}>
                       <p className="text-sm text-gray-400 mb-1">{term.title}</p>
                       <p className="text-white whitespace-pre-wrap">{term.description}</p>
                     </div>
                   ))
-                ) : (
-                  // Fallback to default terms if no custom terms
-                  <>
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Harga Tiket</p>
-                      <p className="text-white">Beli e-book senilai Rp {event.price.toLocaleString()} untuk mendapatkan 1 tiket undian.</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Jaminan</p>
-                      <p className="text-white">Jaminan uang kembali Rp {event.price.toLocaleString()}.</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Hadiah</p>
-                      <p className="text-white">{event.prize}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Periode</p>
-                      <p className="text-white">
-                        {new Date(event.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} -{" "}
-                        {new Date(event.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Pengumuman Pemenang</p>
-                      <p className="text-white">
-                        {new Date(event.announcementDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}{" "}
-                        pukul 19.00 WIB melalui seluruh channel resmi kami.
-                      </p>
-                    </div>
-                  </>
-                )}
+                }
               </div>
             )}
           </div>
