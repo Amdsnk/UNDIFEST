@@ -104,14 +104,6 @@ export default function BuyerDataForm({
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
-
   return (
     <div className="bg-white rounded-2xl p-6 space-y-6">
       <div className="text-center">
@@ -234,7 +226,7 @@ export default function BuyerDataForm({
           </Button>
           <Button
             type="submit"
-            disabled={isProcessing || !agreeTerms}
+            disabled={isProcessing}
             className="flex-1 bg-[#4169E1] hover:bg-[#3557C1] text-white font-semibold"
           >
             {isProcessing ? "Memproses..." : "Bayar Sekarang"}
