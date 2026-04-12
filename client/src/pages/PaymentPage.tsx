@@ -262,7 +262,7 @@ export default function PaymentPage() {
   const cardImageUrl = getEventCardImage(event);
 
   return (
-    <div className="min-h-screen bg-[#ffffff]">
+    <div className="min-h-screen bg-[#16202a]">
       <div className="max-w-undifest mx-auto pb-44 bg-[#16202a]">
         <MobileHeader />
 

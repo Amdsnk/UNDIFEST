@@ -86,21 +86,29 @@ export default function TermsConditionsPage() {
   // Mutation to save all terms at once
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // First, delete all existing terms for this event
-      const deletePromises = terms.map(async (term) => {
-        const res = await fetch(`/api/terms/${term.id}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
-          },
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error(await res.text());
+      const token = localStorage.getItem("admin_token");
+
+      // Fetch fresh terms from server to avoid stale-closure duplication bug
+      const freshRes = await fetch(`/api/admin/events/${selectedEventId}/terms`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
       });
+      const freshTerms: TermsCondition[] = freshRes.ok ? await freshRes.json() : [];
 
-      await Promise.all(deletePromises);
+      // Delete all existing terms one by one (ignore 404s)
+      await Promise.all(
+        freshTerms.map(async (term) => {
+          const res = await fetch(`/api/terms/${term.id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: "include",
+          });
+          // Ignore 404 — term may have already been removed
+          if (!res.ok && res.status !== 404) throw new Error(await res.text());
+        })
+      );
 
-      // Then create new terms for non-empty fields
+      // Create new terms for non-empty fields
       const createPromises = FIXED_TERMS.map(async (fixedTerm) => {
         const termData = formData[fixedTerm.key];
         const title = termData.title.trim() || fixedTerm.defaultTitle;
@@ -109,12 +117,11 @@ export default function TermsConditionsPage() {
         // Skip if description is empty
         if (!description) return null;
 
-        // Create new term
         const res = await fetch(`/api/events/${selectedEventId}/terms`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             title,
