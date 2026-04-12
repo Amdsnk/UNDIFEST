@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -5,7 +6,11 @@ import { Footer } from "@/components/Footer";
 import type { ManualWinnerHistory } from "@shared/schema";
 import historyPicUrl from "@assets/history pic_1763511883477.png";
 
+const ITEMS_PER_PAGE = 10;
+
 export default function HistoryPage() {
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Fetch manual winner history (admin-managed, shown publicly)
   const { data: history, isLoading } = useQuery<ManualWinnerHistory[]>({
     queryKey: ["/api/manual-winner-history"],
@@ -15,6 +20,12 @@ export default function HistoryPage() {
     if (!phone || phone.length <= 6) return phone;
     return phone.slice(0, 4) + "*".repeat(phone.length - 7) + phone.slice(-3);
   };
+
+  const totalPages = Math.ceil((history?.length ?? 0) / ITEMS_PER_PAGE);
+  const paginatedHistory = history?.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
@@ -54,8 +65,8 @@ export default function HistoryPage() {
             <div className="divide-y divide-gray-800">
               {isLoading ? (
                 <div className="p-6 text-center text-gray-400">Loading...</div>
-              ) : history && history.length > 0 ? (
-                history.map((entry) => (
+              ) : paginatedHistory && paginatedHistory.length > 0 ? (
+                paginatedHistory.map((entry) => (
                   <div
                     key={entry.id}
                     data-testid={`winner-${entry.id}`}
@@ -85,6 +96,43 @@ export default function HistoryPage() {
                 </div>
               )}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-800">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#2e3e59] text-white disabled:opacity-30 hover:bg-[#FFB800] hover:text-black transition-colors"
+                >
+                  ← Prev
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+                        page === currentPage
+                          ? "bg-[#FFB800] text-black"
+                          : "bg-[#2e3e59] text-white hover:bg-[#FFB800] hover:text-black"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#2e3e59] text-white disabled:opacity-30 hover:bg-[#FFB800] hover:text-black transition-colors"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
