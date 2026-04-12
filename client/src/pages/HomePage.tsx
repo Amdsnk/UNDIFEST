@@ -140,12 +140,16 @@ export default function HomePage() {
                   src={banners[currentHeroSlide]?.imageUrl || banner01Url}
                   alt={banners[currentHeroSlide]?.title || `Hero Banner ${currentHeroSlide + 1}`}
                   className="w-full h-auto object-contain max-h-[400px]"
+                  loading="eager"
+                  decoding="async"
                 />
               ) : (
                 <img
                   src={banner01Url}
                   alt="Default Hero Banner"
                   className="w-full h-auto object-contain max-h-[400px]"
+                  loading="eager"
+                  decoding="async"
                 />
               )}
             </div>
@@ -193,6 +197,8 @@ export default function HomePage() {
                             src={cardImageUrl}
                             alt={event.name}
                             className="w-full h-auto"
+                            loading="lazy"
+                            decoding="async"
                           />
                           <button
                             onClick={() => handlePurchase(event)}
@@ -200,7 +206,7 @@ export default function HomePage() {
                             className="absolute bottom-4 right-4"
                           >
                             {/* Buy button: smaller on mobile (h-6), original on desktop (h-8) */}
-                            <img src={tombolBeliUrl} alt="Beli" className="h-6 md:h-8 mt-[13px] mb-[13px]" />
+                            <img src={tombolBeliUrl} alt="Beli" className="h-6 md:h-8 mt-[13px] mb-[13px]" loading="lazy" />
                           </button>
                         </div>
                       </div>
@@ -216,6 +222,8 @@ export default function HomePage() {
                             alt={event.name}
                             className="w-full h-auto object-contain"
                             style={{ paddingBottom: '15px' }}
+                            loading="lazy"
+                            decoding="async"
                           />
                           <div className="absolute bottom-4 right-4 z-20">
                             <button
@@ -223,7 +231,7 @@ export default function HomePage() {
                               data-testid={`button-buy-${event.id}`}
                             >
                               {/* Buy button: smaller on mobile (h-6), original on desktop (h-8) */}
-                              <img src={tombolBeliUrl} alt="Beli" className="h-6 md:h-8" />
+                              <img src={tombolBeliUrl} alt="Beli" className="h-6 md:h-8" loading="lazy" />
                             </button>
                           </div>
                         </div>
@@ -406,20 +414,18 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (video: 
                     src={video.thumbnailUrl}
                     alt={video.title}
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                     <Play className="w-8 h-8 text-white" />
                   </div>
                 </div>
               ) : videoSrc ? (
-                <video
-                  src={videoSrc}
-                  className="w-full h-40 object-cover"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                />
+                // No thumbnail: show placeholder with play icon (don't autoplay in list)
+                <div className="relative w-full h-40 bg-gray-900 flex items-center justify-center">
+                  <Play className="w-10 h-10 text-white/60" />
+                </div>
               ) : (
                 <div className="relative w-full h-40 bg-gray-800 flex items-center justify-center">
                   <Play className="w-12 h-12 text-white/40" />

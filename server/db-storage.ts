@@ -245,6 +245,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(videos).orderBy(desc(videos.createdAt));
   }
 
+  async getVideoById(id: string): Promise<Video | null> {
+    const [video] = await db.select().from(videos).where(eq(videos.id, id));
+    return video || null;
+  }
+
   async createVideo(insertVideo: InsertVideo): Promise<Video> {
     const [video] = await db.insert(videos).values({
       ...insertVideo,

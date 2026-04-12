@@ -80,6 +80,7 @@ export interface IStorage {
 
   // Videos
   getAllVideos(): Promise<Video[]>;
+  getVideoById(id: string): Promise<Video | null>;
   getHomepageVideos(): Promise<Video[]>;
   createVideo(video: InsertVideo): Promise<Video>;
   updateVideo(id: string, video: Partial<InsertVideo>): Promise<Video | null>;
@@ -373,6 +374,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.videos.values()).sort(
       (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
     );
+  }
+
+  async getVideoById(id: string): Promise<Video | null> {
+    return this.videos.get(id) || null;
   }
 
   async getHomepageVideos(): Promise<Video[]> {

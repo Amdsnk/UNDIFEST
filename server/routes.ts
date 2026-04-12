@@ -54,8 +54,12 @@ function getClientIp(req: Request): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Serve uploaded files
-  app.use("/uploads", express.static(uploadDir));
+  // Serve uploaded files with caching (videos/images - 7 days cache)
+  app.use("/uploads", express.static(uploadDir, {
+    maxAge: '7d',
+    etag: true,
+    lastModified: true,
+  }));
 
   // Check Server Outbound IP - untuk whitelist di Midtrans
   app.get("/api/server-ip", async (_req: Request, res: Response) => {
@@ -121,6 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const events = await storage.getAllEvents();
       // Public access: only show active events
       const publicEvents = events.filter(e => e.status === "aktif");
+      res.setHeader('Cache-Control', 'public, max-age=30');
       res.json(publicEvents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });
@@ -422,6 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/banners", async (req, res) => {
     try {
       const banners = await storage.getAllBanners();
+      res.setHeader('Cache-Control', 'public, max-age=60');
       res.json(banners);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch banners" });
@@ -1772,7 +1778,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos", async (req, res) => {
     try {
       const videos = await storage.getAllVideos();
-      res.json(videos);
+      // Strip base64 data from list responses - replace with stream URL for backward compat
+      // This prevents returning hundreds of MB of base64 data on every request
+      const sanitized = videos.map(v => ({
+        ...v,
+        videoFile: v.videoFile?.startsWith('data:')
+          ? `/api/videos/${v.id}/stream`
+          : v.videoFile,
+      }));
+      res.setHeader('Cache-Control', 'public, max-age=30');
+      res.json(sanitized);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch videos" });
     }
@@ -1812,7 +1827,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/videos/homepage", async (req, res) => {
     try {
       const videos = await storage.getHomepageVideos();
-      res.json(videos);
+      // Strip base64 from homepage video list - replace with stream URL
+      const sanitized = videos.map(v => ({
+        ...v,
+        videoFile: v.videoFile?.startsWith('data:')
+          ? `/api/videos/${v.id}/stream`
+          : v.videoFile,
+      }));
+      res.setHeader('Cache-Control', 'public, max-age=30');
+      res.json(sanitized);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch homepage videos" });
     }
@@ -1843,46 +1866,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload video file - store as base64 in database for persistence
+  // Upload video file - store as static file for fast streaming (NOT base64)
   app.post("/api/videos/upload", requireAdmin, upload.single('video'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No video file uploaded" });
       }
 
-      // Check file size (max 30MB for base64 storage)
+      // Check file size (max 30MB)
       const maxSize = 30 * 1024 * 1024; // 30MB
       if (req.file.size > maxSize) {
-        // Delete the temporary file
         fs.unlinkSync(req.file.path);
         return res.status(400).json({
           error: "Video terlalu besar. Maksimal 30MB untuk upload lokal. Gunakan YouTube/Vimeo URL untuk video lebih besar."
         });
       }
 
-      console.log(`📹 Uploading video: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
+      console.log(`📹 Video uploaded: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB) → /uploads/${req.file.filename}`);
 
-      // Read file and convert to base64 for persistent storage
-      const filePath = req.file.path;
-      const fileBuffer = fs.readFileSync(filePath);
-      const base64Video = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
-
-      // Delete the temporary file
-      fs.unlinkSync(filePath);
-
-      console.log(`✅ Video converted to base64 successfully`);
-      res.json({ videoFile: base64Video });
+      // Return the static file URL path (NOT base64!) for fast serving
+      res.json({ videoFile: `/uploads/${req.file.filename}` });
     } catch (error) {
       console.error("❌ Video upload error:", error);
-
-      // Clean up temp file if exists
       if (req.file?.path && fs.existsSync(req.file.path)) {
         fs.unlinkSync(req.file.path);
       }
-
       res.status(500).json({
         error: error instanceof Error ? error.message : "Failed to upload video"
       });
+    }
+  });
+
+  // Stream base64 video from DB (backward compatibility for old uploads)
+  app.get("/api/videos/:id/stream", async (req, res) => {
+    try {
+      const video = await storage.getVideoById(req.params.id);
+      if (!video || !video.videoFile) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      // If it's a file URL (new uploads), redirect to it
+      if (!video.videoFile.startsWith('data:')) {
+        return res.redirect(video.videoFile);
+      }
+      // Legacy base64: stream it as video/mp4
+      const matches = video.videoFile.match(/^data:([^;]+);base64,(.+)$/);
+      if (!matches) return res.status(400).json({ error: "Invalid video data" });
+      const mimeType = matches[1];
+      const buffer = Buffer.from(matches[2], 'base64');
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to stream video" });
     }
   });
 
@@ -1892,6 +1928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const partners = await storage.getAllPartners();
       // Only show active partners
       const activePartners = partners.filter(p => p.isActive);
+      res.setHeader('Cache-Control', 'public, max-age=60');
       res.json(activePartners);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch partners" });
