@@ -103,13 +103,9 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [banners]);
 
-  // Filter and sort events: Burger King first, then Yamaha NMAX, then others
+  // Filter and sort events: oldest first (ascending createdAt) so new banners appear at the bottom
   const activeEvents = (events?.filter(e => e.status === "aktif") || []).sort((a, b) => {
-    if (a.cardTemplate === "burgerKing") return -1;
-    if (b.cardTemplate === "burgerKing") return 1;
-    if (a.cardTemplate === "yamahaNmax") return -1;
-    if (b.cardTemplate === "yamahaNmax") return 1;
-    return 0;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   });
   
   // Helper to get event card image based on cardTemplate or fallback to imageUrl

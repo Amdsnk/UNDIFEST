@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { User, Mail, Phone, CheckCircle2, CreditCard, Landmark } from "lucide-react";
+import { User, Mail, Phone, CreditCard, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 
 interface BuyerData {
   name: string;
@@ -46,8 +45,6 @@ export default function BuyerDataForm({
   };
 
   const [formData, setFormData] = useState<BuyerData>(getInitialData);
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [agreeProtection, setAgreeProtection] = useState(false);
   const [errors, setErrors] = useState<Partial<BuyerData>>({});
 
   const validateForm = (): boolean => {
@@ -87,11 +84,6 @@ export default function BuyerDataForm({
     e.preventDefault();
     
     if (!validateForm()) {
-      return;
-    }
-
-    if (!agreeTerms) {
-      alert("Anda harus menyetujui syarat dan ketentuan");
       return;
     }
 
@@ -227,61 +219,7 @@ export default function BuyerDataForm({
           <p className="text-xs text-gray-400">Digunakan jika Anda memenangkan hadiah refund</p>
         </div>
 
-        {/* Protection Notice */}
-        {eventPrice >= 2500 && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-2">
-            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <div className="text-xs text-green-800">
-              <p className="font-semibold">Transaksi Anda Terlindungi</p>
-              <p>
-                Untuk hanya {formatPrice(2500)}, Anda dapat mengamankan transaksi ini dengan proses klaim yang mudah dan berlaku selama 12 bulan.
-              </p>
-            </div>
-          </div>
-        )}
 
-        {/* Terms and Conditions */}
-        <div className="space-y-3 pt-2">
-          {eventPrice >= 2500 && (
-            <div className="flex items-start gap-2">
-              <Checkbox
-                id="protection"
-                checked={agreeProtection}
-                onCheckedChange={(checked) => setAgreeProtection(checked as boolean)}
-                disabled={isProcessing}
-              />
-              <label
-                htmlFor="protection"
-                className="text-xs text-gray-700 leading-tight cursor-pointer"
-              >
-                Oke, amankan transaksi saya dan saya setuju dengan{" "}
-                <a href="#" className="text-blue-600 hover:underline">
-                  Syarat & Ketentuan
-                </a>{" "}
-                yang berlaku.
-              </label>
-            </div>
-          )}
-
-          <div className="flex items-start gap-2">
-            <Checkbox
-              id="terms"
-              checked={agreeTerms}
-              onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
-              disabled={isProcessing}
-            />
-            <label
-              htmlFor="terms"
-              className="text-xs text-gray-700 leading-tight cursor-pointer"
-            >
-              Saya setuju dengan{" "}
-              <a href="#" className="text-blue-600 hover:underline">
-                Syarat & Ketentuan
-              </a>
-              .
-            </label>
-          </div>
-        </div>
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-4">
