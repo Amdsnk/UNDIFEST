@@ -83,6 +83,44 @@ export default function TermsConditionsPage() {
     }
   }, [terms]);
 
+  // Mutation to delete ALL terms for selected event
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem("admin_token");
+      const freshRes = await fetch(`/api/admin/events/${selectedEventId}/terms`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      });
+      const freshTerms: TermsCondition[] = freshRes.ok ? await freshRes.json() : [];
+      await Promise.all(
+        freshTerms.map(async (term) => {
+          const res = await fetch(`/api/terms/${term.id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: "include",
+          });
+          if (!res.ok && res.status !== 404) throw new Error(await res.text());
+        })
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/events/${selectedEventId}/terms`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/events/${selectedEventId}/terms`] });
+      setFormData({
+        term1: { title: FIXED_TERMS[0].defaultTitle, description: "" },
+        term2: { title: FIXED_TERMS[1].defaultTitle, description: "" },
+        term3: { title: FIXED_TERMS[2].defaultTitle, description: "" },
+        term4: { title: FIXED_TERMS[3].defaultTitle, description: "" },
+        term5: { title: FIXED_TERMS[4].defaultTitle, description: "" },
+        term6: { title: FIXED_TERMS[5].defaultTitle, description: "" },
+      });
+      toast({ title: "Semua S&K berhasil dihapus" });
+    },
+    onError: () => {
+      toast({ title: "Gagal menghapus S&K", variant: "destructive" });
+    },
+  });
+
   // Mutation to save all terms at once
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -139,6 +177,7 @@ export default function TermsConditionsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/admin/events/${selectedEventId}/terms`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/events/${selectedEventId}/terms`] });
       toast({ title: "Berhasil menyimpan S&K" });
     },
     onError: () => {
@@ -266,6 +305,18 @@ export default function TermsConditionsPage() {
                   <div className="flex gap-2 pt-4">
                     <Button type="submit" disabled={saveMutation.isPending} className="px-8">
                       {saveMutation.isPending ? "Menyimpan..." : "Simpan S&K"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={deleteAllMutation.isPending}
+                      onClick={() => {
+                        if (confirm("Hapus semua S&K untuk event ini? Data tidak bisa dikembalikan.")) {
+                          deleteAllMutation.mutate();
+                        }
+                      }}
+                    >
+                      {deleteAllMutation.isPending ? "Menghapus..." : "Hapus Semua S&K"}
                     </Button>
                   </div>
                 </form>
