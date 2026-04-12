@@ -52,7 +52,7 @@ import {
   type InsertManualWinnerHistory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import type { IStorage } from "./storage";
 
 export class DatabaseStorage implements IStorage {
@@ -476,8 +476,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(termsConditions)
-      .where(eq(termsConditions.eventId, eventId))
-      .where(eq(termsConditions.isActive, true))
+      .where(and(eq(termsConditions.eventId, eventId), eq(termsConditions.isActive, true)))
       .orderBy(termsConditions.order);
   }
 
