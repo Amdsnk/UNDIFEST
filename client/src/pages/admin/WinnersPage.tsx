@@ -158,15 +158,33 @@ export default function WinnersPage() {
     return isNaN(d.getTime()) ? new Date().toISOString().slice(0, 10) : d.toISOString().slice(0, 10);
   };
 
-  /** Map a raw row (from Excel or TXT) to preview object */
-  const mapRow = (row: any, idx: number) => ({
-    winDate: parseDate(row["Tanggal"] ?? row["tanggal"] ?? row[0]),
-    phoneNumber: String(row["No. Telepon"] ?? row["No Telepon"] ?? row["Nomor Telepon"] ?? row["nomor_telepon"] ?? row["phone"] ?? row[1] ?? "").trim(),
-    amount: String(row["Hadiah"] ?? row["hadiah"] ?? row["Amount"] ?? row[2] ?? "").trim(),
-    eventName: String(row["Event"] ?? row["event"] ?? row["Nama Event"] ?? row[3] ?? "").trim(),
-    displayName: String(row["Nama"] ?? row["nama"] ?? row["displayName"] ?? row[4] ?? "").trim() || undefined,
-    displayOrder: idx,
-  });
+  /** Map a raw row (from Excel or TXT) to preview object.
+   *  Supports format: Hari | Tanggal | no hp | Hadiah | Event
+   *  "Hari" column is ignored (day-of-week label). */
+  const mapRow = (row: any, idx: number) => {
+    // Phone: support "no hp", "no_hp", "No HP", "No. Telepon", etc.
+    const phone = String(
+      row["no hp"] ?? row["No HP"] ?? row["no_hp"] ?? row["No. Telepon"] ??
+      row["No Telepon"] ?? row["Nomor Telepon"] ?? row["nomor_telepon"] ?? row["phone"] ?? ""
+    ).trim();
+
+    // Tanggal: may be at named key, or positional.
+    // When format has "Hari" column, "Tanggal" is at index 1; "no hp" at index 2, etc.
+    const tanggal = row["Tanggal"] ?? row["tanggal"] ?? row["date"] ?? "";
+
+    const amount = String(row["Hadiah"] ?? row["hadiah"] ?? row["Amount"] ?? "").trim();
+    const eventName = String(row["Event"] ?? row["event"] ?? row["Nama Event"] ?? "").trim();
+    const displayName = String(row["Nama"] ?? row["nama"] ?? row["displayName"] ?? "").trim() || undefined;
+
+    return {
+      winDate: parseDate(tanggal),
+      phoneNumber: phone,
+      amount,
+      eventName,
+      displayName,
+      displayOrder: idx,
+    };
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -181,13 +199,24 @@ export default function WinnersPage() {
         // Detect separator: tab, pipe, comma, semicolon
         const sep = lines[0].includes("\t") ? "\t" : lines[0].includes("|") ? "|" : lines[0].includes(";") ? ";" : ",";
         const headers = lines[0].split(sep).map(h => h.trim());
-        const isHeader = isNaN(Number(headers[0])) && headers[0].length < 30;
+        // First row is header if first cell is not a number (e.g. "Hari", "Senin" both qualify)
+        // but "Senin" (day name) in data row would also pass. Detect header by looking for
+        // known column keywords.
+        const headerKeywords = ["hari", "tanggal", "no", "hp", "hadiah", "event", "telepon", "phone", "date"];
+        const isHeader = headers.some(h => headerKeywords.some(k => h.toLowerCase().includes(k)));
         const dataLines = isHeader ? lines.slice(1) : lines;
         const rows = dataLines.map((l, i) => {
           const cols = l.split(sep).map(c => c.trim());
           const obj: any = {};
-          if (isHeader) headers.forEach((h, j) => { obj[h] = cols[j] ?? ""; });
-          else cols.forEach((c, j) => { obj[j] = c; });
+          if (isHeader) {
+            // Store both by header name AND by position index for fallback
+            headers.forEach((h, j) => {
+              obj[h] = cols[j] ?? "";
+              obj[j] = cols[j] ?? "";
+            });
+          } else {
+            cols.forEach((c, j) => { obj[j] = c; });
+          }
           return mapRow(obj, i);
         }).filter(r => r.phoneNumber && r.eventName);
         setUploadPreview(rows);
