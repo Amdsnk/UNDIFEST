@@ -100,8 +100,8 @@ export function Footer() {
       <div className="mt-6 mb-4">
         <img src={kemensosLogoUrl} alt="Kementerian Sosial Republik Indonesia" className="h-16 mb-3" />
         <p className="text-gray-300 text-xs leading-relaxed">
-          PT. Undian Festival Indonesia telah memperoleh Izin Penyelenggaraan dan Pengawasan Undian dari Kementerian Sosial Republik Indonesia{" "}
-          <strong className="text-white">No. 1523/UNDIAN/2025).</strong>
+          PT. Undian Festival Indonesia telah memperoleh Izin Penyelenggaraan dari Kementerian Sosial Republik Indonesia{" "}
+          <strong className="text-white">NOMOR : 303/5.5/PI.02/04/2026.</strong>
         </p>
       </div>
 
