@@ -235,6 +235,12 @@ export async function runMigrations() {
           );
         `);
 
+        // Migrate amount column from INTEGER to VARCHAR (free-text prize description)
+        await db.execute(sql`
+          ALTER TABLE manual_winner_history
+            ALTER COLUMN amount TYPE VARCHAR(500) USING amount::VARCHAR;
+        `);
+
         console.log('✅ Missing columns added successfully');
       } catch (alterError) {
         console.log('ℹ️ Columns may already exist or error:', alterError);

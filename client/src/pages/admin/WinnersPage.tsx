@@ -615,7 +615,7 @@ export default function WinnersPage() {
                           <TableRow>
                             <TableHead>Tanggal</TableHead>
                             <TableHead>No. Telepon</TableHead>
-                            <TableHead>Nominal (Rp)</TableHead>
+                            <TableHead>Hadiah</TableHead>
                             <TableHead>Event</TableHead>
                             <TableHead>Aksi</TableHead>
                           </TableRow>
@@ -625,7 +625,7 @@ export default function WinnersPage() {
                             <TableRow key={entry.id}>
                               <TableCell>{new Date(entry.winDate).toLocaleDateString("id-ID")}</TableCell>
                               <TableCell>{entry.phoneNumber}</TableCell>
-                              <TableCell>{entry.amount.toLocaleString("id-ID")}</TableCell>
+                              <TableCell>{entry.amount}</TableCell>
                               <TableCell>{entry.eventName}</TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
@@ -666,8 +666,8 @@ export default function WinnersPage() {
               <Input placeholder="Nama pemenang" value={manualForm.displayName} onChange={e => setManualForm(f => ({ ...f, displayName: e.target.value }))} />
             </div>
             <div>
-              <Label>Nominal Hadiah (Rp)</Label>
-              <Input type="number" placeholder="10000" value={manualForm.amount} onChange={e => setManualForm(f => ({ ...f, amount: e.target.value }))} />
+              <Label>Hadiah</Label>
+              <Input type="text" placeholder="contoh: 10.000 / Smartphone OPPO Find N6 / Voucher Indomaret" value={manualForm.amount} onChange={e => setManualForm(f => ({ ...f, amount: e.target.value }))} />
             </div>
             <div>
               <Label>Nama Event</Label>

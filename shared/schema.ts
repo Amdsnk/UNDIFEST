@@ -108,7 +108,7 @@ export const manualWinnerHistory = pgTable("manual_winner_history", {
   winDate: timestamp("win_date").notNull(),
   phoneNumber: varchar("phone_number", { length: 20 }).notNull(),
   displayName: varchar("display_name", { length: 255 }),
-  amount: integer("amount").notNull(),
+  amount: varchar("amount", { length: 500 }).notNull(),
   eventName: text("event_name").notNull(),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),

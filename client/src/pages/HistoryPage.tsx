@@ -56,7 +56,7 @@ export default function HistoryPage() {
               <div className="grid grid-cols-4 gap-1 md:gap-2 text-black font-bold text-[10px] md:text-sm">
                 <div>Tanggal</div>
                 <div>Pemenang</div>
-                <div>Nominal (Rp)</div>
+                <div>Hadiah</div>
                 <div>Event</div>
               </div>
             </div>
@@ -82,8 +82,8 @@ export default function HistoryPage() {
                     <div className="font-mono text-[9px] md:text-xs break-all">
                       {maskPhoneNumber(entry.phoneNumber)}
                     </div>
-                    <div className="font-bold">
-                      {entry.amount.toLocaleString('id-ID')}
+                    <div className="font-bold text-[9px] md:text-xs leading-tight">
+                      {entry.amount}
                     </div>
                     <div className="truncate text-[9px] md:text-sm">
                       {entry.eventName}

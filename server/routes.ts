@@ -3232,7 +3232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         winDate: new Date(req.body.winDate),
         phoneNumber: req.body.phoneNumber,
         displayName: req.body.displayName || null,
-        amount: parseInt(req.body.amount),
+        amount: String(req.body.amount),
         eventName: req.body.eventName,
         displayOrder: parseInt(req.body.displayOrder ?? "0"),
       };
@@ -3250,7 +3250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.winDate) updateData.winDate = new Date(req.body.winDate);
       if (req.body.phoneNumber) updateData.phoneNumber = req.body.phoneNumber;
       if (req.body.displayName !== undefined) updateData.displayName = req.body.displayName || null;
-      if (req.body.amount) updateData.amount = parseInt(req.body.amount);
+      if (req.body.amount !== undefined) updateData.amount = String(req.body.amount);
       if (req.body.eventName) updateData.eventName = req.body.eventName;
       if (req.body.displayOrder !== undefined) updateData.displayOrder = parseInt(req.body.displayOrder);
       const record = await storage.updateManualWinnerHistory(req.params.id, updateData);
