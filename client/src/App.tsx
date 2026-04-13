@@ -22,6 +22,7 @@ const PaymentCancelPage = lazy(() => import("@/pages/PaymentCancelPage"));
 const CheckOrderPage = lazy(() => import("@/pages/CheckOrderPage"));
 const TermsPage = lazy(() => import("@/pages/TermsPage"));
 const PrivacyPage = lazy(() => import("@/pages/PrivacyPage"));
+const DeliveryPolicyPage = lazy(() => import("@/pages/DeliveryPolicyPage"));
 const HowItWorksUserPage = lazy(() => import("@/pages/HowItWorksPage"));
 const FAQPage = lazy(() => import("@/pages/FAQPage"));
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
@@ -90,6 +91,7 @@ function Router() {
 
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/delivery-policy" component={DeliveryPolicyPage} />
       <Route path="/how-it-works" component={HowItWorksUserPage} />
       <Route path="/faq" component={FAQPage} />
       <Route path="/about" component={AboutPage} />

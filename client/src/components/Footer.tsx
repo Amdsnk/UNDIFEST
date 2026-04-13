@@ -89,6 +89,9 @@ export function Footer() {
             <a href="/privacy" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
               Kebijakan Privasi
             </a>
+            <a href="/delivery-policy" className="text-[#ffffff] text-xs md:text-sm hover:text-gray-300 transition-colors">
+              Delivery Policy
+            </a>
           </div>
         </div>
       </div>
