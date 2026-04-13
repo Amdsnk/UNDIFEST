@@ -154,6 +154,11 @@ export default function EditEventPage() {
 
       if (!response.ok) {
         const error = await response.json();
+        if (response.status === 401) {
+          localStorage.removeItem("admin_token");
+          window.location.href = "/admin-panel-7x9k";
+          throw new Error("Sesi habis, silakan login kembali");
+        }
         throw new Error(error.error || "Gagal mengupdate event");
       }
 

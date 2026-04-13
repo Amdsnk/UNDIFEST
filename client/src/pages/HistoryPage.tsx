@@ -16,10 +16,8 @@ export default function HistoryPage() {
     queryKey: ["/api/manual-winner-history"],
   });
 
-  const maskPhoneNumber = (phone: string) => {
-    if (!phone || phone.length <= 6) return phone;
-    return phone.slice(0, 4) + "*".repeat(phone.length - 7) + phone.slice(-3);
-  };
+  const toNomorUndian = (id: string) =>
+    `UND-${id.slice(0, 8).toUpperCase()}`;
 
   const totalPages = Math.ceil((history?.length ?? 0) / ITEMS_PER_PAGE);
   const paginatedHistory = history?.slice(
@@ -55,7 +53,7 @@ export default function HistoryPage() {
             <div className="bg-[#FFB800] p-3">
               <div className="grid grid-cols-4 gap-1 md:gap-2 text-black font-bold text-[10px] md:text-sm">
                 <div>Tanggal</div>
-                <div>Pemenang</div>
+                <div>No. Undian</div>
                 <div>Hadiah</div>
                 <div>Event</div>
               </div>
@@ -79,8 +77,8 @@ export default function HistoryPage() {
                         year: "2-digit"
                       })}
                     </div>
-                    <div className="font-mono text-[9px] md:text-xs break-all">
-                      {maskPhoneNumber(entry.phoneNumber)}
+                    <div className="font-mono text-[9px] md:text-xs break-all text-[#FFB800]">
+                      {toNomorUndian(entry.id)}
                     </div>
                     <div className="font-bold text-[9px] md:text-xs leading-tight">
                       {entry.amount}

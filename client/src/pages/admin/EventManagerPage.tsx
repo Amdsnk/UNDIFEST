@@ -110,7 +110,14 @@ export default function EventManagerPage() {
           ...(isFormData ? {} : { "Content-Type": "application/json" }),
         },
       });
-      if (!res.ok) throw new Error(editingEventId ? "Failed to update event" : "Failed to create event");
+      if (!res.ok) {
+        if (res.status === 401) {
+          localStorage.removeItem("admin_token");
+          window.location.href = "/admin-panel-7x9k";
+          throw new Error("Sesi habis, silakan login kembali");
+        }
+        throw new Error(editingEventId ? "Failed to update event" : "Failed to create event");
+      }
       return res.json();
     },
     onSuccess: () => {
