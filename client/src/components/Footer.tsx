@@ -97,12 +97,12 @@ export function Footer() {
       </div>
 
       {/* Kemensos License Section */}
-      <div className="mt-6 mb-4 p-4 rounded-xl border-2 border-red-500">
-        <div className="flex items-center gap-3 mb-3">
-          <img src={kemensosLogoUrl} alt="Kementerian Sosial" className="h-14 flex-shrink-0" />
+      <div className="mt-6 mb-4 py-4">
+        <div className="flex items-center gap-4 mb-3">
+          <img src={kemensosLogoUrl} alt="Kementerian Sosial" className="h-16 flex-shrink-0" />
           <div>
-            <p className="text-white font-bold text-base leading-tight">KEMENTERIAN SOSIAL</p>
-            <p className="text-white font-bold text-base leading-tight">REPUBLIK INDONESIA</p>
+            <p className="text-white font-bold text-xl leading-snug">KEMENTERIAN SOSIAL</p>
+            <p className="text-white font-bold text-xl leading-snug">REPUBLIK INDONESIA</p>
           </div>
         </div>
         <p className="text-gray-300 text-xs leading-relaxed">
