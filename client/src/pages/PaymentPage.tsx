@@ -5,7 +5,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import BuyerDataForm from "@/components/BuyerDataForm";
 import type { Event, TermsCondition } from "@shared/schema";
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Copy, Check, ThumbsUp, ChevronRight } from "lucide-react";
+import { Copy, Check, ThumbsUp, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import undian01Url from "@assets/undian01_1763489504866.png";
 import undian02Url from "@assets/undian02_1763489504867.png";
@@ -51,7 +51,6 @@ export default function PaymentPage() {
   const eventId = params?.eventId;
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [showTermsDropdown, setShowTermsDropdown] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'va' | 'qris' | 'directdebit' | 'cstore' | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<string>('');
@@ -273,49 +272,6 @@ export default function PaymentPage() {
           </div>
         )}
 
-        {/* Syarat & Ketentuan Dropdown - Only show if not in payment details view */}
-        {!paymentDetails && (
-          <div className="px-4 py-2">
-            <div className="border border-gray-700 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setShowTermsDropdown(!showTermsDropdown)}
-                className="w-full flex items-center justify-between p-4 bg-[#1a2332] hover:bg-[#1a2332]/80 transition-colors"
-              >
-                <span className="text-white text-base font-bold">Syarat & Ketentuan</span>
-                {showTermsDropdown ? (
-                  <ChevronUp className="w-5 h-5 text-[#00D4FF]" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-[#00D4FF]" />
-                )}
-              </button>
-              {showTermsDropdown && (
-                <div className="p-4 bg-[#1a2332]/50 space-y-4 text-white">
-                  {/* Banner Kupon */}
-                  <div className="mb-4">
-                    <img
-                      src={cardImageUrl}
-                      alt={event.name}
-                      className="w-full h-auto object-contain rounded-lg"
-                    />
-                  </div>
-
-                  {/* Display terms from database */}
-                  {terms
-                    .filter(term => term.isActive && term.description.trim() !== '')
-                    .sort((a, b) => a.order - b.order)
-                    .map((term) => (
-                      <div key={term.id}>
-                        <p className="text-sm text-gray-400 mb-1">{term.title}</p>
-                        <p className="text-sm whitespace-pre-wrap">{term.description}</p>
-                      </div>
-                    ))
-                  }
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Payment Details or Payment Method Selection */}
         {paymentDetails ? (
           /* Payment Details Display */
@@ -451,6 +407,7 @@ export default function PaymentPage() {
           </div>
         ) : paymentMethod === null ? (
           /* Payment Method Selection - New Design matching screenshot */
+          <>
           <div className="px-4 py-4">
             <div className="bg-[#2952CC] rounded-t-2xl p-5">
               <h2 className="text-white text-2xl font-bold">Payment Method</h2>
@@ -493,6 +450,37 @@ export default function PaymentPage() {
               </button>
             </div>
           </div>
+
+          {/* Syarat & Ketentuan - always open */}
+          <div className="px-4 pb-4">
+            <div className="border border-gray-700 rounded-xl overflow-hidden">
+              <div className="p-4 bg-[#1a2332]">
+                <span className="text-white text-base font-bold">Syarat & Ketentuan</span>
+              </div>
+              <div className="p-4 bg-[#1a2332]/50 space-y-4 text-white">
+                {/* Banner Kupon */}
+                <div className="mb-4">
+                  <img
+                    src={cardImageUrl}
+                    alt={event.name}
+                    className="w-full h-auto object-contain rounded-lg"
+                  />
+                </div>
+                {/* Display terms from database */}
+                {terms
+                  .filter(term => term.isActive && term.description.trim() !== '')
+                  .sort((a, b) => a.order - b.order)
+                  .map((term) => (
+                    <div key={term.id}>
+                      <p className="text-sm text-gray-400 mb-1">{term.title}</p>
+                      <p className="text-sm whitespace-pre-wrap">{term.description}</p>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+          </>
         ) : showBuyerForm ? (
           /* Buyer Data Form */
           <div className="px-4 py-4">
