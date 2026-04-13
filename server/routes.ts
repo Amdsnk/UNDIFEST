@@ -119,12 +119,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper: strip heavy base64 fields from event list to reduce payload size
+  const stripEventBulk = (e: any) => ({
+    ...e,
+    bannerHomepage: e.bannerHomepage ? `__has_banner__` : null,
+    bannerUndian: e.bannerUndian ? `__has_banner__` : null,
+    ebookFile: e.ebookFile ? `__has_ebook__` : null,
+  });
+
   // Events API
   app.get("/api/events", async (req, res) => {
     try {
       const events = await storage.getAllEvents();
-      // Public access: only show active events
-      const publicEvents = events.filter(e => e.status === "aktif");
+      // Public access: only show active events — strip heavy base64 fields for list
+      const publicEvents = events.filter(e => e.status === "aktif").map(stripEventBulk);
       res.setHeader('Cache-Control', 'public, max-age=30');
       res.json(publicEvents);
     } catch (error) {
@@ -136,7 +144,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/events", requireAdmin, async (req, res) => {
     try {
       const events = await storage.getAllEvents();
-      res.json(events);
+      // Strip heavy base64 from list — full data available via /api/events/:id
+      res.json(events.map(stripEventBulk));
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });
     }

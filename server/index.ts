@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase, seedManualWinnerHistory } from "./db-seed";
@@ -9,6 +10,9 @@ const app = express();
 
 // Trust reverse proxy (Railway, Cloudflare) so req.ip and X-Forwarded-For work correctly
 app.set('trust proxy', 1);
+
+// Gzip compression - reduces JSON response size by 60-80%
+app.use(compression());
 
 declare module 'http' {
   interface IncomingMessage {

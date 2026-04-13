@@ -69,7 +69,7 @@ export default function WinnersPage() {
 
   const { data: winners, refetch: refetchWinners } = useQuery<Winner[]>({
     queryKey: ["/api/winners"],
-    refetchInterval: 5000, // Auto-refetch every 5 seconds
+    refetchInterval: 30000, // Auto-refetch every 30 seconds
   });
 
   const { data: users } = useQuery<User[]>({
