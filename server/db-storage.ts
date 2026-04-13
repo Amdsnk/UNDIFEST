@@ -518,6 +518,12 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
+  async bulkCreateManualWinnerHistory(entries: InsertManualWinnerHistory[]): Promise<ManualWinnerHistory[]> {
+    if (entries.length === 0) return [];
+    const records = await db.insert(manualWinnerHistory).values(entries).returning();
+    return records;
+  }
+
   async updateManualWinnerHistory(id: string, entry: Partial<InsertManualWinnerHistory>): Promise<ManualWinnerHistory | undefined> {
     const [record] = await db.update(manualWinnerHistory).set(entry).where(eq(manualWinnerHistory.id, id)).returning();
     return record || undefined;

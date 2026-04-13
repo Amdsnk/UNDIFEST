@@ -134,6 +134,7 @@ export interface IStorage {
   // Manual Winner History
   getAllManualWinnerHistory(): Promise<ManualWinnerHistory[]>;
   createManualWinnerHistory(entry: InsertManualWinnerHistory): Promise<ManualWinnerHistory>;
+  bulkCreateManualWinnerHistory(entries: InsertManualWinnerHistory[]): Promise<ManualWinnerHistory[]>;
   updateManualWinnerHistory(id: string, entry: Partial<InsertManualWinnerHistory>): Promise<ManualWinnerHistory | undefined>;
   deleteManualWinnerHistory(id: string): Promise<boolean>;
   deleteAllManualWinnerHistory(): Promise<number>;
@@ -465,6 +466,9 @@ export class MemStorage implements IStorage {
   async createManualWinnerHistory(entry: InsertManualWinnerHistory): Promise<ManualWinnerHistory> {
     const record = { ...entry, id: randomUUID(), createdAt: new Date() } as ManualWinnerHistory;
     return record;
+  }
+  async bulkCreateManualWinnerHistory(entries: InsertManualWinnerHistory[]): Promise<ManualWinnerHistory[]> {
+    return entries.map(e => ({ ...e, id: randomUUID(), createdAt: new Date() }) as ManualWinnerHistory);
   }
   async updateManualWinnerHistory(_id: string, _entry: Partial<InsertManualWinnerHistory>): Promise<ManualWinnerHistory | undefined> { return undefined; }
   async deleteManualWinnerHistory(_id: string): Promise<boolean> { return false; }

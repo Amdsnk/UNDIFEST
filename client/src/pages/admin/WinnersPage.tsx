@@ -37,13 +37,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Trophy, Users, RefreshCw, Sparkles, Plus, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Trophy, Users, RefreshCw, Sparkles, Plus, Pencil, Trash2, Upload, Download, FileSpreadsheet, FileText as FileTextIcon } from "lucide-react";
+import { useState, useRef } from "react";
 import type { Event, Transaction, Winner, User, ManualWinnerHistory } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
+import * as XLSX from "xlsx";
 
 export default function WinnersPage() {
   const [selectedEventId, setSelectedEventId] = useState<string>("__all__");
@@ -80,6 +81,12 @@ export default function WinnersPage() {
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
   const [editingManual, setEditingManual] = useState<ManualWinnerHistory | null>(null);
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
+
+  // ── Upload Excel/TXT ───────────────────────────────────────────────────────
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadPreview, setUploadPreview] = useState<any[]>([]);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadFileName, setUploadFileName] = useState("");
   const [manualForm, setManualForm] = useState({
     winDate: "", phoneNumber: "", displayName: "", amount: "", eventName: "",
   });
@@ -118,6 +125,98 @@ export default function WinnersPage() {
     },
     onError: (e: Error) => toast({ variant: "destructive", title: "Gagal hapus semua", description: e.message }),
   });
+
+  const bulkCreateMutation = useMutation({
+    mutationFn: (entries: any[]) =>
+      apiRequest("/api/manual-winner-history/bulk", { method: "POST", body: { entries } }),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/manual-winner-history"] });
+      setUploadDialogOpen(false);
+      setUploadPreview([]);
+      toast({ title: `✅ ${res?.inserted ?? 0} entri berhasil disimpan dari file` });
+    },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Gagal upload", description: e.message }),
+  });
+
+  /** Normalise a date value from Excel (serial number or string) to ISO string */
+  const parseDate = (raw: any): string => {
+    if (!raw) return new Date().toISOString().slice(0, 10);
+    if (typeof raw === "number") {
+      // Excel serial date
+      const date = XLSX.SSF.parse_date_code(raw);
+      const d = new Date(date.y, date.m - 1, date.d);
+      return d.toISOString().slice(0, 10);
+    }
+    const str = String(raw).trim();
+    // Try DD/MM/YYYY or DD-MM-YYYY
+    const parts = str.split(/[\/\-\.]/);
+    if (parts.length === 3 && parts[0].length <= 2 && parts[2].length === 4) {
+      return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+    }
+    // Fallback: parse as-is
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? new Date().toISOString().slice(0, 10) : d.toISOString().slice(0, 10);
+  };
+
+  /** Map a raw row (from Excel or TXT) to preview object */
+  const mapRow = (row: any, idx: number) => ({
+    winDate: parseDate(row["Tanggal"] ?? row["tanggal"] ?? row[0]),
+    phoneNumber: String(row["No. Telepon"] ?? row["No Telepon"] ?? row["Nomor Telepon"] ?? row["nomor_telepon"] ?? row["phone"] ?? row[1] ?? "").trim(),
+    amount: String(row["Hadiah"] ?? row["hadiah"] ?? row["Amount"] ?? row[2] ?? "").trim(),
+    eventName: String(row["Event"] ?? row["event"] ?? row["Nama Event"] ?? row[3] ?? "").trim(),
+    displayName: String(row["Nama"] ?? row["nama"] ?? row["displayName"] ?? row[4] ?? "").trim() || undefined,
+    displayOrder: idx,
+  });
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadFileName(file.name);
+    const ext = file.name.split(".").pop()?.toLowerCase();
+
+    try {
+      if (ext === "txt" || ext === "csv") {
+        const text = await file.text();
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        // Detect separator: tab, pipe, comma, semicolon
+        const sep = lines[0].includes("\t") ? "\t" : lines[0].includes("|") ? "|" : lines[0].includes(";") ? ";" : ",";
+        const headers = lines[0].split(sep).map(h => h.trim());
+        const isHeader = isNaN(Number(headers[0])) && headers[0].length < 30;
+        const dataLines = isHeader ? lines.slice(1) : lines;
+        const rows = dataLines.map((l, i) => {
+          const cols = l.split(sep).map(c => c.trim());
+          const obj: any = {};
+          if (isHeader) headers.forEach((h, j) => { obj[h] = cols[j] ?? ""; });
+          else cols.forEach((c, j) => { obj[j] = c; });
+          return mapRow(obj, i);
+        }).filter(r => r.phoneNumber && r.eventName);
+        setUploadPreview(rows);
+      } else {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const raw: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+        const rows = raw.map((r, i) => mapRow(r, i)).filter(r => r.phoneNumber && r.eventName);
+        setUploadPreview(rows);
+      }
+      setUploadDialogOpen(true);
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Gagal membaca file", description: err.message });
+    }
+    // Reset input so same file can be re-uploaded
+    e.target.value = "";
+  };
+
+  const downloadTemplate = () => {
+    const ws = XLSX.utils.aoa_to_sheet([
+      ["Tanggal", "No. Telepon", "Hadiah", "Event", "Nama"],
+      ["01/12/2025", "08123456789", "100.000", "E-BOOK : Jadilah Miliarder", "Budi Santoso"],
+      ["15/01/2026", "08567891234", "50.000", "Undian Spesial Lebaran", ""],
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "template-riwayat-pemenang.xlsx");
+  };
 
   const openAddManual = () => {
     setEditingManual(null);
@@ -611,13 +710,22 @@ export default function WinnersPage() {
                     <Trophy className="w-5 h-5 text-yellow-500" />
                     Riwayat Pemenang Manual (Halaman /history)
                   </CardTitle>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    <Button onClick={downloadTemplate} size="sm" variant="outline" className="text-gray-600">
+                      <Download className="w-4 h-4 mr-1" /> Template
+                    </Button>
+                    <Button onClick={() => fileInputRef.current?.click()} size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      <Upload className="w-4 h-4 mr-1" /> Upload Excel/TXT
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".xlsx,.xls,.csv,.txt"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
                     {manualHistory && manualHistory.length > 0 && (
-                      <Button
-                        onClick={() => setClearAllDialogOpen(true)}
-                        size="sm"
-                        variant="destructive"
-                      >
+                      <Button onClick={() => setClearAllDialogOpen(true)} size="sm" variant="destructive">
                         <Trash2 className="w-4 h-4 mr-1" /> Hapus Semua
                       </Button>
                     )}
@@ -737,6 +845,55 @@ export default function WinnersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* ── Upload Preview Dialog ──────────────────────────────────────────── */}
+      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-blue-600" />
+              Preview Upload — {uploadFileName}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-500">
+            Ditemukan <strong>{uploadPreview.length}</strong> baris data. Periksa sebelum menyimpan.
+          </p>
+          <div className="overflow-auto flex-1 border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead>No. Telepon</TableHead>
+                  <TableHead>Hadiah</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Nama</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {uploadPreview.map((row, i) => (
+                  <TableRow key={i} className={!row.phoneNumber || !row.eventName ? "bg-red-50" : ""}>
+                    <TableCell>{row.winDate}</TableCell>
+                    <TableCell>{row.phoneNumber || <span className="text-red-500">⚠ kosong</span>}</TableCell>
+                    <TableCell>{row.amount}</TableCell>
+                    <TableCell>{row.eventName || <span className="text-red-500">⚠ kosong</span>}</TableCell>
+                    <TableCell>{row.displayName || "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex justify-end gap-3 pt-2 border-t">
+            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>Batal</Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={uploadPreview.length === 0 || bulkCreateMutation.isPending}
+              onClick={() => bulkCreateMutation.mutate(uploadPreview)}
+            >
+              {bulkCreateMutation.isPending ? "Menyimpan..." : `Simpan ${uploadPreview.length} Data`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Clear All Confirmation Dialog ──────────────────────────────────── */}
       <AlertDialog open={clearAllDialogOpen} onOpenChange={setClearAllDialogOpen}>
         <AlertDialogContent>

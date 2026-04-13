@@ -3270,6 +3270,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: bulk create manual entries (from Excel/TXT upload)
+  app.post("/api/manual-winner-history/bulk", requireAdmin, async (req, res) => {
+    try {
+      const rows: any[] = req.body.entries;
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ error: "Tidak ada data untuk disimpan" });
+      }
+
+      const entries = rows.map((r: any, idx: number) => ({
+        winDate: new Date(r.winDate),
+        phoneNumber: String(r.phoneNumber || "").trim(),
+        displayName: r.displayName ? String(r.displayName).trim() : null,
+        amount: String(r.amount || "").trim(),
+        eventName: String(r.eventName || "").trim(),
+        displayOrder: idx,
+      }));
+
+      // Basic validation
+      const invalid = entries.filter(e => !e.phoneNumber || !e.amount || !e.eventName || isNaN(e.winDate.getTime()));
+      if (invalid.length > 0) {
+        return res.status(400).json({ error: `${invalid.length} baris tidak valid (telepon/hadiah/event/tanggal kosong)` });
+      }
+
+      const records = await storage.bulkCreateManualWinnerHistory(entries);
+      res.json({ success: true, inserted: records.length });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Gagal menyimpan data bulk" });
+    }
+  });
+
   // Admin: delete ALL manual entries (reset)
   app.delete("/api/manual-winner-history", requireAdmin, async (_req, res) => {
     try {
