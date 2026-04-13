@@ -79,6 +79,7 @@ export default function WinnersPage() {
   // ── Manual Winner History ───────────────────────────────────────────────────
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
   const [editingManual, setEditingManual] = useState<ManualWinnerHistory | null>(null);
+  const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
   const [manualForm, setManualForm] = useState({
     winDate: "", phoneNumber: "", displayName: "", amount: "", eventName: "",
   });
@@ -106,6 +107,16 @@ export default function WinnersPage() {
       apiRequest(`/api/manual-winner-history/${id}`, { method: "DELETE" }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/manual-winner-history"] }); toast({ title: "Entri dihapus" }); },
     onError: (e: Error) => toast({ variant: "destructive", title: "Gagal", description: e.message }),
+  });
+
+  const clearAllManualMutation = useMutation({
+    mutationFn: () => apiRequest("/api/manual-winner-history", { method: "DELETE" }),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/manual-winner-history"] });
+      setClearAllDialogOpen(false);
+      toast({ title: `Semua entri dihapus (${res?.deleted ?? 0} data)` });
+    },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Gagal hapus semua", description: e.message }),
   });
 
   const openAddManual = () => {
@@ -600,9 +611,20 @@ export default function WinnersPage() {
                     <Trophy className="w-5 h-5 text-yellow-500" />
                     Riwayat Pemenang Manual (Halaman /history)
                   </CardTitle>
-                  <Button onClick={openAddManual} size="sm" className="bg-green-600 hover:bg-green-700">
-                    <Plus className="w-4 h-4 mr-1" /> Tambah Entri
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {manualHistory && manualHistory.length > 0 && (
+                      <Button
+                        onClick={() => setClearAllDialogOpen(true)}
+                        size="sm"
+                        variant="destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" /> Hapus Semua
+                      </Button>
+                    )}
+                    <Button onClick={openAddManual} size="sm" className="bg-green-600 hover:bg-green-700">
+                      <Plus className="w-4 h-4 mr-1" /> Tambah Entri
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-500 mb-3">Data di bawah ini ditampilkan di halaman publik Riwayat Pemenang. Admin mengelola entri secara manual.</p>
@@ -711,6 +733,27 @@ export default function WinnersPage() {
               className="bg-green-600 hover:bg-green-700"
             >
               Konfirmasi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* ── Clear All Confirmation Dialog ──────────────────────────────────── */}
+      <AlertDialog open={clearAllDialogOpen} onOpenChange={setClearAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600">Hapus Semua Entri?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini akan menghapus <strong>semua {manualHistory?.length ?? 0} entri</strong> Riwayat Pemenang Manual secara permanen.
+              Data tidak dapat dipulihkan. Pastikan Anda sudah siap memasukkan data baru.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => clearAllManualMutation.mutate()}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Ya, Hapus Semua
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

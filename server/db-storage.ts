@@ -527,4 +527,9 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(manualWinnerHistory).where(eq(manualWinnerHistory.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
+
+  async deleteAllManualWinnerHistory(): Promise<number> {
+    const result = await db.delete(manualWinnerHistory);
+    return result.rowCount ?? 0;
+  }
 }

@@ -136,6 +136,7 @@ export interface IStorage {
   createManualWinnerHistory(entry: InsertManualWinnerHistory): Promise<ManualWinnerHistory>;
   updateManualWinnerHistory(id: string, entry: Partial<InsertManualWinnerHistory>): Promise<ManualWinnerHistory | undefined>;
   deleteManualWinnerHistory(id: string): Promise<boolean>;
+  deleteAllManualWinnerHistory(): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -467,6 +468,7 @@ export class MemStorage implements IStorage {
   }
   async updateManualWinnerHistory(_id: string, _entry: Partial<InsertManualWinnerHistory>): Promise<ManualWinnerHistory | undefined> { return undefined; }
   async deleteManualWinnerHistory(_id: string): Promise<boolean> { return false; }
+  async deleteAllManualWinnerHistory(): Promise<number> { return 0; }
 }
 
 // Use database storage instead of in-memory

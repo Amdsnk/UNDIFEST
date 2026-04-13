@@ -76,10 +76,7 @@ app.use((req, res, next) => {
     console.log("App will continue running without seed data...");
   });
 
-  // Seed manual winner history dummy data (independent — runs even if main seed skipped)
-  seedManualWinnerHistory().catch((error) => {
-    console.error("Failed to seed manual winner history:", error);
-  });
+  // NOTE: Manual winner history is managed exclusively by admin — no auto-seeding.
 
   // ── Recurring Event Scheduler ────────────────────────────────────────────
   // Checks every 10 minutes for finished recurring events and auto-creates the next occurrence

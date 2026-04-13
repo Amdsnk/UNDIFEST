@@ -3270,6 +3270,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: delete ALL manual entries (reset)
+  app.delete("/api/manual-winner-history", requireAdmin, async (_req, res) => {
+    try {
+      const count = await storage.deleteAllManualWinnerHistory();
+      res.json({ success: true, deleted: count });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete all entries" });
+    }
+  });
+
   // Admin: delete a manual entry
   app.delete("/api/manual-winner-history/:id", requireAdmin, async (req, res) => {
     try {
