@@ -245,9 +245,9 @@ export async function seedDatabase() {
  */
 export async function seedManualWinnerHistory() {
   try {
-    const existing = await db.select().from(manualWinnerHistory).limit(1);
-    if (existing.length > 0) {
-      console.log("✓ Manual winner history already has data, skipping seed...");
+    const existing = await db.select().from(manualWinnerHistory).limit(20);
+    if (existing.length >= 20) {
+      console.log("✓ Manual winner history already has enough data, skipping seed...");
       return;
     }
 
@@ -265,7 +265,7 @@ export async function seedManualWinnerHistory() {
       "Undian Akhir Tahun 2025",
     ];
 
-    const amounts = [10000, 10000, 10000, 25000, 25000, 50000, 100000];
+    const amounts = ["10.000", "10.000", "10.000", "25.000", "25.000", "50.000", "100.000"];
 
     const phonePrefixes = ["0812", "0813", "0851", "0852", "0853", "0856", "0857", "0858", "0877", "0878", "0881", "0882", "0888", "0895", "0896"];
 
@@ -280,7 +280,7 @@ export async function seedManualWinnerHistory() {
     const entries: {
       winDate: Date;
       phoneNumber: string;
-      amount: number;
+      amount: string;
       eventName: string;
       displayOrder: number;
     }[] = [];
