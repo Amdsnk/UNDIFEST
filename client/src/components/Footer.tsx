@@ -97,7 +97,7 @@ export function Footer() {
       </div>
 
       {/* Kemensos License Section */}
-      <div className="mt-6 mb-4 p-4 rounded-xl border-2 border-dashed border-red-500">
+      <div className="mt-6 mb-4 p-4 rounded-xl border-2 border-red-500">
         <div className="flex items-center gap-3 mb-3">
           <img src={kemensosLogoUrl} alt="Kementerian Sosial" className="h-14 flex-shrink-0" />
           <div>
