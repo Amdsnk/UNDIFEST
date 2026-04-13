@@ -96,6 +96,21 @@ export function Footer() {
         </div>
       </div>
 
+      {/* Kemensos License Section */}
+      <div className="mt-6 mb-4 p-4 bg-[#0d1035] rounded-xl border border-[#1e2255]">
+        <div className="flex items-center gap-3 mb-3">
+          <img src={kemensosLogoUrl} alt="Kementerian Sosial" className="h-12 flex-shrink-0" />
+          <div>
+            <p className="text-white font-bold text-sm leading-tight">KEMENTERIAN SOSIAL</p>
+            <p className="text-white font-bold text-sm leading-tight">REPUBLIK INDONESIA</p>
+          </div>
+        </div>
+        <p className="text-gray-300 text-xs leading-relaxed">
+          PT. Undian Festival Indonesia telah memperoleh Izin Penyelenggaraan dari Kementerian Sosial Republik Indonesia{" "}
+          <strong className="text-white">NOMOR : 303/5.5/PI.02/04/2026.</strong>
+        </p>
+      </div>
+
       {/* Social Media */}
       <div className="mb-4 md:mb-8">
         <h3 className="text-white font-bold text-lg mb-4">Follow Us</h3>
