@@ -628,6 +628,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update bank info on a transaction (public — transactionId is proof of ownership)
+  app.patch("/api/transactions/:id/bank-info", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { buyerBankName, buyerAccountNumber } = req.body;
+
+      if (!buyerBankName || !buyerAccountNumber) {
+        return res.status(400).json({ error: "Nama bank dan nomor rekening harus diisi" });
+      }
+
+      const transaction = await storage.getTransaction(id);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaksi tidak ditemukan" });
+      }
+
+      await storage.updateTransaction(id, {
+        buyerBankName: String(buyerBankName).trim(),
+        buyerAccountNumber: String(buyerAccountNumber).trim(),
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Gagal menyimpan data rekening" });
+    }
+  });
+
   // Update transaction payment status (admin only)
   app.patch("/api/transactions/:id/status", requireAdmin, async (req, res) => {
     try {

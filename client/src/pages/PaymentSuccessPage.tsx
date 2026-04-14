@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { CheckCircle, Loader2, Download, FileText, Link2, Copy, Check } from "lucide-react";
+import { CheckCircle, Loader2, Download, FileText, Link2, Copy, Check, Landmark, CreditCard } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 const MAX_POLL_ATTEMPTS = 40; // 40 × 3s = 2 minutes (only used for non-redirect flow)
@@ -21,6 +21,13 @@ export default function PaymentSuccessPage() {
   const [txDate, setTxDate] = useState<string>("");
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasDownloadedRef = useRef(false);
+
+  // Bank info form state
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [bankSubmitted, setBankSubmitted] = useState(false);
+  const [bankSubmitting, setBankSubmitting] = useState(false);
+  const [bankError, setBankError] = useState("");
 
   const successPageUrl = typeof window !== "undefined"
     ? `${window.location.origin}/payment/success?trx=${transactionId}`
@@ -216,6 +223,31 @@ export default function PaymentSuccessPage() {
     };
   }, [fetchEbook, triggerAutoDownload]);
 
+  const handleBankSubmit = async () => {
+    if (!bankName.trim() || !accountNumber.trim()) {
+      setBankError("Nama bank dan nomor rekening harus diisi");
+      return;
+    }
+    if (!/^\d{6,20}$/.test(accountNumber.replace(/[\s-]/g, ""))) {
+      setBankError("Nomor rekening tidak valid (6–20 digit angka)");
+      return;
+    }
+    setBankError("");
+    setBankSubmitting(true);
+    try {
+      await apiRequest(`/api/transactions/${transactionId}/bank-info`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buyerBankName: bankName.trim(), buyerAccountNumber: accountNumber.trim() }),
+      });
+      setBankSubmitted(true);
+    } catch {
+      setBankError("Gagal menyimpan. Silakan coba lagi.");
+    } finally {
+      setBankSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0a1621]">
       <div className="max-w-undifest mx-auto pb-20 bg-[#16202a]">
@@ -313,6 +345,62 @@ export default function PaymentSuccessPage() {
               >
                 Lihat Riwayat Transaksi
               </button>
+
+              {/* Data Rekening Form */}
+              {transactionId && (
+                <div className="w-full max-w-md mt-6 bg-white rounded-2xl p-6">
+                  <div className="text-center mb-4">
+                    <h3 className="text-gray-800 text-xl font-bold mb-1">Data Rekening</h3>
+                    <p className="text-gray-500 text-sm">Isi data Anda</p>
+                  </div>
+                  {bankSubmitted ? (
+                    <div className="flex flex-col items-center gap-2 py-4">
+                      <CheckCircle className="w-10 h-10 text-green-500" />
+                      <p className="text-green-600 font-semibold">Data rekening tersimpan!</p>
+                      <p className="text-gray-400 text-xs text-center">Akan digunakan jika Anda memenangkan hadiah refund</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <Landmark className="w-4 h-4" />
+                          Nama Bank
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: BCA, BRI, BNI, Mandiri, GoPay, OVO, dll"
+                          value={bankName}
+                          onChange={e => setBankName(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <CreditCard className="w-4 h-4" />
+                          Nomor Rekening / E-Wallet
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Masukkan nomor rekening atau nomor e-wallet"
+                          value={accountNumber}
+                          onChange={e => setAccountNumber(e.target.value.replace(/[^0-9]/g, ""))}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        <p className="text-xs text-gray-400">Digunakan jika Anda memenangkan hadiah refund</p>
+                      </div>
+                      {bankError && <p className="text-red-500 text-xs">{bankError}</p>}
+                      <button
+                        onClick={handleBankSubmit}
+                        disabled={bankSubmitting}
+                        className="w-full bg-[#4169E1] hover:bg-[#3557C1] disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors"
+                      >
+                        {bankSubmitting ? "Menyimpan..." : "Submit"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* WhatsApp Section */}
               <div className="w-full max-w-md mt-6 text-center">

@@ -142,43 +142,82 @@ export default function WinnersPage() {
     onError: (e: Error) => toast({ variant: "destructive", title: "Gagal upload", description: e.message }),
   });
 
-  /** Normalise a date value from Excel (serial number or string) to ISO string */
+  /** Normalise a date value from Excel (serial number, Date object, or string) to ISO string.
+   *  Uses local-time methods to avoid timezone (WIB UTC+7) shifting the date by -1 day. */
   const parseDate = (raw: any): string => {
-    if (!raw) return new Date().toISOString().slice(0, 10);
-    if (typeof raw === "number") {
-      // Excel serial date
-      const date = XLSX.SSF.parse_date_code(raw);
-      const d = new Date(date.y, date.m - 1, date.d);
-      return d.toISOString().slice(0, 10);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const today = () => {
+      const t = new Date();
+      return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+    };
+    if (!raw && raw !== 0) return today();
+
+    // JavaScript Date object (from XLSX cellDates: true)
+    if (raw instanceof Date) {
+      if (isNaN(raw.getTime())) return today();
+      // getFullYear/Month/Date use LOCAL time → correct for WIB without any offset issue
+      return `${raw.getFullYear()}-${pad(raw.getMonth() + 1)}-${pad(raw.getDate())}`;
     }
+
+    // Excel serial date number
+    if (typeof raw === "number") {
+      const date = XLSX.SSF.parse_date_code(raw);
+      // Format directly from parsed components – avoid new Date() which shifts by timezone
+      return `${date.y}-${pad(date.m)}-${pad(date.d)}`;
+    }
+
     const str = String(raw).trim();
-    // Try DD/MM/YYYY or DD-MM-YYYY
+    // Try DD/MM/YYYY, DD-MM-YYYY, or DD.MM.YYYY
     const parts = str.split(/[\/\-\.]/);
     if (parts.length === 3 && parts[0].length <= 2 && parts[2].length === 4) {
-      return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      return `${parts[2]}-${pad(Number(parts[1]))}-${pad(Number(parts[0]))}`;
     }
-    // Fallback: parse as-is
+    // Fallback: parse as-is using local time methods to avoid UTC shift
     const d = new Date(str);
-    return isNaN(d.getTime()) ? new Date().toISOString().slice(0, 10) : d.toISOString().slice(0, 10);
+    if (isNaN(d.getTime())) return today();
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  /** Normalise a phone number string/number: ensure leading zero for Indonesian numbers.
+   *  Excel often strips the leading 0 when a cell is stored as a number. */
+  const normalizePhone = (raw: any): string => {
+    if (raw === null || raw === undefined || raw === "") return "";
+    const str = String(raw).trim().replace(/[\s\-]/g, "");
+    // If stored as pure number by Excel and starts with 8x (Indonesian mobile), add leading 0
+    if (/^8[0-9]{8,11}$/.test(str)) return "0" + str;
+    return str;
   };
 
   /** Map a raw row (from Excel or TXT) to preview object.
    *  Supports format: Hari | Tanggal | no hp | Hadiah | Event
    *  "Hari" column is ignored (day-of-week label). */
   const mapRow = (row: any, idx: number) => {
-    // Phone: support "no hp", "no_hp", "No HP", "No. Telepon", etc.
-    const phone = String(
+    // Phone: support named headers AND positional fallback (col index 1 in template)
+    const rawPhone =
       row["no hp"] ?? row["No HP"] ?? row["no_hp"] ?? row["No. Telepon"] ??
-      row["No Telepon"] ?? row["Nomor Telepon"] ?? row["nomor_telepon"] ?? row["phone"] ?? ""
+      row["No Telepon"] ?? row["Nomor Telepon"] ?? row["nomor_telepon"] ?? row["phone"] ??
+      row[1] ?? "";  // positional fallback: column B
+    const phone = normalizePhone(rawPhone);
+
+    // Tanggal: named header OR positional fallback (col index 0 in template)
+    const tanggal =
+      row["Tanggal"] ?? row["tanggal"] ?? row["date"] ??
+      row[0] ?? "";  // positional fallback: column A
+
+    // Amount: named header OR positional fallback (col index 2)
+    const amount = String(
+      row["Hadiah"] ?? row["hadiah"] ?? row["Amount"] ?? row[2] ?? ""
     ).trim();
 
-    // Tanggal: may be at named key, or positional.
-    // When format has "Hari" column, "Tanggal" is at index 1; "no hp" at index 2, etc.
-    const tanggal = row["Tanggal"] ?? row["tanggal"] ?? row["date"] ?? "";
+    // Event: named header OR positional fallback (col index 3)
+    const eventName = String(
+      row["Event"] ?? row["event"] ?? row["Nama Event"] ?? row[3] ?? ""
+    ).trim();
 
-    const amount = String(row["Hadiah"] ?? row["hadiah"] ?? row["Amount"] ?? "").trim();
-    const eventName = String(row["Event"] ?? row["event"] ?? row["Nama Event"] ?? "").trim();
-    const displayName = String(row["Nama"] ?? row["nama"] ?? row["displayName"] ?? "").trim() || undefined;
+    // Nama (optional): named header OR positional fallback (col index 4)
+    const displayName = String(
+      row["Nama"] ?? row["nama"] ?? row["displayName"] ?? row[4] ?? ""
+    ).trim() || undefined;
 
     return {
       winDate: parseDate(tanggal),
@@ -226,7 +265,8 @@ export default function WinnersPage() {
         setUploadPreview(rows);
       } else {
         const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, { type: "array" });
+        // cellDates:true → XLSX returns JS Date objects for date-formatted cells
+        const wb = XLSX.read(buf, { type: "array", cellDates: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
         const rows = raw.map((r, i) => mapRow(r, i)).filter(r => r.phoneNumber && r.eventName);
