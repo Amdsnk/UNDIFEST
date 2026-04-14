@@ -128,7 +128,11 @@ export default function WinnersPage() {
 
   const bulkCreateMutation = useMutation({
     mutationFn: (entries: any[]) =>
-      apiRequest("/api/manual-winner-history/bulk", { method: "POST", body: { entries } }),
+      apiRequest("/api/manual-winner-history/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries }),
+      }),
     onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/manual-winner-history"] });
       setUploadDialogOpen(false);
