@@ -319,9 +319,11 @@ export default function WinnersPage() {
 
   const activeEvents = events?.filter(e => e.status === "aktif" || e.status === "selesai") || [];
 
+  // Hanya hitung transaksi yang sudah LUNAS (paid) sebagai peserta aktif
+  const paidTransactions = transactions?.filter(t => t.paymentStatus === "paid") || [];
   const eventTransactions = selectedEventId !== "__all__"
-    ? transactions?.filter(t => t.eventId === selectedEventId) || []
-    : transactions || [];
+    ? paidTransactions.filter(t => t.eventId === selectedEventId)
+    : paidTransactions;
 
   const eventWinners = selectedEventId !== "__all__"
     ? winners?.filter(w => w.eventId === selectedEventId) || []
