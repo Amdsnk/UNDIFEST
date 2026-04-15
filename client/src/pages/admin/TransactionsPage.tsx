@@ -185,7 +185,7 @@ export default function TransactionsPage() {
   return (
     <SidebarProvider>
       <AdminSidebar />
-      <div className="flex flex-col flex-1 min-h-screen admin-light bg-gray-50">
+      <div className="flex flex-col flex-1 min-h-screen min-w-0 admin-light bg-gray-50">
         <AdminPageHeader 
             title="Daftar Transaksi"
             description="Riwayat seluruh transaksi pembelian tiket"
@@ -195,7 +195,7 @@ export default function TransactionsPage() {
             ]}
           />
 
-        <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex-1 p-8 overflow-x-hidden">
             <div className="max-w-7xl mx-auto space-y-6">
               {/* Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
