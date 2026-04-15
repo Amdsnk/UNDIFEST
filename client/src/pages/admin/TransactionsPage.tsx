@@ -491,6 +491,28 @@ export default function TransactionsPage() {
                                           </div>
                                         </div>
 
+                                        {/* Data Rekening Pembeli */}
+                                        {(transaction.buyerBankName || transaction.buyerAccountNumber) && (
+                                          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                            <p className="text-sm text-blue-800 font-medium mb-3">Data Rekening Pemenang:</p>
+                                            <div className="grid grid-cols-2 gap-3">
+                                              <div>
+                                                <p className="text-xs text-blue-600 font-medium mb-1">Nama Bank</p>
+                                                <p className="font-semibold text-gray-900">{transaction.buyerBankName || "-"}</p>
+                                              </div>
+                                              <div>
+                                                <p className="text-xs text-blue-600 font-medium mb-1">Nomor Rekening</p>
+                                                <p className="font-mono font-semibold text-gray-900">{transaction.buyerAccountNumber || "-"}</p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
+                                        {!transaction.buyerBankName && !transaction.buyerAccountNumber && (
+                                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                            <p className="text-sm text-gray-500 font-medium">Data Rekening Pemenang: <span className="text-gray-400 font-normal">Belum diisi oleh pembeli</span></p>
+                                          </div>
+                                        )}
+
                                         {/* Manual status update buttons */}
                                         <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                                           <p className="text-sm text-yellow-800 font-medium mb-3">Update Status Pembayaran Manual:</p>

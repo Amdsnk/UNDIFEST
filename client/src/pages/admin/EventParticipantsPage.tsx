@@ -67,8 +67,9 @@ export default function EventParticipantsPage() {
   } = useQuery<ParticipantsResponse>({
     queryKey: [`/api/admin/events/${eventId}/participants`],
     enabled: !!eventId,
-    staleTime: 0,      // Always treat as stale → always fetches fresh
-    gcTime: 0,         // Don't cache
+    staleTime: 0,         // Always treat as stale → always fetches fresh
+    gcTime: 0,            // Don't cache
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
 
   // Still fetch full transaction list for the "pending" section and CSV export

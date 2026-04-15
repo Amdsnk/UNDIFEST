@@ -250,7 +250,7 @@ export default function PaymentSuccessPage() {
 
   return (
     <div className="min-h-screen bg-[#0a1621]">
-      <div className="max-w-undifest mx-auto pb-20 bg-[#16202a]">
+      <div className="max-w-undifest mx-auto pb-40 bg-[#16202a]">
         <MobileHeader />
 
         <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
