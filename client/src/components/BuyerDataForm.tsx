@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,13 @@ export default function BuyerDataForm({
 
   const [formData, setFormData] = useState<BuyerData>(getInitialData);
   const [errors, setErrors] = useState<Partial<BuyerData>>({});
+
+  // FB Pixel: track when buyer form is shown (InitiateCheckout)
+  useEffect(() => {
+    try {
+      (window as any).fbq?.('track', 'InitiateCheckout');
+    } catch { /* non-fatal */ }
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<BuyerData> = {};

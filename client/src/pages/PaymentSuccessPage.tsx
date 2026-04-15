@@ -33,6 +33,18 @@ export default function PaymentSuccessPage() {
     ? `${window.location.origin}/payment/success?trx=${transactionId}`
     : "";
 
+  // FB Pixel: track Purchase saat pembayaran berhasil dan amount sudah diketahui
+  useEffect(() => {
+    if (status === "success" && txAmount > 0) {
+      try {
+        (window as any).fbq?.('track', 'Purchase', {
+          value: txAmount,
+          currency: 'IDR',
+        });
+      } catch { /* non-fatal */ }
+    }
+  }, [status, txAmount]);
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(successPageUrl).then(() => {
       setCopied(true);

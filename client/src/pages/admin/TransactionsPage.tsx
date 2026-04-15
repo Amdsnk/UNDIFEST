@@ -286,12 +286,16 @@ export default function TransactionsPage() {
 
                   {/* Table */}
                   <div className="overflow-x-auto rounded-xl border border-gray-200 mx-6 mb-6">
-                    <Table className="min-w-[950px]">
+                    <Table className="min-w-[1300px]">
                       <TableHeader>
                         <TableRow className="bg-gradient-to-r from-gray-50 to-purple-50 hover:from-gray-100 hover:to-purple-100">
                           <TableHead className="font-bold text-gray-700">ID Transaksi</TableHead>
                           <TableHead className="font-bold text-gray-700">Event</TableHead>
+                          <TableHead className="font-bold text-gray-700">Nama</TableHead>
                           <TableHead className="font-bold text-gray-700">Nomor Telepon</TableHead>
+                          <TableHead className="font-bold text-gray-700">Email</TableHead>
+                          <TableHead className="font-bold text-gray-700">No Rekening</TableHead>
+                          <TableHead className="font-bold text-gray-700 text-center">Total Tiket</TableHead>
                           <TableHead className="font-bold text-gray-700">Jumlah</TableHead>
                           <TableHead className="font-bold text-gray-700">Status</TableHead>
                           <TableHead className="font-bold text-gray-700">IP</TableHead>
@@ -302,7 +306,7 @@ export default function TransactionsPage() {
                       <TableBody>
                         {isLoading ? (
                           <TableRow>
-                            <TableCell colSpan={8} className="text-center py-12">
+                            <TableCell colSpan={12} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                                 <p className="text-gray-500 font-medium">Memuat data transaksi...</p>
@@ -324,8 +328,33 @@ export default function TransactionsPage() {
                                 </div>
                               </TableCell>
                               <TableCell className="py-3">
+                                <span className="text-sm text-gray-800">{transaction.buyerName || "-"}</span>
+                              </TableCell>
+                              <TableCell className="py-3">
                                 <span className="font-mono bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-xs font-medium">
                                   {transaction.phoneNumber}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-3">
+                                <span className="text-xs text-gray-700">{transaction.buyerEmail || "-"}</span>
+                              </TableCell>
+                              <TableCell className="py-3">
+                                <div className="flex flex-col text-xs">
+                                  {(transaction.buyerAccountNumber || transaction.buyerBankName) ? (
+                                    <>
+                                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">{transaction.buyerAccountNumber || "-"}</span>
+                                      {transaction.buyerBankName && (
+                                        <span className="text-gray-500 mt-0.5">{transaction.buyerBankName}</span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-3 text-center">
+                                <span className="inline-flex items-center justify-center bg-purple-100 text-purple-700 font-bold text-sm rounded-full w-8 h-8">
+                                  {transaction.ticketCount ?? 1}
                                 </span>
                               </TableCell>
                               <TableCell className="py-3">
@@ -581,7 +610,7 @@ export default function TransactionsPage() {
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={8} className="text-center py-12">
+                            <TableCell colSpan={12} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="bg-gray-100 rounded-full p-4">
                                   <Receipt className="w-12 h-12 text-gray-400" />
