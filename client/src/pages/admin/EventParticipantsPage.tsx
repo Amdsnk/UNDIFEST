@@ -54,7 +54,7 @@ export default function EventParticipantsPage() {
   // Returns registeredParticipants, guestParticipants, paidTransactions from server.
   // The server does ALL filtering - the client just renders.
   type ParticipantsResponse = {
-    registeredParticipants: User[];
+    registeredParticipants: { user: User; transaction: Transaction }[];
     guestParticipants: { transaction: Transaction; totalTickets: number; totalAmount: number }[];
     paidTransactions: Transaction[];
     totalPaid: number;
@@ -86,7 +86,8 @@ export default function EventParticipantsPage() {
   const isLoading = isLoadingEvent || isLoadingParticipants || isLoadingTransactions || isLoadingWinners;
 
   // Derive participant data from the server response
-  const users: User[] = participantsData?.registeredParticipants ?? [];
+  // registeredParticipantRows: one entry per paid transaction (not per unique user)
+  const registeredParticipantRows = participantsData?.registeredParticipants ?? [];
   const serverGuestParticipants = participantsData?.guestParticipants ?? [];
 
   // Normalize phone numbers for comparison (handles +62, 62, 08 formats)
@@ -194,17 +195,6 @@ export default function EventParticipantsPage() {
     },
   });
 
-  const getUserStats = (userId: string, phoneNumber: string) => {
-    const userTransactions = transactions.filter(
-      t => (t.userId === userId || t.phoneNumber === phoneNumber) &&
-           t.eventId === eventId &&
-           t.paymentStatus === "paid"
-    );
-    const totalTickets = userTransactions.reduce((sum, t) => sum + t.ticketCount, 0);
-    const totalAmount = userTransactions.reduce((sum, t) => sum + t.amount, 0);
-    return { totalTickets, totalAmount };
-  };
-
   const toggleFilterStatus = (status: string) => {
     setFilterStatus(prev =>
       prev.includes(status)
@@ -224,9 +214,9 @@ export default function EventParticipantsPage() {
   };
 
   // ── DATA FROM SERVER (authoritative — no client-side filtering) ─────────────
-  // `users` (registered participants) and `serverGuestParticipants` are already
-  // computed server-side from the dedicated /api/admin/events/:id/participants endpoint.
-  const eventParticipants = users; // already filtered by server
+  // `registeredParticipantRows` is one row per paid transaction (not per unique user).
+  // `serverGuestParticipants` are already per-transaction from the server.
+  const eventParticipants = registeredParticipantRows; // one row per transaction
 
   // Guest participants come pre-aggregated from the server
   const guestParticipants = serverGuestParticipants;
@@ -239,20 +229,8 @@ export default function EventParticipantsPage() {
          (now - new Date(t.createdAt).getTime()) < 24 * 60 * 60 * 1000
   );
 
-  // Stats helper for registered users (uses paidTransactions from server)
-  const getGuestStats = (phone: string) => {
-    // Already aggregated server-side; look it up from serverGuestParticipants
-    const entry = serverGuestParticipants.find(
-      g => normalizePhone(g.transaction.phoneNumber) === normalizePhone(phone)
-    );
-    return {
-      totalTickets: entry?.totalTickets ?? 0,
-      totalAmount: entry?.totalAmount ?? 0,
-    };
-  };
-
   const filteredUsers = eventParticipants
-    .filter(user => {
+    .filter(({ user }) => {
       const matchesSearch = searchTerm === "" ||
         (user.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
         user.phoneNumber.includes(searchTerm) ||
@@ -275,40 +253,40 @@ export default function EventParticipantsPage() {
 
       switch (sortField) {
         case "name":
-          aValue = (a.name || "").toLowerCase();
-          bValue = (b.name || "").toLowerCase();
+          aValue = (a.user.name || "").toLowerCase();
+          bValue = (b.user.name || "").toLowerCase();
           break;
         case "phone":
-          aValue = a.phoneNumber;
-          bValue = b.phoneNumber;
+          aValue = a.user.phoneNumber;
+          bValue = b.user.phoneNumber;
           break;
         case "city":
-          aValue = (a.city || "").toLowerCase();
-          bValue = (b.city || "").toLowerCase();
+          aValue = (a.user.city || "").toLowerCase();
+          bValue = (b.user.city || "").toLowerCase();
           break;
         case "email":
-          aValue = (a.email || "").toLowerCase();
-          bValue = (b.email || "").toLowerCase();
+          aValue = (a.user.email || "").toLowerCase();
+          bValue = (b.user.email || "").toLowerCase();
           break;
         case "totalTickets":
-          aValue = getUserStats(a.id, a.phoneNumber).totalTickets;
-          bValue = getUserStats(b.id, b.phoneNumber).totalTickets;
+          aValue = a.transaction.ticketCount;
+          bValue = b.transaction.ticketCount;
           break;
         case "totalAmount":
-          aValue = getUserStats(a.id, a.phoneNumber).totalAmount;
-          bValue = getUserStats(b.id, b.phoneNumber).totalAmount;
+          aValue = a.transaction.amount;
+          bValue = b.transaction.amount;
           break;
         case "status":
-          aValue = a.isActive ? 1 : 0;
-          bValue = b.isActive ? 1 : 0;
+          aValue = a.user.isActive ? 1 : 0;
+          bValue = b.user.isActive ? 1 : 0;
           break;
         case "ip":
-          aValue = (a.ip || "").toLowerCase();
-          bValue = (b.ip || "").toLowerCase();
+          aValue = (a.user.ip || "").toLowerCase();
+          bValue = (b.user.ip || "").toLowerCase();
           break;
         case "createdAt":
-          aValue = new Date(a.createdAt).getTime();
-          bValue = new Date(b.createdAt).getTime();
+          aValue = new Date(a.transaction.createdAt).getTime();
+          bValue = new Date(b.transaction.createdAt).getTime();
           break;
         default:
           return 0;
@@ -343,17 +321,10 @@ export default function EventParticipantsPage() {
 
     let rowNum = 1;
 
-    // Registered users
-    eventParticipants.forEach(user => {
-      const stats = getUserStats(user.id, user.phoneNumber);
-      const userTx = transactions.find(
-        t => (t.userId === user.id || t.phoneNumber === user.phoneNumber) &&
-             t.eventId === eventId && t.paymentStatus === "paid"
-      );
-      const lotteryCode = userTx ? `UND-${userTx.id.slice(0, 8).toUpperCase()}` : "-";
-      const joinTime = userTx
-        ? new Date(userTx.createdAt).toLocaleString("id-ID")
-        : new Date(user.createdAt).toLocaleString("id-ID");
+    // Registered users — one row per transaction
+    eventParticipants.forEach(({ user, transaction }) => {
+      const lotteryCode = `UND-${transaction.id.slice(0, 8).toUpperCase()}`;
+      const joinTime = new Date(transaction.createdAt).toLocaleString("id-ID");
       const noRek = user.accountNumber
         ? `${user.bankName || ""} ${user.accountNumber}`.trim()
         : "-";
@@ -368,7 +339,7 @@ export default function EventParticipantsPage() {
         joinTime,
         user.city || "-",
         user.ip || "-",
-        String(stats.totalAmount),
+        String(transaction.amount),
         "Akun Terdaftar",
       ]);
     });
@@ -487,7 +458,7 @@ export default function EventParticipantsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-blue-100 text-sm font-medium">Total Peserta</p>
-                      <p className="text-3xl font-bold mt-1">{eventParticipants.length + guestParticipants.length}</p>
+                      <p className="text-3xl font-bold mt-1">{new Set(eventParticipants.map(r => r.user.id)).size + guestParticipants.length}</p>
                     </div>
                     <div className="bg-white/20 rounded-full p-3">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -520,7 +491,7 @@ export default function EventParticipantsPage() {
                     <div>
                       <p className="text-purple-100 text-sm font-medium">Akun Aktif</p>
                       <p className="text-3xl font-bold mt-1">
-                        {eventParticipants.filter(u => u.isActive).length}
+                        {new Set(eventParticipants.filter(r => r.user.isActive).map(r => r.user.id)).size}
                       </p>
                     </div>
                     <div className="bg-white/20 rounded-full p-3">
@@ -696,7 +667,7 @@ export default function EventParticipantsPage() {
                           className="font-bold cursor-pointer hover:bg-purple-50 text-gray-700 transition-colors"
                           onClick={() => handleSort("createdAt")}
                         >
-                          Tgl Regist {sortField === "createdAt" && (sortOrder === "asc" ? "↑" : "↓")}
+                          Waktu Transaksi {sortField === "createdAt" && (sortOrder === "asc" ? "↑" : "↓")}
                         </TableHead>
                         <TableHead className="font-bold text-gray-700">
                           Aksi
@@ -726,13 +697,12 @@ export default function EventParticipantsPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        paginatedUsers.map((user, index) => {
-                          const stats = getUserStats(user.id, user.phoneNumber);
+                        paginatedUsers.map(({ user, transaction }, index) => {
                           const isWinner = winners.some(w => w.userId === user.id && w.eventId === eventId);
                           const rowNumber = (currentPage - 1) * itemsPerPage + index + 1;
 
                           return (
-                            <TableRow key={user.id} className="hover:bg-purple-50/50 transition-colors">
+                            <TableRow key={transaction.id} className="hover:bg-purple-50/50 transition-colors">
                               <TableCell className="font-semibold text-gray-700">
                                 {rowNumber}
                               </TableCell>
@@ -768,12 +738,12 @@ export default function EventParticipantsPage() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
-                                  {stats.totalTickets}
+                                  {transaction.ticketCount}
                                 </span>
                               </TableCell>
                               <TableCell className="text-right">
                                 <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
-                                  {new Intl.NumberFormat("id-ID").format(stats.totalAmount)}
+                                  {new Intl.NumberFormat("id-ID").format(transaction.amount)}
                                 </span>
                               </TableCell>
                               <TableCell>
@@ -793,14 +763,14 @@ export default function EventParticipantsPage() {
                               <TableCell className="text-gray-600">
                                 <div className="flex flex-col">
                                   <span className="font-medium">
-                                    {new Date(user.createdAt).toLocaleDateString("id-ID", {
+                                    {new Date(transaction.createdAt).toLocaleDateString("id-ID", {
                                       day: "2-digit",
                                       month: "short",
                                       year: "numeric",
                                     })}
                                   </span>
                                   <span className="text-xs text-gray-500">
-                                    {new Date(user.createdAt).toLocaleTimeString("id-ID", {
+                                    {new Date(transaction.createdAt).toLocaleTimeString("id-ID", {
                                       hour: "2-digit",
                                       minute: "2-digit",
                                     })}
@@ -945,6 +915,7 @@ export default function EventParticipantsPage() {
                         <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
                           <TableHead className="font-bold text-gray-700">No</TableHead>
                           <TableHead className="font-bold text-gray-700">Nama</TableHead>
+                          <TableHead className="font-bold text-gray-700">Waktu Transaksi</TableHead>
                           <TableHead className="font-bold text-gray-700">No WA</TableHead>
                           <TableHead className="font-bold text-gray-700">Email</TableHead>
                           <TableHead className="font-bold text-gray-700">Bank</TableHead>
@@ -970,6 +941,23 @@ export default function EventParticipantsPage() {
                                       Pemenang
                                     </span>
                                   )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {new Date(t.createdAt).toLocaleDateString("id-ID", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(t.createdAt).toLocaleTimeString("id-ID", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
                                 </div>
                               </TableCell>
                               <TableCell>

@@ -1293,36 +1293,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       const userByPhone = new Map(allUsers.map(u => [normalizePhone(u.phoneNumber), u]));
 
-      // 5. Categorize every paid transaction - no exceptions
-      const registeredUserIds = new Set<string>();
+      // 5. Return one row per paid transaction (no aggregation/deduplication)
+      // Registered = transaction properly linked to a valid user account (has userId)
+      // Guest = no valid userId, regardless of phone match
+      const registeredParticipantRows: { user: (typeof allUsers)[0]; transaction: (typeof paidTransactions)[0] }[] = [];
+      const guestTransactionsList: typeof paidTransactions = [];
+
       paidTransactions.forEach(t => {
         if (t.userId && userById.has(t.userId)) {
-          registeredUserIds.add(t.userId);
+          // Properly linked to a valid user account — one row per transaction
+          registeredParticipantRows.push({ user: userById.get(t.userId)!, transaction: t });
         } else {
-          const matched = userByPhone.get(normalizePhone(t.phoneNumber));
-          if (matched) registeredUserIds.add(matched.id);
+          // No valid userId = guest transaction
+          guestTransactionsList.push(t);
         }
-      });
-
-      const registeredParticipants = allUsers.filter(u => registeredUserIds.has(u.id));
-      // Guest = transaction where userId is null/invalid (bought without logging in)
-      // We do NOT filter by phone - even if phone matches a registered account,
-      // if the person chose to buy as guest (no userId), show it as a guest transaction.
-      const guestTransactions = paidTransactions.filter(t => {
-        if (t.userId && userById.has(t.userId)) return false; // properly linked to valid account
-        return true; // no valid userId = guest, regardless of phone
       });
 
       // 6. Return each guest transaction as a separate row (no deduplication)
       // This ensures every purchase is recorded even if same phone/name is used multiple times.
-      const guestParticipantRows = guestTransactions.map(t => ({
+      const guestParticipantRows = guestTransactionsList.map(t => ({
         transaction: t,
         totalTickets: t.ticketCount,
         totalAmount: t.amount,
       }));
 
       res.json({
-        registeredParticipants,
+        registeredParticipants: registeredParticipantRows,
         guestParticipants: guestParticipantRows,
         paidTransactions,
         totalPaid: paidTransactions.length,
