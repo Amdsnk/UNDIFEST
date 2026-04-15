@@ -620,6 +620,12 @@ export default function EventParticipantsPage() {
                         </TableHead>
                         <TableHead
                           className="font-bold cursor-pointer hover:bg-purple-50 text-gray-700 transition-colors"
+                          onClick={() => handleSort("createdAt")}
+                        >
+                          Waktu Transaksi {sortField === "createdAt" && (sortOrder === "asc" ? "↑" : "↓")}
+                        </TableHead>
+                        <TableHead
+                          className="font-bold cursor-pointer hover:bg-purple-50 text-gray-700 transition-colors"
                           onClick={() => handleSort("phone")}
                         >
                           No WA {sortField === "phone" && (sortOrder === "asc" ? "↑" : "↓")}
@@ -662,12 +668,6 @@ export default function EventParticipantsPage() {
                           onClick={() => handleSort("ip")}
                         >
                           IP {sortField === "ip" && (sortOrder === "asc" ? "↑" : "↓")}
-                        </TableHead>
-                        <TableHead
-                          className="font-bold cursor-pointer hover:bg-purple-50 text-gray-700 transition-colors"
-                          onClick={() => handleSort("createdAt")}
-                        >
-                          Waktu Transaksi {sortField === "createdAt" && (sortOrder === "asc" ? "↑" : "↓")}
                         </TableHead>
                         <TableHead className="font-bold text-gray-700">
                           Aksi
@@ -717,6 +717,23 @@ export default function EventParticipantsPage() {
                                   )}
                                 </div>
                               </TableCell>
+                              <TableCell className="text-gray-600">
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {new Date(transaction.createdAt).toLocaleDateString("id-ID", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(transaction.createdAt).toLocaleTimeString("id-ID", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                </div>
+                              </TableCell>
                               <TableCell>
                                 <span className="font-mono bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
                                   {user.phoneNumber}
@@ -726,10 +743,16 @@ export default function EventParticipantsPage() {
                               <TableCell className="text-gray-700">{user.email || "-"}</TableCell>
                               <TableCell>
                                 <div className="flex flex-col text-sm">
-                                  {user.accountNumber ? (
+                                  {(transaction.buyerAccountNumber || user.accountNumber) ? (
                                     <>
-                                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">{user.accountNumber}</span>
-                                      {user.bankName && <span className="text-xs text-gray-500 mt-0.5">{user.bankName}</span>}
+                                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">
+                                        {transaction.buyerAccountNumber || user.accountNumber}
+                                      </span>
+                                      {(transaction.buyerBankName || user.bankName) && (
+                                        <span className="text-xs text-gray-500 mt-0.5">
+                                          {transaction.buyerBankName || user.bankName}
+                                        </span>
+                                      )}
                                     </>
                                   ) : (
                                     <span className="text-gray-400">-</span>
@@ -759,23 +782,6 @@ export default function EventParticipantsPage() {
                                 <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">
                                   {user.ip || "-"}
                                 </span>
-                              </TableCell>
-                              <TableCell className="text-gray-600">
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {new Date(transaction.createdAt).toLocaleDateString("id-ID", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    })}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    {new Date(transaction.createdAt).toLocaleTimeString("id-ID", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </span>
-                                </div>
                               </TableCell>
                               <TableCell>
                                 {!isWinner ? (
