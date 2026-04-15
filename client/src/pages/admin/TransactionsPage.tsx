@@ -286,7 +286,7 @@ export default function TransactionsPage() {
 
                   {/* Table */}
                   <div className="overflow-x-auto rounded-xl border border-gray-200 mx-6 mb-6">
-                    <Table>
+                    <Table className="min-w-[950px]">
                       <TableHeader>
                         <TableRow className="bg-gradient-to-r from-gray-50 to-purple-50 hover:from-gray-100 hover:to-purple-100">
                           <TableHead className="font-bold text-gray-700">ID Transaksi</TableHead>
@@ -396,13 +396,13 @@ export default function TransactionsPage() {
                                         <Eye className="w-3 h-3" />
                                       </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="max-w-2xl">
+                                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                                       <DialogHeader>
                                         <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                                           Detail Transaksi
                                         </DialogTitle>
                                       </DialogHeader>
-                                      <div className="space-y-4 mt-4">
+                                      <div className="space-y-4 mt-4 overflow-y-auto pr-1">
                                         <div className="grid grid-cols-2 gap-4">
                                           <div className="bg-gray-50 p-4 rounded-lg">
                                             <p className="text-sm text-gray-500 font-medium mb-1">ID Transaksi</p>
