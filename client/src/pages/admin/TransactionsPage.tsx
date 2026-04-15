@@ -35,7 +35,7 @@ import { Search, DollarSign, TrendingUp, Calendar, Receipt, Eye, Trash2, CheckCi
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Transaction } from "@shared/schema";
+import type { Transaction, User } from "@shared/schema";
 
 export default function TransactionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,6 +45,28 @@ export default function TransactionsPage() {
   const { data: transactions, isLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
   });
+
+  const { data: users } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+  });
+
+  // Build lookup maps: by userId (number) and by normalized phone
+  const normalizePhone = (p: string) => {
+    if (!p) return "";
+    const d = p.replace(/\D/g, "");
+    if (d.startsWith("62")) return "0" + d.slice(2);
+    return d.startsWith("0") ? d : d;
+  };
+  const userById = new Map<number, User>(users?.map(u => [u.id as number, u]) ?? []);
+  const userByPhone = new Map<string, User>(users?.map(u => [normalizePhone(u.phoneNumber), u]) ?? []);
+
+  const getUser = (tx: Transaction): User | undefined => {
+    if (tx.userId != null) {
+      const u = userById.get(tx.userId as number);
+      if (u) return u;
+    }
+    return userByPhone.get(normalizePhone(tx.phoneNumber));
+  };
 
   // Sync a single pending transaction with Midtrans
   const syncOneMutation = useMutation({
@@ -171,11 +193,19 @@ export default function TransactionsPage() {
     }
   };
 
-  const filteredTransactions = transactions?.filter(transaction =>
-    transaction.eventName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    transaction.phoneNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (transaction.buyerIp || "").toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredTransactions = transactions?.filter(transaction => {
+    const q = searchQuery.toLowerCase();
+    if (!q) return true;
+    const user = getUser(transaction);
+    return (
+      transaction.eventName.toLowerCase().includes(q) ||
+      transaction.phoneNumber.toLowerCase().includes(q) ||
+      (transaction.buyerName || user?.name || "").toLowerCase().includes(q) ||
+      (transaction.buyerEmail || user?.email || "").toLowerCase().includes(q) ||
+      (user?.city || "").toLowerCase().includes(q) ||
+      (transaction.buyerIp || "").toLowerCase().includes(q)
+    );
+  }) || [];
 
   const totalRevenue = filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
   const averageTransaction = filteredTransactions.length > 0
@@ -286,27 +316,29 @@ export default function TransactionsPage() {
 
                   {/* Table */}
                   <div className="overflow-x-auto rounded-xl border border-gray-200 mx-6 mb-6">
-                    <Table className="min-w-[1300px]">
+                    <Table className="min-w-[1600px]">
                       <TableHeader>
                         <TableRow className="bg-gradient-to-r from-gray-50 to-purple-50 hover:from-gray-100 hover:to-purple-100">
                           <TableHead className="font-bold text-gray-700">ID Transaksi</TableHead>
                           <TableHead className="font-bold text-gray-700">Event</TableHead>
                           <TableHead className="font-bold text-gray-700">Nama</TableHead>
-                          <TableHead className="font-bold text-gray-700">Nomor Telepon</TableHead>
+                          <TableHead className="font-bold text-gray-700">Waktu Transaksi</TableHead>
+                          <TableHead className="font-bold text-gray-700">No WA</TableHead>
+                          <TableHead className="font-bold text-gray-700">Kota</TableHead>
                           <TableHead className="font-bold text-gray-700">Email</TableHead>
                           <TableHead className="font-bold text-gray-700">No Rekening</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Total Tiket</TableHead>
-                          <TableHead className="font-bold text-gray-700">Jumlah</TableHead>
+                          <TableHead className="font-bold text-gray-700">Total Rp</TableHead>
+                          <TableHead className="font-bold text-gray-700">Status Akun</TableHead>
                           <TableHead className="font-bold text-gray-700">Status</TableHead>
                           <TableHead className="font-bold text-gray-700">IP</TableHead>
-                          <TableHead className="font-bold text-gray-700">Tanggal</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {isLoading ? (
                           <TableRow>
-                            <TableCell colSpan={12} className="text-center py-12">
+                            <TableCell colSpan={14} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                                 <p className="text-gray-500 font-medium">Memuat data transaksi...</p>
@@ -314,78 +346,112 @@ export default function TransactionsPage() {
                             </TableCell>
                           </TableRow>
                         ) : filteredTransactions.length > 0 ? (
-                          filteredTransactions.map((transaction) => (
+                          filteredTransactions.map((transaction) => {
+                            const user = getUser(transaction);
+                            const nama = transaction.buyerName || user?.name || "-";
+                            const email = transaction.buyerEmail || user?.email || "-";
+                            const kota = user?.city || "-";
+                            const noRek = transaction.buyerAccountNumber || user?.accountNumber || null;
+                            const bankName = transaction.buyerBankName || user?.bankName || null;
+                            const isAkun = user?.isActive;
+                            return (
                             <TableRow key={transaction.id} data-testid={`row-transaction-${transaction.id}`} className="hover:bg-purple-50/50 transition-colors">
+                              {/* ID Transaksi */}
                               <TableCell className="py-3">
                                 <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
                                   {transaction.id.slice(0, 8)}...
                                 </span>
                               </TableCell>
+                              {/* Event */}
                               <TableCell className="py-3">
                                 <div className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
                                   <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
                                   {transaction.eventName}
                                 </div>
                               </TableCell>
+                              {/* Nama */}
                               <TableCell className="py-3">
-                                <span className="text-sm text-gray-800">{transaction.buyerName || "-"}</span>
+                                <span className="text-sm font-semibold text-gray-900">{nama}</span>
                               </TableCell>
+                              {/* Waktu Transaksi */}
+                              <TableCell className="py-3">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs font-medium text-gray-700">
+                                    {new Date(transaction.createdAt).toLocaleDateString('id-ID', {
+                                      day: '2-digit', month: 'short', year: 'numeric'
+                                    })}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(transaction.createdAt).toLocaleTimeString('id-ID', {
+                                      hour: '2-digit', minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              {/* No WA */}
                               <TableCell className="py-3">
                                 <span className="font-mono bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-xs font-medium">
                                   {transaction.phoneNumber}
                                 </span>
                               </TableCell>
+                              {/* Kota */}
                               <TableCell className="py-3">
-                                <span className="text-xs text-gray-700">{transaction.buyerEmail || "-"}</span>
+                                <span className="text-xs text-gray-700">{kota}</span>
                               </TableCell>
+                              {/* Email */}
+                              <TableCell className="py-3">
+                                <span className="text-xs text-gray-700">{email}</span>
+                              </TableCell>
+                              {/* No Rekening */}
                               <TableCell className="py-3">
                                 <div className="flex flex-col text-xs">
-                                  {(transaction.buyerAccountNumber || transaction.buyerBankName) ? (
+                                  {noRek ? (
                                     <>
-                                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">{transaction.buyerAccountNumber || "-"}</span>
-                                      {transaction.buyerBankName && (
-                                        <span className="text-gray-500 mt-0.5">{transaction.buyerBankName}</span>
-                                      )}
+                                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">{noRek}</span>
+                                      {bankName && <span className="text-gray-500 mt-0.5">{bankName}</span>}
                                     </>
                                   ) : (
                                     <span className="text-gray-400">-</span>
                                   )}
                                 </div>
                               </TableCell>
+                              {/* Total Tiket */}
                               <TableCell className="py-3 text-center">
                                 <span className="inline-flex items-center justify-center bg-purple-100 text-purple-700 font-bold text-sm rounded-full w-8 h-8">
                                   {transaction.ticketCount ?? 1}
                                 </span>
                               </TableCell>
+                              {/* Total Rp */}
                               <TableCell className="py-3">
                                 <span className="inline-flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-md whitespace-nowrap">
-                                  Rp {transaction.amount.toLocaleString('id-ID')}
+                                  {new Intl.NumberFormat("id-ID").format(transaction.amount)}
                                 </span>
                               </TableCell>
+                              {/* Status Akun */}
+                              <TableCell className="py-3">
+                                {user == null ? (
+                                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
+                                    Guest
+                                  </span>
+                                ) : isAkun ? (
+                                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+                                    Lengkap
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600">
+                                    Belum
+                                  </span>
+                                )}
+                              </TableCell>
+                              {/* Status (payment) */}
                               <TableCell className="py-3">
                                 {getStatusBadge(transaction.paymentStatus)}
                               </TableCell>
+                              {/* IP */}
                               <TableCell className="py-3">
                                 <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
                                   {transaction.buyerIp || "-"}
                                 </span>
-                              </TableCell>
-                              <TableCell className="py-3">
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="text-xs font-medium text-gray-700">
-                                    {new Date(transaction.createdAt).toLocaleDateString('id-ID', {
-                                      day: '2-digit',
-                                      month: 'short',
-                                      year: 'numeric'
-                                    })}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    {new Date(transaction.createdAt).toLocaleTimeString('id-ID', {
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })}
-                                  </span>
-                                </div>
                               </TableCell>
                               <TableCell className="text-center">
                                 <div className="flex items-center justify-center gap-1">
@@ -607,10 +673,11 @@ export default function TransactionsPage() {
                                 </div>
                               </TableCell>
                             </TableRow>
-                          ))
+                          );
+                          })
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={12} className="text-center py-12">
+                            <TableCell colSpan={14} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="bg-gray-100 rounded-full p-4">
                                   <Receipt className="w-12 h-12 text-gray-400" />
