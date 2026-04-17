@@ -316,12 +316,13 @@ export default function TransactionsPage() {
 
                   {/* Table */}
                   <div className="overflow-x-auto rounded-xl border border-gray-200 mx-6 mb-6">
-                    <Table className="min-w-[1600px]">
+                    <Table className="min-w-[1100px]">
                       <TableHeader>
                         <TableRow className="bg-gradient-to-r from-gray-50 to-purple-50 hover:from-gray-100 hover:to-purple-100">
+                          <TableHead className="font-bold text-gray-700 w-10">No</TableHead>
+                          <TableHead className="font-bold text-gray-700">Nama</TableHead>
                           <TableHead className="font-bold text-gray-700">ID Transaksi</TableHead>
                           <TableHead className="font-bold text-gray-700">Event</TableHead>
-                          <TableHead className="font-bold text-gray-700">Nama</TableHead>
                           <TableHead className="font-bold text-gray-700">Waktu Transaksi</TableHead>
                           <TableHead className="font-bold text-gray-700">No WA</TableHead>
                           <TableHead className="font-bold text-gray-700">Kota</TableHead>
@@ -330,7 +331,6 @@ export default function TransactionsPage() {
                           <TableHead className="font-bold text-gray-700 text-center">Total Tiket</TableHead>
                           <TableHead className="font-bold text-gray-700">Total Rp</TableHead>
                           <TableHead className="font-bold text-gray-700">Status Akun</TableHead>
-                          <TableHead className="font-bold text-gray-700">Status</TableHead>
                           <TableHead className="font-bold text-gray-700">IP</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Aksi</TableHead>
                         </TableRow>
@@ -346,7 +346,7 @@ export default function TransactionsPage() {
                             </TableCell>
                           </TableRow>
                         ) : filteredTransactions.length > 0 ? (
-                          filteredTransactions.map((transaction) => {
+                          filteredTransactions.map((transaction, rowIndex) => {
                             const user = getUser(transaction);
                             const nama = transaction.buyerName || user?.name || "-";
                             const email = transaction.buyerEmail || user?.email || "-";
@@ -356,25 +356,29 @@ export default function TransactionsPage() {
                             const isAkun = user?.isActive;
                             return (
                             <TableRow key={transaction.id} data-testid={`row-transaction-${transaction.id}`} className="hover:bg-purple-50/50 transition-colors">
+                              {/* No */}
+                              <TableCell className="py-2 text-center text-xs font-semibold text-gray-500">
+                                {rowIndex + 1}
+                              </TableCell>
+                              {/* Nama */}
+                              <TableCell className="py-2">
+                                <span className="text-sm font-semibold text-gray-900">{nama}</span>
+                              </TableCell>
                               {/* ID Transaksi */}
-                              <TableCell className="py-3">
+                              <TableCell className="py-2">
                                 <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
                                   {transaction.id.slice(0, 8)}...
                                 </span>
                               </TableCell>
                               {/* Event */}
-                              <TableCell className="py-3">
-                                <div className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
-                                  {transaction.eventName}
+                              <TableCell className="py-2">
+                                <div className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex-shrink-0"></div>
+                                  <span className="line-clamp-2 max-w-[120px]">{transaction.eventName}</span>
                                 </div>
                               </TableCell>
-                              {/* Nama */}
-                              <TableCell className="py-3">
-                                <span className="text-sm font-semibold text-gray-900">{nama}</span>
-                              </TableCell>
                               {/* Waktu Transaksi */}
-                              <TableCell className="py-3">
+                              <TableCell className="py-2">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-xs font-medium text-gray-700">
                                     {new Date(transaction.createdAt).toLocaleDateString('id-ID', {
@@ -389,21 +393,21 @@ export default function TransactionsPage() {
                                 </div>
                               </TableCell>
                               {/* No WA */}
-                              <TableCell className="py-3">
-                                <span className="font-mono bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-xs font-medium">
+                              <TableCell className="py-2">
+                                <span className="font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
                                   {transaction.phoneNumber}
                                 </span>
                               </TableCell>
                               {/* Kota */}
-                              <TableCell className="py-3">
+                              <TableCell className="py-2">
                                 <span className="text-xs text-gray-700">{kota}</span>
                               </TableCell>
                               {/* Email */}
-                              <TableCell className="py-3">
-                                <span className="text-xs text-gray-700">{email}</span>
+                              <TableCell className="py-2">
+                                <span className="text-xs text-gray-700 break-all">{email}</span>
                               </TableCell>
                               {/* No Rekening */}
-                              <TableCell className="py-3">
+                              <TableCell className="py-2">
                                 <div className="flex flex-col text-xs">
                                   {noRek ? (
                                     <>
@@ -416,39 +420,35 @@ export default function TransactionsPage() {
                                 </div>
                               </TableCell>
                               {/* Total Tiket */}
-                              <TableCell className="py-3 text-center">
+                              <TableCell className="py-2 text-center">
                                 <span className="inline-flex items-center justify-center bg-purple-100 text-purple-700 font-bold text-sm rounded-full w-8 h-8">
                                   {transaction.ticketCount ?? 1}
                                 </span>
                               </TableCell>
                               {/* Total Rp */}
-                              <TableCell className="py-3">
-                                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-md whitespace-nowrap">
+                              <TableCell className="py-2">
+                                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2 py-1 rounded-full text-xs font-bold shadow-sm whitespace-nowrap">
                                   {new Intl.NumberFormat("id-ID").format(transaction.amount)}
                                 </span>
                               </TableCell>
                               {/* Status Akun */}
-                              <TableCell className="py-3">
+                              <TableCell className="py-2">
                                 {user == null ? (
-                                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
                                     Guest
                                   </span>
                                 ) : isAkun ? (
-                                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white">
                                     Lengkap
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600">
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600">
                                     Belum
                                   </span>
                                 )}
                               </TableCell>
-                              {/* Status (payment) */}
-                              <TableCell className="py-3">
-                                {getStatusBadge(transaction.paymentStatus)}
-                              </TableCell>
                               {/* IP */}
-                              <TableCell className="py-3">
+                              <TableCell className="py-2">
                                 <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
                                   {transaction.buyerIp || "-"}
                                 </span>

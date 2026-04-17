@@ -229,69 +229,77 @@ export default function EventParticipantsPage() {
          (now - new Date(t.createdAt).getTime()) < 24 * 60 * 60 * 1000
   );
 
-  const filteredUsers = eventParticipants
-    .filter(({ user }) => {
-      const matchesSearch = searchTerm === "" ||
-        (user.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        user.phoneNumber.includes(searchTerm) ||
-        (user.email?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.city?.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Unified participant type for merged table
+  type UnifiedParticipant =
+    | { kind: "registered"; user: User; transaction: Transaction }
+    | { kind: "guest"; transaction: Transaction; totalTickets: number; totalAmount: number };
 
-      const matchesAccountStatus = filterStatus.length === 0 ||
-        (filterStatus.includes("active") && user.isActive) ||
-        (filterStatus.includes("inactive") && !user.isActive);
+  const allParticipants: UnifiedParticipant[] = [
+    ...registeredParticipantRows.map(r => ({ kind: "registered" as const, ...r })),
+    ...serverGuestParticipants.map(g => ({ kind: "guest" as const, ...g })),
+  ];
 
-      const userIsWinner = winners.some(w => w.userId === user.id && w.eventId === eventId);
+  const filteredAll = allParticipants
+    .filter((row) => {
+      const matchesSearch = searchTerm === "" || (
+        row.kind === "registered"
+          ? ((row.user.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+             row.user.phoneNumber.includes(searchTerm) ||
+             (row.user.email?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+             (row.user.city?.toLowerCase().includes(searchTerm.toLowerCase())))
+          : ((row.transaction.buyerName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+             row.transaction.phoneNumber.includes(searchTerm) ||
+             (row.transaction.buyerEmail?.toLowerCase().includes(searchTerm.toLowerCase())))
+      );
+
+      // Account status filter: guests always show; only registered users are filtered
+      const matchesAccountStatus = row.kind === "guest" || filterStatus.length === 0 ||
+        (filterStatus.includes("active") && row.user.isActive) ||
+        (filterStatus.includes("inactive") && !row.user.isActive);
+
+      const isWinner = row.kind === "registered"
+        ? winners.some(w => w.userId === row.user.id && w.eventId === eventId)
+        : winners.some(w => w.transactionId === row.transaction.id && w.eventId === eventId);
+
       const matchesWinnerStatus = filterWinnerStatus.length === 0 ||
-        (filterWinnerStatus.includes("winner") && userIsWinner) ||
-        (filterWinnerStatus.includes("participant") && !userIsWinner);
+        (filterWinnerStatus.includes("winner") && isWinner) ||
+        (filterWinnerStatus.includes("participant") && !isWinner);
 
       return matchesSearch && matchesAccountStatus && matchesWinnerStatus;
     })
     .sort((a, b) => {
-      let aValue: any, bValue: any;
+      const getVal = (row: UnifiedParticipant): any => {
+        if (row.kind === "registered") {
+          switch (sortField) {
+            case "name": return (row.user.name || "").toLowerCase();
+            case "phone": return row.user.phoneNumber;
+            case "city": return (row.user.city || "").toLowerCase();
+            case "email": return (row.user.email || "").toLowerCase();
+            case "totalTickets": return row.transaction.ticketCount;
+            case "totalAmount": return row.transaction.amount;
+            case "status": return row.user.isActive ? 1 : 0;
+            case "ip": return (row.user.ip || "").toLowerCase();
+            case "createdAt": return new Date(row.transaction.createdAt).getTime();
+            default: return "";
+          }
+        } else {
+          switch (sortField) {
+            case "name": return (row.transaction.buyerName || "").toLowerCase();
+            case "phone": return row.transaction.phoneNumber;
+            case "city": return "";
+            case "email": return (row.transaction.buyerEmail || "").toLowerCase();
+            case "totalTickets": return row.totalTickets;
+            case "totalAmount": return row.totalAmount;
+            case "status": return 2; // guests sort after active/inactive
+            case "ip": return (row.transaction.buyerIp || "").toLowerCase();
+            case "createdAt": return new Date(row.transaction.createdAt).getTime();
+            default: return "";
+          }
+        }
+      };
 
-      switch (sortField) {
-        case "name":
-          aValue = (a.user.name || "").toLowerCase();
-          bValue = (b.user.name || "").toLowerCase();
-          break;
-        case "phone":
-          aValue = a.user.phoneNumber;
-          bValue = b.user.phoneNumber;
-          break;
-        case "city":
-          aValue = (a.user.city || "").toLowerCase();
-          bValue = (b.user.city || "").toLowerCase();
-          break;
-        case "email":
-          aValue = (a.user.email || "").toLowerCase();
-          bValue = (b.user.email || "").toLowerCase();
-          break;
-        case "totalTickets":
-          aValue = a.transaction.ticketCount;
-          bValue = b.transaction.ticketCount;
-          break;
-        case "totalAmount":
-          aValue = a.transaction.amount;
-          bValue = b.transaction.amount;
-          break;
-        case "status":
-          aValue = a.user.isActive ? 1 : 0;
-          bValue = b.user.isActive ? 1 : 0;
-          break;
-        case "ip":
-          aValue = (a.user.ip || "").toLowerCase();
-          bValue = (b.user.ip || "").toLowerCase();
-          break;
-        case "createdAt":
-          aValue = new Date(a.transaction.createdAt).getTime();
-          bValue = new Date(b.transaction.createdAt).getTime();
-          break;
-        default:
-          return 0;
-      }
-
+      const aValue = getVal(a);
+      const bValue = getVal(b);
       if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
       if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
       return 0;
@@ -306,8 +314,8 @@ export default function EventParticipantsPage() {
     }
   };
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice(
+  const totalPages = Math.ceil(filteredAll.length / itemsPerPage);
+  const paginatedAll = filteredAll.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -508,7 +516,7 @@ export default function EventParticipantsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-orange-100 text-sm font-medium">Hasil Filter</p>
-                      <p className="text-3xl font-bold mt-1">{filteredUsers.length}</p>
+                      <p className="text-3xl font-bold mt-1">{filteredAll.length}</p>
                     </div>
                     <div className="bg-white/20 rounded-full p-3">
                       <Search className="w-6 h-6" />
@@ -684,7 +692,7 @@ export default function EventParticipantsPage() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ) : paginatedUsers.length === 0 ? (
+                      ) : paginatedAll.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={12} className="text-center py-12">
                             <div className="flex flex-col items-center gap-3">
@@ -697,18 +705,32 @@ export default function EventParticipantsPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        paginatedUsers.map(({ user, transaction }, index) => {
-                          const isWinner = winners.some(w => w.userId === user.id && w.eventId === eventId);
+                        paginatedAll.map((row, index) => {
                           const rowNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                          const isWinner = row.kind === "registered"
+                            ? winners.some(w => w.userId === row.user.id && w.eventId === eventId)
+                            : winners.some(w => w.transactionId === row.transaction.id && w.eventId === eventId);
+
+                          const nama = row.kind === "registered" ? (row.user.name || "-") : (row.transaction.buyerName || "-");
+                          const noWa = row.kind === "registered" ? row.user.phoneNumber : row.transaction.phoneNumber;
+                          const kota = row.kind === "registered" ? (row.user.city || "-") : "-";
+                          const email = row.kind === "registered" ? (row.user.email || "-") : (row.transaction.buyerEmail || "-");
+                          const noRek = row.kind === "registered"
+                            ? (row.transaction.buyerAccountNumber || row.user.accountNumber)
+                            : row.transaction.buyerAccountNumber;
+                          const bankNama = row.kind === "registered"
+                            ? (row.transaction.buyerBankName || row.user.bankName)
+                            : row.transaction.buyerBankName;
+                          const totalTiket = row.kind === "registered" ? row.transaction.ticketCount : row.totalTickets;
+                          const totalAmt = row.kind === "registered" ? row.transaction.amount : row.totalAmount;
+                          const ip = row.kind === "registered" ? (row.user.ip || "-") : (row.transaction.buyerIp || "-");
 
                           return (
-                            <TableRow key={transaction.id} className="hover:bg-purple-50/50 transition-colors">
-                              <TableCell className="font-semibold text-gray-700">
-                                {rowNumber}
-                              </TableCell>
+                            <TableRow key={row.transaction.id} className={`hover:bg-purple-50/50 transition-colors ${row.kind === "guest" ? "bg-orange-50/30" : ""}`}>
+                              <TableCell className="font-semibold text-gray-700">{rowNumber}</TableCell>
                               <TableCell className="font-semibold">
                                 <div className="flex flex-col gap-1">
-                                  <div className="font-semibold text-gray-900">{user.name || "-"}</div>
+                                  <div className="font-semibold text-gray-900">{nama}</div>
                                   {isWinner && (
                                     <span className="inline-flex items-center gap-1 text-xs bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full font-bold w-fit">
                                       <Trophy className="w-3 h-3" />
@@ -720,39 +742,26 @@ export default function EventParticipantsPage() {
                               <TableCell className="text-gray-600">
                                 <div className="flex flex-col">
                                   <span className="font-medium">
-                                    {new Date(transaction.createdAt).toLocaleDateString("id-ID", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    })}
+                                    {new Date(row.transaction.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                                   </span>
                                   <span className="text-xs text-gray-500">
-                                    {new Date(transaction.createdAt).toLocaleTimeString("id-ID", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
+                                    {new Date(row.transaction.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
                                   </span>
                                 </div>
                               </TableCell>
                               <TableCell>
                                 <span className="font-mono bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-                                  {user.phoneNumber}
+                                  {noWa}
                                 </span>
                               </TableCell>
-                              <TableCell className="text-gray-700">{user.city || "-"}</TableCell>
-                              <TableCell className="text-gray-700">{user.email || "-"}</TableCell>
+                              <TableCell className="text-gray-700">{kota}</TableCell>
+                              <TableCell className="text-gray-700">{email}</TableCell>
                               <TableCell>
                                 <div className="flex flex-col text-sm">
-                                  {(transaction.buyerAccountNumber || user.accountNumber) ? (
+                                  {noRek ? (
                                     <>
-                                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">
-                                        {transaction.buyerAccountNumber || user.accountNumber}
-                                      </span>
-                                      {(transaction.buyerBankName || user.bankName) && (
-                                        <span className="text-xs text-gray-500 mt-0.5">
-                                          {transaction.buyerBankName || user.bankName}
-                                        </span>
-                                      )}
+                                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">{noRek}</span>
+                                      {bankNama && <span className="text-xs text-gray-500 mt-0.5">{bankNama}</span>}
                                     </>
                                   ) : (
                                     <span className="text-gray-400">-</span>
@@ -761,48 +770,75 @@ export default function EventParticipantsPage() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
-                                  {transaction.ticketCount}
+                                  {totalTiket}
                                 </span>
                               </TableCell>
                               <TableCell className="text-right">
                                 <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
-                                  {new Intl.NumberFormat("id-ID").format(transaction.amount)}
+                                  {new Intl.NumberFormat("id-ID").format(totalAmt)}
                                 </span>
                               </TableCell>
                               <TableCell>
-                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${
-                                  user.isActive
-                                    ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white"
-                                    : "bg-gradient-to-r from-red-500 to-orange-600 text-white"
-                                }`}>
-                                  {user.isActive ? "Lengkap" : "Belum"}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">
-                                  {user.ip || "-"}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                {!isWinner ? (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => nominateWinnerMutation.mutate({ userId: user.id, eventId: eventId! })}
-                                    disabled={nominateWinnerMutation.isPending}
-                                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                                  >
-                                    <Trophy className="w-3 h-3 mr-1" />
-                                    Nominasi
-                                  </Button>
+                                {row.kind === "guest" ? (
+                                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
+                                    Guest
+                                  </span>
                                 ) : (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => cancelNominationMutation.mutate({ userId: user.id, eventId: eventId! })}
-                                    disabled={cancelNominationMutation.isPending}
-                                    className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                                  >
-                                    ❌ Batalkan
-                                  </Button>
+                                  <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${
+                                    row.user.isActive
+                                      ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white"
+                                      : "bg-gradient-to-r from-red-500 to-orange-600 text-white"
+                                  }`}>
+                                    {row.user.isActive ? "Lengkap" : "Belum"}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">{ip}</span>
+                              </TableCell>
+                              <TableCell>
+                                {row.kind === "registered" ? (
+                                  !isWinner ? (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => nominateWinnerMutation.mutate({ userId: row.user.id, eventId: eventId! })}
+                                      disabled={nominateWinnerMutation.isPending}
+                                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                    >
+                                      <Trophy className="w-3 h-3 mr-1" />
+                                      Nominasi
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => cancelNominationMutation.mutate({ userId: row.user.id, eventId: eventId! })}
+                                      disabled={cancelNominationMutation.isPending}
+                                      className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                    >
+                                      ❌ Batalkan
+                                    </Button>
+                                  )
+                                ) : (
+                                  !isWinner ? (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => nominateGuestMutation.mutate({ transactionId: row.transaction.id, eventId: eventId! })}
+                                      disabled={nominateGuestMutation.isPending}
+                                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                    >
+                                      <Trophy className="w-3 h-3 mr-1" />
+                                      Nominasi
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => cancelGuestNominationMutation.mutate({ transactionId: row.transaction.id, eventId: eventId! })}
+                                      disabled={cancelGuestNominationMutation.isPending}
+                                      className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                    >
+                                      ❌ Batalkan
+                                    </Button>
+                                  )
                                 )}
                               </TableCell>
                             </TableRow>
@@ -834,7 +870,7 @@ export default function EventParticipantsPage() {
                       </SelectContent>
                     </Select>
                     <span className="text-sm font-medium text-gray-600 bg-white px-3 py-1 rounded-full border border-gray-200">
-                      Menampilkan <span className="font-bold text-purple-600">{paginatedUsers.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> - <span className="font-bold text-purple-600">{Math.min(currentPage * itemsPerPage, filteredUsers.length)}</span> dari <span className="font-bold text-blue-600">{filteredUsers.length}</span> peserta
+                      Menampilkan <span className="font-bold text-purple-600">{paginatedAll.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> - <span className="font-bold text-purple-600">{Math.min(currentPage * itemsPerPage, filteredAll.length)}</span> dari <span className="font-bold text-blue-600">{filteredAll.length}</span> peserta
                     </span>
                   </div>
 
@@ -903,125 +939,6 @@ export default function EventParticipantsPage() {
               </CardContent>
             </Card>
 
-            {/* Guest Participants Section */}
-            {guestParticipants.length > 0 && (
-              <Card className="bg-white shadow-lg border-0 rounded-xl">
-                <CardHeader className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 rounded-t-xl">
-                  <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Peserta Guest ({guestParticipants.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="rounded-xl border-2 border-gray-200 overflow-x-auto">
-                    <Table className="min-w-[800px]">
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
-                          <TableHead className="font-bold text-gray-700">No</TableHead>
-                          <TableHead className="font-bold text-gray-700">Nama</TableHead>
-                          <TableHead className="font-bold text-gray-700">Waktu Transaksi</TableHead>
-                          <TableHead className="font-bold text-gray-700">No WA</TableHead>
-                          <TableHead className="font-bold text-gray-700">Email</TableHead>
-                          <TableHead className="font-bold text-gray-700">Bank</TableHead>
-                          <TableHead className="font-bold text-gray-700">No. Rekening</TableHead>
-                          <TableHead className="font-bold text-gray-700">IP</TableHead>
-                          <TableHead className="font-bold text-right text-gray-700">Total Tiket</TableHead>
-                          <TableHead className="font-bold text-right text-gray-700">Total Rp</TableHead>
-                          <TableHead className="font-bold text-gray-700">Aksi</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {guestParticipants.map(({ transaction: t, totalTickets, totalAmount }, index) => {
-                          const isGuestWinner = winners.some(w => w.transactionId === t.id && w.eventId === eventId);
-                          return (
-                            <TableRow key={t.id} className="hover:bg-orange-50/50 transition-colors">
-                              <TableCell className="font-semibold text-gray-700">{index + 1}</TableCell>
-                              <TableCell className="font-semibold">
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-semibold text-gray-900">{t.buyerName || "-"}</span>
-                                  {isGuestWinner && (
-                                    <span className="inline-flex items-center gap-1 text-xs bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-0.5 rounded-full font-bold w-fit">
-                                      <Trophy className="w-3 h-3" />
-                                      Pemenang
-                                    </span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-gray-600">
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {new Date(t.createdAt).toLocaleDateString("id-ID", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    })}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    {new Date(t.createdAt).toLocaleTimeString("id-ID", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <span className="font-mono bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
-                                  {t.phoneNumber}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-gray-700">{t.buyerEmail || "-"}</TableCell>
-                              <TableCell>
-                                <span className="font-medium text-gray-700">{t.buyerBankName || "-"}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-700">{t.buyerAccountNumber || "-"}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">{t.buyerIp || "-"}</span>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
-                                  {totalTickets}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
-                                  {new Intl.NumberFormat("id-ID").format(totalAmount)}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                {!isGuestWinner ? (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => nominateGuestMutation.mutate({ transactionId: t.id, eventId: eventId! })}
-                                    disabled={nominateGuestMutation.isPending}
-                                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                                  >
-                                    <Trophy className="w-3 h-3 mr-1" />
-                                    Nominasi
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => cancelGuestNominationMutation.mutate({ transactionId: t.id, eventId: eventId! })}
-                                    disabled={cancelGuestNominationMutation.isPending}
-                                    className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                                  >
-                                    ❌ Batalkan
-                                  </Button>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
             {/* Pending Transactions Section — last 24 hours */}
             {pendingTransactions.length > 0 && (
               <Card className="bg-white shadow-lg border-0 rounded-xl">
@@ -1083,7 +1000,7 @@ export default function EventParticipantsPage() {
                                   try {
                                     const result = await apiRequest(`/api/admin/transactions/${t.id}/sync`, { method: "POST" });
                                     toast({ title: `Status: ${result.newStatus || result.midtransStatus}`, description: result.message || "Sync selesai" });
-                                    forceRefetch();
+                                    handleRefresh();
                                   } catch (e: any) {
                                     toast({ variant: "destructive", title: "Gagal sync", description: e.message });
                                   }

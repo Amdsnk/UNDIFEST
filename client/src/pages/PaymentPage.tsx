@@ -81,6 +81,11 @@ export default function PaymentPage() {
   const handlePaymentMethodSelect = (method: 'va' | 'qris' | 'directdebit' | 'cstore', channel: string) => {
     if (!event || isProcessing) return;
 
+    // FB Pixel: track AddPaymentInfo when user selects a payment method
+    try {
+      (window as any).fbq?.('track', 'AddPaymentInfo');
+    } catch { /* non-fatal */ }
+
     // Set payment method and channel, then show buyer form
     setPaymentMethod(method);
     setPaymentChannel(channel);
@@ -419,7 +424,10 @@ export default function PaymentPage() {
             <div className="bg-[#2952CC] px-5 pb-5 rounded-b-2xl space-y-3">
               {/* Virtual Account (VA) */}
               <button
-                onClick={() => setPaymentMethod('va')}
+                onClick={() => {
+                  try { (window as any).fbq?.('track', 'AddPaymentInfo'); } catch { /* non-fatal */ }
+                  setPaymentMethod('va');
+                }}
                 disabled={isProcessing}
                 className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
               >
