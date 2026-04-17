@@ -31,6 +31,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Search, DollarSign, TrendingUp, Calendar, Receipt, Eye, Trash2, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +46,8 @@ import type { Transaction, User } from "@shared/schema";
 
 export default function TransactionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -212,6 +221,28 @@ export default function TransactionsPage() {
     ? totalRevenue / filteredTransactions.length
     : 0;
 
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 4) {
+        pages.push(1, 2, 3, 4, 5, "...", totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return pages;
+  };
+
   return (
     <SidebarProvider>
       <AdminSidebar />
@@ -276,7 +307,7 @@ export default function TransactionsPage() {
               </div>
 
               {/* Main Table Card */}
-              <Card className="border-0 shadow-lg">
+              <Card className="bg-white shadow-lg border-0 rounded-xl">
                 <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-xl">
                   <h2 className="text-2xl font-bold flex items-center gap-2">
                     <Receipt className="w-6 h-6" />
@@ -285,38 +316,40 @@ export default function TransactionsPage() {
                   <p className="text-blue-100 mt-1">Riwayat seluruh transaksi pembelian tiket</p>
                 </div>
 
-                <CardContent className="p-0">
-                  {/* Search Bar */}
-                  <div className="flex flex-col md:flex-row items-center gap-4 mb-6 px-6 pt-6">
-                    <div className="relative flex-1 w-full">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <Input
-                        type="text"
-                        placeholder="Cari event atau nomor telepon..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        data-testid="input-search"
-                        className="pl-12 h-12 border-2 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-xl text-base"
-                      />
-                    </div>
-                    <Button
-                      onClick={() => syncAllMutation.mutate()}
-                      disabled={syncAllMutation.isPending}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 h-12 rounded-xl shadow"
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${syncAllMutation.isPending ? "animate-spin" : ""}`} />
-                      {syncAllMutation.isPending ? "Sinkronisasi..." : "Sinkron Semua"}
-                    </Button>
-                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 rounded-xl border border-purple-200">
-                      <span className="text-sm font-semibold text-gray-700">
-                        <span className="text-purple-600">{filteredTransactions.length}</span> transaksi ditemukan
-                      </span>
+                <CardContent className="p-4">
+                  <div className="flex flex-col gap-4 mb-4">
+                    {/* Search Bar */}
+                    <div className="flex flex-col md:flex-row items-center gap-3">
+                      <div className="relative flex-1 w-full">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Input
+                          type="text"
+                          placeholder="Cari nama, event, atau nomor telepon..."
+                          value={searchQuery}
+                          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                          data-testid="input-search"
+                          className="pl-12 h-12 border-2 border-gray-200 focus:border-purple-500 rounded-lg text-base"
+                        />
+                      </div>
+                      <Button
+                        onClick={() => syncAllMutation.mutate()}
+                        disabled={syncAllMutation.isPending}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 h-12 rounded-lg shadow"
+                      >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${syncAllMutation.isPending ? "animate-spin" : ""}`} />
+                        {syncAllMutation.isPending ? "Sinkronisasi..." : "Sinkron Semua"}
+                      </Button>
+                      <div className="bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 rounded-lg border border-purple-200 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-gray-700">
+                          <span className="text-purple-600">{filteredTransactions.length}</span> transaksi ditemukan
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Table */}
-                  <div className="overflow-x-auto rounded-xl border border-gray-200 mx-6 mb-6">
-                    <Table className="min-w-[1100px]">
+                  <div className="rounded-xl border-2 border-gray-200 overflow-x-auto">
+                    <Table className="min-w-[900px]">
                       <TableHeader>
                         <TableRow className="bg-gradient-to-r from-gray-50 to-purple-50 hover:from-gray-100 hover:to-purple-100">
                           <TableHead className="font-bold text-gray-700 w-10">No</TableHead>
@@ -345,8 +378,8 @@ export default function TransactionsPage() {
                               </div>
                             </TableCell>
                           </TableRow>
-                        ) : filteredTransactions.length > 0 ? (
-                          filteredTransactions.map((transaction, rowIndex) => {
+                        ) : paginatedTransactions.length > 0 ? (
+                          paginatedTransactions.map((transaction, rowIndex) => {
                             const user = getUser(transaction);
                             const nama = transaction.buyerName || user?.name || "-";
                             const email = transaction.buyerEmail || user?.email || "-";
@@ -358,7 +391,7 @@ export default function TransactionsPage() {
                             <TableRow key={transaction.id} data-testid={`row-transaction-${transaction.id}`} className="hover:bg-purple-50/50 transition-colors">
                               {/* No */}
                               <TableCell className="py-2 text-center text-xs font-semibold text-gray-500">
-                                {rowIndex + 1}
+                                {(currentPage - 1) * itemsPerPage + rowIndex + 1}
                               </TableCell>
                               {/* Nama */}
                               <TableCell className="py-2">
@@ -697,6 +730,81 @@ export default function TransactionsPage() {
                       </TableBody>
                     </Table>
                   </div>
+
+                  {/* Pagination Footer */}
+                  {totalPages > 0 && (
+                    <div className="flex flex-col md:flex-row items-center justify-between mt-6 gap-4">
+                      <span className="text-sm font-medium text-gray-600 bg-white px-3 py-1 rounded-full border border-gray-200">
+                        Menampilkan{" "}
+                        <span className="font-bold text-purple-600">
+                          {paginatedTransactions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}
+                        </span>{" "}
+                        -{" "}
+                        <span className="font-bold text-purple-600">
+                          {Math.min(currentPage * itemsPerPage, filteredTransactions.length)}
+                        </span>{" "}
+                        dari{" "}
+                        <span className="font-bold text-blue-600">{filteredTransactions.length}</span> transaksi
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="h-9 px-3 rounded-lg border-2"
+                        >
+                          ‹ Prev
+                        </Button>
+
+                        {getPageNumbers().map((page, i) =>
+                          page === "..." ? (
+                            <span key={`ellipsis-${i}`} className="px-2 text-gray-400">...</span>
+                          ) : (
+                            <Button
+                              key={page}
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(page as number)}
+                              className={`h-9 w-9 rounded-lg border-2 ${
+                                currentPage === page
+                                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent"
+                                  : "hover:border-purple-400"
+                              }`}
+                            >
+                              {page}
+                            </Button>
+                          )
+                        )}
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="h-9 px-3 rounded-lg border-2"
+                        >
+                          Next ›
+                        </Button>
+
+                        <Select
+                          value={String(itemsPerPage)}
+                          onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}
+                        >
+                          <SelectTrigger className="h-9 w-[90px] rounded-lg border-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10 / hal</SelectItem>
+                            <SelectItem value="25">25 / hal</SelectItem>
+                            <SelectItem value="50">50 / hal</SelectItem>
+                            <SelectItem value="100">100 / hal</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
           </div>
