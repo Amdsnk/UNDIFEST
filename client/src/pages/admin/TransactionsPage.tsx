@@ -246,7 +246,7 @@ export default function TransactionsPage() {
   return (
     <SidebarProvider>
       <AdminSidebar />
-      <div className="flex flex-col flex-1 min-h-screen min-w-0 admin-light bg-gray-50">
+      <div className="flex flex-col flex-1 min-h-screen min-w-0 admin-light bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/30">
         <AdminPageHeader 
             title="Daftar Transaksi"
             description="Riwayat seluruh transaksi pembelian tiket"
@@ -256,8 +256,8 @@ export default function TransactionsPage() {
             ]}
           />
 
-        <div className="flex-1 p-8 overflow-x-hidden">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
+            <div className="space-y-6">
               {/* Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-blue-500 to-blue-600 text-white">
@@ -351,7 +351,7 @@ export default function TransactionsPage() {
                   <div className="rounded-xl border-2 border-gray-200 overflow-x-auto">
                     <Table className="min-w-[900px]">
                       <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-gray-50 to-purple-50 hover:from-gray-100 hover:to-purple-100">
+                        <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-50">
                           <TableHead className="font-bold text-gray-700 w-10">No</TableHead>
                           <TableHead className="font-bold text-gray-700">Nama</TableHead>
                           <TableHead className="font-bold text-gray-700">ID Transaksi</TableHead>
