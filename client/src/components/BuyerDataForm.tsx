@@ -43,11 +43,11 @@ export default function BuyerDataForm({
   const [formData, setFormData] = useState<BuyerData>(getInitialData);
   const [errors, setErrors] = useState<Partial<BuyerData>>({});
 
-  // FB Pixel: track when buyer form is shown (InitiateCheckout)
+  // FB Pixel: inject <script> tag into document.head (InitiateCheckout)
   useEffect(() => {
-    try {
-      (window as any).fbq?.('track', 'InitiateCheckout');
-    } catch { /* non-fatal */ }
+    const script = document.createElement('script');
+    script.innerHTML = "fbq('track', 'InitiateCheckout');";
+    document.head.appendChild(script);
   }, []);
 
   const validateForm = (): boolean => {

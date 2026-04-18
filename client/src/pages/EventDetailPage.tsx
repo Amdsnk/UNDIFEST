@@ -94,10 +94,10 @@ export default function EventDetailPage() {
   const handlePurchaseClick = () => {
     // Navigate to payment page instead of direct purchase
     if (!event) return;
-    // FB Pixel: track InitiateCheckout when user clicks buy button
-    try {
-      (window as any).fbq?.('track', 'InitiateCheckout');
-    } catch { /* non-fatal */ }
+    // FB Pixel: inject <script> InitiateCheckout ke document.head sebelum navigasi
+    const script = document.createElement('script');
+    script.innerHTML = "fbq('track', 'InitiateCheckout');";
+    document.head.appendChild(script);
     window.location.href = `/payment/${event.id}`;
   };
 

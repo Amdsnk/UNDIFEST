@@ -33,15 +33,14 @@ export default function PaymentSuccessPage() {
     ? `${window.location.origin}/payment/success?trx=${transactionId}`
     : "";
 
-  // FB Pixel: track Purchase saat pembayaran berhasil dan amount sudah diketahui
+  // FB Pixel: inject <script> Purchase ke document.head saat pembayaran berhasil
+  const pixelPurchaseFiredRef = useRef(false);
   useEffect(() => {
-    if (status === "success" && txAmount > 0) {
-      try {
-        (window as any).fbq?.('track', 'Purchase', {
-          value: txAmount,
-          currency: 'IDR',
-        });
-      } catch { /* non-fatal */ }
+    if (status === "success" && txAmount > 0 && !pixelPurchaseFiredRef.current) {
+      pixelPurchaseFiredRef.current = true;
+      const script = document.createElement('script');
+      script.innerHTML = `fbq('track', 'Purchase', {value: ${txAmount}.00, currency: 'IDR'});`;
+      document.head.appendChild(script);
     }
   }, [status, txAmount]);
 
