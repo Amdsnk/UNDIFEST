@@ -77,27 +77,25 @@ export default function TransactionsPage() {
     return userByPhone.get(normalizePhone(tx.phoneNumber));
   };
 
-  // Sync a single pending transaction with Midtrans
+  // Sync a single pending transaction with Midtrans (admin endpoint)
   const syncOneMutation = useMutation({
     mutationFn: async (transactionId: string) => {
-      return apiRequest(`/api/payments/status/${transactionId}`);
+      return apiRequest(`/api/admin/transactions/${transactionId}/sync`, { method: "POST" });
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      if (data?.paymentStatus === "paid") {
+      if (data?.newStatus === "paid") {
         toast({ title: "✅ Sudah Lunas — status diperbarui otomatis!" });
-      } else if (data?.paymentStatus === "expired") {
+      } else if (data?.newStatus === "expired") {
         toast({ title: "⌛ Transaksi kadaluarsa — tidak ada pembayaran di Midtrans >24 jam" });
-      } else if (data?.midtransRawStatus === "not_found") {
-        toast({ title: "⚠️ Tidak ditemukan di Midtrans — pembeli belum menyelesaikan pembayaran" });
-      } else if (data?.midtransRawStatus === "api_error") {
+      } else if (data?.midtransStatus === "not_found") {
+        toast({ title: "⚠️ Tidak ditemukan di Midtrans — jika pembayaran sudah masuk, klik tombol Konfirmasi untuk konfirmasi manual", duration: 6000 });
+      } else if (!data?.success && data?.message?.includes("Could not reach")) {
         toast({ variant: "destructive", title: "❌ Gagal terhubung ke Midtrans — coba lagi nanti" });
-      } else if (data?.midtransRawStatus === "not_checked") {
-        toast({ title: "ℹ️ Transaksi belum mencapai tahap pembayaran Midtrans" });
-      } else if (data?.midtransRawStatus === "pending") {
+      } else if (data?.midtransStatus === "pending") {
         toast({ title: "⏳ Midtrans: menunggu pembayaran — pembeli belum menyelesaikan" });
       } else {
-        toast({ title: `Status Midtrans: ${data?.midtransRawStatus ?? data?.paymentStatus ?? "tidak diketahui"}` });
+        toast({ title: `Status Midtrans: ${data?.midtransStatus ?? data?.newStatus ?? "tidak diketahui"}` });
       }
     },
     onError: () => {

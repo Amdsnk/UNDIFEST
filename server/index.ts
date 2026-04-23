@@ -158,8 +158,10 @@ app.use((req, res, next) => {
     if (!isMidtransConfigured()) return;
     try {
       const allTransactions = await storage.getAllTransactions();
+      // Include ALL pending transactions — even those without paymentId
+      // Some Midtrans orders may exist under transaction.id even if paymentId wasn't stored
       const pending = allTransactions.filter(
-        (t) => t.paymentStatus === "pending" && t.paymentId
+        (t) => t.paymentStatus === "pending"
       );
       if (pending.length === 0) return;
 

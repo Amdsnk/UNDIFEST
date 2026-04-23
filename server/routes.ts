@@ -1335,11 +1335,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = await storage.getTransaction(req.params.id);
       if (!transaction) return res.status(404).json({ error: "Transaction not found" });
 
-      if (!transaction.paymentId) {
-        return res.json({ success: false, message: "No payment ID to sync", status: transaction.paymentStatus });
+      // Try checking by transaction.id first (order_id sent to Midtrans)
+      let midtransStatus = await checkMidtransTransactionStatus(transaction.id);
+
+      // Fallback: if not found and paymentId differs from transaction.id, try paymentId
+      // (handles edge cases where order_id and paymentId might differ)
+      if (
+        midtransStatus?.transactionStatus === "not_found" &&
+        transaction.paymentId &&
+        transaction.paymentId !== transaction.id
+      ) {
+        const fallback = await checkMidtransTransactionStatus(transaction.paymentId);
+        if (fallback && fallback.transactionStatus !== "not_found") {
+          midtransStatus = fallback;
+          console.log(`[Admin Sync] Found via paymentId fallback for tx: ${transaction.id}`);
+        }
       }
 
-      const midtransStatus = await checkMidtransTransactionStatus(transaction.id);
       if (!midtransStatus) {
         return res.json({ success: false, message: "Could not reach Midtrans", status: transaction.paymentStatus });
       }
