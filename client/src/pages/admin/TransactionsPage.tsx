@@ -38,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, DollarSign, TrendingUp, Calendar, Receipt, Eye, Trash2, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { Search, DollarSign, TrendingUp, Calendar, Receipt, Eye, Trash2, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw, ExternalLink, Copy } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -48,6 +48,8 @@ export default function TransactionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  // Dialog for "not found in Midtrans" case — lets admin see Order ID and confirm manually
+  const [notFoundTx, setNotFoundTx] = useState<Transaction | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -79,17 +81,18 @@ export default function TransactionsPage() {
 
   // Sync a single pending transaction with Midtrans (admin endpoint)
   const syncOneMutation = useMutation({
-    mutationFn: async (transactionId: string) => {
+    mutationFn: async ({ transactionId }: { transactionId: string; transaction: Transaction }) => {
       return apiRequest(`/api/admin/transactions/${transactionId}/sync`, { method: "POST" });
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: any, variables: { transactionId: string; transaction: Transaction }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       if (data?.newStatus === "paid") {
         toast({ title: "✅ Sudah Lunas — status diperbarui otomatis!" });
       } else if (data?.newStatus === "expired") {
         toast({ title: "⌛ Transaksi kadaluarsa — tidak ada pembayaran di Midtrans >24 jam" });
       } else if (data?.midtransStatus === "not_found") {
-        toast({ title: "⚠️ Tidak ditemukan di Midtrans — jika pembayaran sudah masuk, klik tombol Konfirmasi untuk konfirmasi manual", duration: 6000 });
+        // Show a dialog with Order ID + Midtrans dashboard link + confirm button
+        setNotFoundTx(variables.transaction);
       } else if (!data?.success && data?.message?.includes("Could not reach")) {
         toast({ variant: "destructive", title: "❌ Gagal terhubung ke Midtrans — coba lagi nanti" });
       } else if (data?.midtransStatus === "pending") {
@@ -491,7 +494,7 @@ export default function TransactionsPage() {
                                       <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => syncOneMutation.mutate(transaction.id)}
+                                        onClick={() => syncOneMutation.mutate({ transactionId: transaction.id, transaction })}
                                         disabled={syncOneMutation.isPending}
                                         className="bg-blue-500 text-white border-0 hover:bg-blue-600 shadow-md text-xs px-2"
                                         title="Cek status ke Midtrans dan perbarui otomatis"
@@ -808,6 +811,86 @@ export default function TransactionsPage() {
           </div>
         </div>
       </div>
+
+      {/* Dialog: "Tidak ditemukan di Midtrans" — show Order ID + confirm button */}
+      {notFoundTx && (
+        <Dialog open={!!notFoundTx} onOpenChange={(open) => { if (!open) setNotFoundTx(null); }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-orange-600">
+                <AlertCircle className="w-5 h-5" />
+                Tidak Ditemukan di Midtrans
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-gray-700">
+                Pembayaran atas nama <strong>{notFoundTx.buyerName || notFoundTx.phoneNumber}</strong> tidak ditemukan di sistem Midtrans.
+                Ini bisa terjadi karena webhook Midtrans tidak sampai ke server kami.
+              </p>
+
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-2">
+                <p className="text-xs font-semibold text-orange-800 uppercase tracking-wide">Order ID Midtrans (untuk dicek manual):</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm font-mono bg-white border rounded px-2 py-1 flex-1 break-all select-all">
+                    {notFoundTx.id}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(notFoundTx.id);
+                      toast({ title: "✅ Order ID disalin!" });
+                    }}
+                  >
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 space-y-1">
+                <p className="font-semibold">Langkah yang disarankan:</p>
+                <ol className="list-decimal list-inside space-y-1 text-xs">
+                  <li>Buka dashboard Midtrans → cari Order ID di atas</li>
+                  <li>Jika status di Midtrans <strong>Settlement/Lunas</strong> → klik "Konfirmasi Lunas" di bawah</li>
+                  <li>Jika tidak ada di Midtrans → pembeli mungkin belum selesai bayar</li>
+                </ol>
+              </div>
+
+              <a
+                href="https://dashboard.midtrans.com/transactions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Buka Dashboard Midtrans
+              </a>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  updateStatusMutation.mutate({ id: notFoundTx.id, status: "paid" });
+                  setNotFoundTx(null);
+                }}
+                disabled={updateStatusMutation.isPending}
+              >
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Konfirmasi Lunas (Manual)
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setNotFoundTx(null)}
+              >
+                Tutup
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </SidebarProvider>
   );
 }

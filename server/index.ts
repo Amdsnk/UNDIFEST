@@ -169,8 +169,22 @@ app.use((req, res, next) => {
 
       for (const t of pending) {
         try {
-          const midtransStatus = await checkMidtransTransactionStatus(t.id);
+          let midtransStatus = await checkMidtransTransactionStatus(t.id);
           if (!midtransStatus) continue;
+
+          // Fallback: if not found by transaction.id, try stored paymentId
+          // (handles VA payments where paymentId = Snap token, which may resolve differently)
+          if (
+            midtransStatus.transactionStatus === "not_found" &&
+            t.paymentId &&
+            t.paymentId !== t.id
+          ) {
+            const fallback = await checkMidtransTransactionStatus(t.paymentId);
+            if (fallback && fallback.transactionStatus !== "not_found") {
+              midtransStatus = fallback;
+              log(`[PaymentSync] Found via paymentId fallback for tx: ${t.id}`);
+            }
+          }
 
           const { transactionStatus, fraudStatus } = midtransStatus;
 
