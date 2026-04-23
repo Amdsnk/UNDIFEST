@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase, seedManualWinnerHistory } from "./db-seed";
 import { runMigrations } from "./db-migrate";
 import { storage } from "./storage";
+import { checkMidtransTransactionStatus, isMidtransConfigured } from "./midtrans";
 
 const app = express();
 
@@ -149,6 +150,82 @@ app.use((req, res, next) => {
   }
   setInterval(runRecurringScheduler, 10 * 60 * 1000); // every 10 minutes
   runRecurringScheduler(); // run immediately on startup
+
+  // ── Midtrans Payment Auto-Sync ──────────────────────────────────────────
+  // Runs every 5 minutes to sync ALL pending transactions with Midtrans.
+  // This is a safety net for when the Midtrans webhook is delayed or missed.
+  async function runPaymentSyncScheduler() {
+    if (!isMidtransConfigured()) return;
+    try {
+      const allTransactions = await storage.getAllTransactions();
+      const pending = allTransactions.filter(
+        (t) => t.paymentStatus === "pending" && t.paymentId
+      );
+      if (pending.length === 0) return;
+
+      log(`[PaymentSync] Checking ${pending.length} pending transaction(s)...`);
+
+      for (const t of pending) {
+        try {
+          const midtransStatus = await checkMidtransTransactionStatus(t.id);
+          if (!midtransStatus) continue;
+
+          const { transactionStatus, fraudStatus } = midtransStatus;
+
+          if (
+            transactionStatus === "settlement" ||
+            (transactionStatus === "capture" && fraudStatus === "accept")
+          ) {
+            await storage.updateTransaction(t.id, {
+              paymentStatus: "paid",
+              paidAt: new Date(),
+            });
+            await storage.incrementEventTickets(t.eventId).catch(() => {});
+            log(`[PaymentSync] ✅ ${t.id} → paid`);
+
+            // Send WhatsApp notification via Fonnte
+            if (t.phoneNumber && process.env.FONNTE_API_TOKEN) {
+              const baseUrl = process.env.APP_URL || "https://undifest.com";
+              const downloadLink = `${baseUrl}/payment/success?trx=${t.id}`;
+              const nomorUndian = `UND-${t.id.slice(0, 8).toUpperCase()}`;
+              const ev = await storage.getEvent(t.eventId).catch(() => null);
+              const hasEbook = !!(ev?.ebookFile);
+              const waMsg = hasEbook
+                ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${t.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
+                : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${t.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+              fetch("https://api.fonnte.com/send", {
+                method: "POST",
+                headers: {
+                  Authorization: process.env.FONNTE_API_TOKEN,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ target: t.phoneNumber, message: waMsg }),
+              }).catch(() => {});
+            }
+          } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
+            await storage.updateTransaction(t.id, { paymentStatus: "failed" });
+            log(`[PaymentSync] ❌ ${t.id} → failed`);
+          } else if (transactionStatus === "expire") {
+            await storage.updateTransaction(t.id, { paymentStatus: "expired" });
+            log(`[PaymentSync] ⏰ ${t.id} → expired`);
+          } else if (transactionStatus === "not_found") {
+            const hoursSince =
+              (Date.now() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60);
+            if (hoursSince > 24) {
+              await storage.updateTransaction(t.id, { paymentStatus: "expired" });
+              log(`[PaymentSync] ⏰ ${t.id} → expired (not in Midtrans, >24h)`);
+            }
+          }
+        } catch {
+          // non-fatal: skip this transaction
+        }
+      }
+    } catch (err) {
+      console.error("[PaymentSync] Scheduler error:", err);
+    }
+  }
+  setInterval(runPaymentSyncScheduler, 5 * 60 * 1000); // every 5 minutes
+  runPaymentSyncScheduler(); // run immediately on startup
 
   const server = await registerRoutes(app);
 

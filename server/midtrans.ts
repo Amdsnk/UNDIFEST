@@ -272,6 +272,11 @@ export async function createSnapTransaction(params: {
     if (params.pendingUrl) payload.callbacks.pending = params.pendingUrl;
   }
 
+  // Include notification URL so Midtrans always knows where to send webhooks
+  // This overrides/complements the URL configured in the Midtrans dashboard
+  const appUrl = process.env.APP_URL || "https://undifest.com";
+  payload.notification_url = `${appUrl}/api/payments/midtrans/notification`;
+
   const response = await fetch(MIDTRANS_SNAP_URL, {
     method: 'POST',
     headers: {
@@ -351,6 +356,10 @@ export async function createPaymentLink(params: {
     if (params.errorUrl) payload.callbacks.error = params.errorUrl;
     if (params.pendingUrl) payload.callbacks.pending = params.pendingUrl;
   }
+
+  // Include notification URL so Midtrans always knows where to send webhooks
+  const appUrl = process.env.APP_URL || "https://undifest.com";
+  payload.notification_url = `${appUrl}/api/payments/midtrans/notification`;
 
   const response = await fetch(`${MIDTRANS_BASE_URL}/v1/payment-links`, {
     method: 'POST',
