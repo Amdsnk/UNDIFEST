@@ -5,7 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase, seedManualWinnerHistory } from "./db-seed";
 import { runMigrations } from "./db-migrate";
 import { storage } from "./storage";
-import { checkMidtransTransactionStatus, isMidtransConfigured } from "./midtrans";
+import { checkMidtransStatusWithFallback, isMidtransConfigured } from "./midtrans";
 
 const app = express();
 
@@ -169,22 +169,9 @@ app.use((req, res, next) => {
 
       for (const t of pending) {
         try {
-          let midtransStatus = await checkMidtransTransactionStatus(t.id);
+          // Use unified helper: tries transaction.id first, then paymentId as fallback
+          const midtransStatus = await checkMidtransStatusWithFallback(t.id, t.paymentId);
           if (!midtransStatus) continue;
-
-          // Fallback: if not found by transaction.id, try stored paymentId
-          // (handles VA payments where paymentId = Snap token, which may resolve differently)
-          if (
-            midtransStatus.transactionStatus === "not_found" &&
-            t.paymentId &&
-            t.paymentId !== t.id
-          ) {
-            const fallback = await checkMidtransTransactionStatus(t.paymentId);
-            if (fallback && fallback.transactionStatus !== "not_found") {
-              midtransStatus = fallback;
-              log(`[PaymentSync] Found via paymentId fallback for tx: ${t.id}`);
-            }
-          }
 
           const { transactionStatus, fraudStatus } = midtransStatus;
 
@@ -222,16 +209,11 @@ app.use((req, res, next) => {
             await storage.updateTransaction(t.id, { paymentStatus: "failed" });
             log(`[PaymentSync] ❌ ${t.id} → failed`);
           } else if (transactionStatus === "expire") {
+            // Only expire on explicit Midtrans 'expire' — never on 'not_found'
             await storage.updateTransaction(t.id, { paymentStatus: "expired" });
             log(`[PaymentSync] ⏰ ${t.id} → expired`);
-          } else if (transactionStatus === "not_found") {
-            const hoursSince =
-              (Date.now() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60);
-            if (hoursSince > 24) {
-              await storage.updateTransaction(t.id, { paymentStatus: "expired" });
-              log(`[PaymentSync] ⏰ ${t.id} → expired (not in Midtrans, >24h)`);
-            }
           }
+          // not_found → leave as pending, do not auto-expire
         } catch {
           // non-fatal: skip this transaction
         }

@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { insertEventSchema, insertBannerSchema, insertTransactionSchema, insertVideoSchema, updateVideoSchema, insertPartnerSchema, insertHowItWorksSchema, insertBankSchema, insertIpWhitelistSchema, insertPaymentMethodSchema, insertPageSchema, insertTermsConditionSchema } from "@shared/schema";
 import { comparePassword, generateToken, generateUserToken, requireAdmin, requireUser, requireRole, requireWrite, verifyUserToken } from "./auth";
-import { createSnapTransaction, createPaymentLink, checkMidtransTransactionStatus, isMidtransConfigured, getMidtransConfig, verifyMidtransSignature } from "./midtrans";
+import { createSnapTransaction, createPaymentLink, checkMidtransTransactionStatus, checkMidtransStatusWithFallback, isMidtransConfigured, getMidtransConfig, verifyMidtransSignature } from "./midtrans";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -509,17 +509,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const transactions = await storage.getAllTransactions();
 
-      // Auto-sync all pending transactions with Midtrans in real-time
-      // This ensures admin always sees the true payment status without manual intervention
-      const pendingWithPaymentId = transactions.filter(
-        (t) => t.paymentStatus === "pending" && t.paymentId
+      // Auto-sync all pending transactions with Midtrans in real-time.
+      // Only update if Midtrans gives a definitive status (paid/failed/expired).
+      // NEVER auto-expire based on 'not_found' — Midtrans API can return not_found
+      // temporarily even for settled payments (API glitch, wrong env, race condition).
+      const pendingTransactions = transactions.filter(
+        (t) => t.paymentStatus === "pending"
       );
 
-      if (pendingWithPaymentId.length > 0) {
+      if (pendingTransactions.length > 0) {
         await Promise.all(
-          pendingWithPaymentId.map(async (t) => {
+          pendingTransactions.map(async (t) => {
             try {
-              const midtransStatus = await checkMidtransTransactionStatus(t.id);
+              const midtransStatus = await checkMidtransStatusWithFallback(t.id, t.paymentId);
               if (!midtransStatus) return;
               const { transactionStatus, fraudStatus } = midtransStatus;
               if (
@@ -533,15 +535,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 await storage.updateTransaction(t.id, { paymentStatus: "failed" });
                 t.paymentStatus = "failed";
               } else if (transactionStatus === "expire") {
+                // Only expire if Midtrans EXPLICITLY says expire — never based on not_found
                 await storage.updateTransaction(t.id, { paymentStatus: "expired" });
                 t.paymentStatus = "expired";
-              } else if (transactionStatus === "not_found") {
-                const hoursSinceCreation = (Date.now() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60);
-                if (hoursSinceCreation > 24) {
-                  await storage.updateTransaction(t.id, { paymentStatus: "expired" });
-                  t.paymentStatus = "expired";
-                }
               }
+              // not_found → do nothing, leave as pending
             } catch {
               // non-fatal: skip if Midtrans check fails for this transaction
             }
@@ -559,18 +557,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/transactions/sync-pending", requireAdmin, async (req, res) => {
     try {
       const transactions = await storage.getAllTransactions();
-      const pendingWithPaymentId = transactions.filter(
-        (t) => t.paymentStatus === "pending" && t.paymentId
-      );
+      // Check all pending — including those without paymentId (try by transaction.id)
+      const pending = transactions.filter((t) => t.paymentStatus === "pending");
 
       let updated = 0;
       const results: { id: string; from: string; to: string }[] = [];
 
       await Promise.all(
-        pendingWithPaymentId.map(async (t) => {
+        pending.map(async (t) => {
           try {
-            const midtransStatus = await checkMidtransTransactionStatus(t.id);
-            if (!midtransStatus) return; // null = error koneksi, skip
+            // Use fallback: try paymentId if transaction.id returns not_found
+            const midtransStatus = await checkMidtransStatusWithFallback(t.id, t.paymentId);
+            if (!midtransStatus) return; // null = connection error, skip
 
             const { transactionStatus, fraudStatus } = midtransStatus;
             if (
@@ -586,26 +584,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               results.push({ id: t.id, from: "pending", to: "failed" });
               updated++;
             } else if (transactionStatus === "expire") {
+              // Only expire on explicit Midtrans 'expire' — never on 'not_found'
               await storage.updateTransaction(t.id, { paymentStatus: "expired" });
               results.push({ id: t.id, from: "pending", to: "expired" });
               updated++;
-            } else if (transactionStatus === "not_found") {
-              // Order tidak ada di Midtrans → auto-expire jika sudah > 24 jam
-              const hoursSinceCreation = (Date.now() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60);
-              if (hoursSinceCreation > 24) {
-                await storage.updateTransaction(t.id, { paymentStatus: "expired" });
-                results.push({ id: t.id, from: "pending", to: "expired" });
-                updated++;
-              }
             }
+            // not_found → leave as pending, do not auto-expire
           } catch (e) {
             console.error("[Sync Pending] Error checking transaction:", t.id, e);
           }
         })
       );
 
-      console.log(`[Sync Pending] Checked ${pendingWithPaymentId.length} transactions, updated ${updated}`);
-      res.json({ checked: pendingWithPaymentId.length, updated, results });
+      console.log(`[Sync Pending] Checked ${pending.length} transactions, updated ${updated}`);
+      res.json({ checked: pending.length, updated, results });
     } catch (error) {
       console.error("[Sync Pending] Error:", error);
       res.status(500).json({ error: "Failed to sync pending transactions" });
@@ -754,12 +746,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // lainnya       = status langsung dari Midtrans (pending, settlement, dll)
       let midtransRawStatus: string = "not_checked";
 
-      // If still pending, check Midtrans API directly (handles webhook delay)
-      if (currentStatus === "pending" && transaction.paymentId) {
+      // If still pending, check Midtrans API directly (handles webhook delay).
+      // Use fallback: try paymentId if transaction.id returns not_found.
+      // NEVER auto-expire based on not_found — only expire on explicit Midtrans 'expire'.
+      if (currentStatus === "pending") {
         try {
-          const midtransStatus = await checkMidtransTransactionStatus(transactionId);
+          const midtransStatus = await checkMidtransStatusWithFallback(transactionId, transaction.paymentId);
           if (!midtransStatus) {
-            // null = gagal koneksi ke Midtrans
             midtransRawStatus = "api_error";
           } else {
             const { transactionStatus, fraudStatus } = midtransStatus;
@@ -767,15 +760,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             if (transactionStatus === "settlement" || (transactionStatus === "capture" && fraudStatus === "accept")) {
               currentStatus = "paid";
-              await storage.updateTransaction(transactionId, {
-                paymentStatus: "paid",
-                paidAt: new Date(),
-              });
-              // Increment event tickets (transaction was pending, now confirmed paid)
+              await storage.updateTransaction(transactionId, { paymentStatus: "paid", paidAt: new Date() });
               await storage.incrementEventTickets(transaction.eventId).catch(e =>
                 console.error("[Payment Status] Failed to increment tickets:", e)
               );
-              // Send WhatsApp notification once (status was pending, now paid)
               if (transaction.phoneNumber) {
                 const baseUrl = process.env.APP_URL || "https://undifest.com";
                 const downloadLink = `${baseUrl}/payment/success?trx=${transaction.id}`;
@@ -788,22 +776,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 sendWhatsAppMessage(transaction.phoneNumber, waMsg).catch(() => {});
               }
               console.log("[Payment Status] Updated to paid via direct Midtrans check:", transactionId);
-            } else if (transactionStatus === "deny" || transactionStatus === "cancel" || transactionStatus === "failure") {
+            } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
               currentStatus = "failed";
               await storage.updateTransaction(transactionId, { paymentStatus: "failed" });
             } else if (transactionStatus === "expire") {
+              // Only expire if Midtrans EXPLICITLY returns 'expire'
               currentStatus = "expired";
               await storage.updateTransaction(transactionId, { paymentStatus: "expired" });
-            } else if (transactionStatus === "not_found") {
-              // Order tidak ada di Midtrans → payment link dibuat tapi belum/tidak jadi dibayar
-              // Auto-expire jika sudah lebih dari 24 jam
-              const hoursSinceCreation = (Date.now() - new Date(transaction.createdAt).getTime()) / (1000 * 60 * 60);
-              if (hoursSinceCreation > 24) {
-                currentStatus = "expired";
-                await storage.updateTransaction(transactionId, { paymentStatus: "expired" });
-                console.log("[Payment Status] Auto-expired (not found in Midtrans, >24h):", transactionId);
-              }
             }
+            // not_found → leave as pending, do not auto-expire
           }
         } catch (midtransErr) {
           midtransRawStatus = "api_error";

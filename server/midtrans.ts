@@ -386,6 +386,13 @@ export async function createPaymentLink(params: {
   return { paymentUrl: result.payment_url };
 }
 
+export type MidtransStatusResult = {
+  transactionStatus: string;
+  fraudStatus?: string;
+  paymentType?: string;
+  grossAmount?: string;
+} | null;
+
 /**
  * Check Midtrans transaction status directly from Midtrans API
  * Used to verify payment status when webhook hasn't arrived yet
@@ -396,12 +403,7 @@ export async function createPaymentLink(params: {
  *   - { transactionStatus: 'settlement', ... }  → lunas
  *   - null                                       → gagal koneksi ke Midtrans (error jaringan / auth)
  */
-export async function checkMidtransTransactionStatus(orderId: string): Promise<{
-  transactionStatus: string;
-  fraudStatus?: string;
-  paymentType?: string;
-  grossAmount?: string;
-} | null> {
+export async function checkMidtransTransactionStatus(orderId: string): Promise<MidtransStatusResult> {
   try {
     const response = await fetch(`${MIDTRANS_BASE_URL}/v2/${orderId}/status`, {
       method: 'GET',
@@ -448,3 +450,35 @@ export async function checkMidtransTransactionStatus(orderId: string): Promise<{
   }
 }
 
+/**
+ * Check Midtrans status with automatic paymentId fallback.
+ *
+ * Strategy:
+ *   1. Try by orderId (= transaction.id, which is the order_id we sent to Midtrans)
+ *   2. If not found AND paymentId differs from orderId, try by paymentId
+ *      (covers cases where the Snap token or payment link ID is stored as paymentId)
+ *
+ * IMPORTANT: Never auto-expire based on 'not_found'. Return as-is and let the caller decide.
+ * Only Midtrans-explicit 'expire' status should mark a transaction expired.
+ */
+export async function checkMidtransStatusWithFallback(
+  orderId: string,
+  paymentId?: string | null
+): Promise<MidtransStatusResult> {
+  let result = await checkMidtransTransactionStatus(orderId);
+
+  // Fallback: try paymentId if primary lookup returned not_found
+  if (
+    result?.transactionStatus === 'not_found' &&
+    paymentId &&
+    paymentId !== orderId
+  ) {
+    const fallback = await checkMidtransTransactionStatus(paymentId);
+    if (fallback && fallback.transactionStatus !== 'not_found') {
+      console.log(`[Midtrans] Found via paymentId fallback for order: ${orderId}`);
+      result = fallback;
+    }
+  }
+
+  return result;
+}
