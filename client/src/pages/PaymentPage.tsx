@@ -68,14 +68,16 @@ export default function PaymentPage() {
     enabled: !!eventId,
   });
 
-  // Helper to get event card image based on cardTemplate or fallback to imageUrl
+  // Helper to get event card image based on cardTemplate or fallback to bannerUndian/imageUrl
   const getEventCardImage = (event: Event) => {
     if (event.cardTemplate === "burgerKing") {
       return undian01Url;
     } else if (event.cardTemplate === "yamahaNmax") {
       return undian02Url;
     }
-    return event.imageUrl;
+    // Prefer bannerUndian (specific to the undian/payment page),
+    // fall back to imageUrl (same as bannerHomepage) if no undian banner is set
+    return (event as any).bannerUndian || event.imageUrl;
   };
 
   const handlePaymentMethodSelect = (method: 'va' | 'qris' | 'directdebit' | 'cstore', channel: string) => {
