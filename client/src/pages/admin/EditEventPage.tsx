@@ -49,7 +49,7 @@ export default function EditEventPage() {
   const ebookFileRef = useRef<HTMLInputElement>(null);
 
   const { data: event, isLoading } = useQuery<Event>({
-    queryKey: [`/api/events/${params?.id}`],
+    queryKey: [`/api/admin/events/${params?.id}`],
     enabled: !!params?.id,
   });
 
@@ -166,7 +166,7 @@ export default function EditEventPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/events/${params?.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/events/${params?.id}`] });
       toast({
         title: "Event Berhasil Diupdate",
         description: "Perubahan event telah disimpan",

@@ -143,10 +143,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/events", requireAdmin, async (req, res) => {
     try {
       const events = await storage.getAllEvents();
-      // Strip heavy base64 from list — full data available via /api/events/:id
+      // Strip heavy base64 from list — full data available via /api/admin/events/:id
       res.json(events.map(stripEventBulk));
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  // Admin-only endpoint to get a single event (any status, includes full banner data for edit)
+  app.get("/api/admin/events/:id", requireAdmin, async (req, res) => {
+    try {
+      const event = await storage.getEvent(req.params.id);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch event" });
     }
   });
 

@@ -83,8 +83,8 @@ export default function EventManagerPage() {
     queryKey: ["/api/events"],
   });
 
-  const currentEvents = events.filter(e => e.status === "active");
-  const pastEvents = events.filter(e => e.status === "completed");
+  const currentEvents = events.filter(e => e.status === "aktif" || e.status === "nonaktif");
+  const pastEvents = events.filter(e => e.status === "selesai");
 
   const getEventStats = (eventId: string) => {
     return {
