@@ -122,8 +122,8 @@ export default function MembersPage() {
             ]}
           />
 
-        <div className="flex-1 p-8 overflow-y-auto">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
+            <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white">
                   <CardContent className="p-6">
@@ -362,17 +362,23 @@ export default function MembersPage() {
                                 Rp {t.amount.toLocaleString('id-ID')}
                               </TableCell>
                               <TableCell>
-                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
-                                  t.paymentStatus === "paid"
-                                    ? "bg-green-100 text-green-700"
-                                    : t.paymentStatus === "pending"
-                                    ? "bg-yellow-100 text-yellow-700"
-                                    : t.paymentStatus === "failed"
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-gray-100 text-gray-600"
-                                }`}>
-                                  {t.paymentStatus === "paid" ? "✅ Lunas" : t.paymentStatus === "pending" ? "⏳ Pending" : t.paymentStatus === "failed" ? "❌ Gagal" : t.paymentStatus}
-                                </span>
+                                {t.paymentStatus === "paid" ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                    <CheckCircle className="w-3 h-3" /> Lunas
+                                  </span>
+                                ) : t.paymentStatus === "pending" ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
+                                    ⏳ Pending
+                                  </span>
+                                ) : t.paymentStatus === "expired" ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                                    ⏰ Expired
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                    ❌ Gagal
+                                  </span>
+                                )}
                               </TableCell>
                               <TableCell className="text-gray-600 text-sm">
                                 {new Date(t.createdAt).toLocaleDateString('id-ID', {

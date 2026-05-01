@@ -364,6 +364,7 @@ export default function TransactionsPage() {
                           <TableHead className="font-bold text-gray-700">No Rekening</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Total Tiket</TableHead>
                           <TableHead className="font-bold text-gray-700">Total Rp</TableHead>
+                          <TableHead className="font-bold text-gray-700">Status Bayar</TableHead>
                           <TableHead className="font-bold text-gray-700">Status Akun</TableHead>
                           <TableHead className="font-bold text-gray-700">IP</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Aksi</TableHead>
@@ -372,7 +373,7 @@ export default function TransactionsPage() {
                       <TableBody>
                         {isLoading ? (
                           <TableRow>
-                            <TableCell colSpan={14} className="text-center py-12">
+                            <TableCell colSpan={15} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                                 <p className="text-gray-500 font-medium">Memuat data transaksi...</p>
@@ -464,6 +465,10 @@ export default function TransactionsPage() {
                                 <span className="inline-flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2 py-1 rounded-full text-xs font-bold shadow-sm whitespace-nowrap">
                                   {new Intl.NumberFormat("id-ID").format(transaction.amount)}
                                 </span>
+                              </TableCell>
+                              {/* Status Pembayaran */}
+                              <TableCell className="py-2">
+                                {getStatusBadge(transaction.paymentStatus)}
                               </TableCell>
                               {/* Status Akun */}
                               <TableCell className="py-2">
@@ -711,7 +716,7 @@ export default function TransactionsPage() {
                           })
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={14} className="text-center py-12">
+                            <TableCell colSpan={15} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="bg-gray-100 rounded-full p-4">
                                   <Receipt className="w-12 h-12 text-gray-400" />
