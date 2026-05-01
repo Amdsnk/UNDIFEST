@@ -349,31 +349,27 @@ export default function TransactionsPage() {
                   </div>
 
                   {/* Table */}
-                  <div className="rounded-xl border-2 border-gray-200 overflow-x-auto">
-                    <Table className="min-w-[900px]">
+                  <div className="rounded-xl border-2 border-gray-200">
+                    <Table>
                       <TableHeader>
                         <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-50">
-                          <TableHead className="font-bold text-gray-700 w-10">No</TableHead>
+                          <TableHead className="font-bold text-gray-700 w-8 px-2">No</TableHead>
                           <TableHead className="font-bold text-gray-700">Nama</TableHead>
                           <TableHead className="font-bold text-gray-700">ID Transaksi</TableHead>
                           <TableHead className="font-bold text-gray-700">Event</TableHead>
-                          <TableHead className="font-bold text-gray-700">Waktu Transaksi</TableHead>
+                          <TableHead className="font-bold text-gray-700">Waktu</TableHead>
                           <TableHead className="font-bold text-gray-700">No WA</TableHead>
-                          <TableHead className="font-bold text-gray-700">Kota</TableHead>
-                          <TableHead className="font-bold text-gray-700">Email</TableHead>
                           <TableHead className="font-bold text-gray-700">No Rekening</TableHead>
-                          <TableHead className="font-bold text-gray-700 text-center">Total Tiket</TableHead>
+                          <TableHead className="font-bold text-gray-700 text-center">Tiket</TableHead>
                           <TableHead className="font-bold text-gray-700">Total Rp</TableHead>
-                          <TableHead className="font-bold text-gray-700">Status Bayar</TableHead>
-                          <TableHead className="font-bold text-gray-700">Status Akun</TableHead>
-                          <TableHead className="font-bold text-gray-700">IP</TableHead>
+                          <TableHead className="font-bold text-gray-700">Status</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {isLoading ? (
                           <TableRow>
-                            <TableCell colSpan={15} className="text-center py-12">
+                            <TableCell colSpan={11} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                                 <p className="text-gray-500 font-medium">Memuat data transaksi...</p>
@@ -388,11 +384,10 @@ export default function TransactionsPage() {
                             const kota = user?.city || "-";
                             const noRek = transaction.buyerAccountNumber || user?.accountNumber || null;
                             const bankName = transaction.buyerBankName || user?.bankName || null;
-                            const isAkun = user?.isActive;
                             return (
                             <TableRow key={transaction.id} data-testid={`row-transaction-${transaction.id}`} className="hover:bg-purple-50/50 transition-colors">
                               {/* No */}
-                              <TableCell className="py-2 text-center text-xs font-semibold text-gray-500">
+                              <TableCell className="py-1 px-2 text-center text-xs font-semibold text-gray-500">
                                 {(currentPage - 1) * itemsPerPage + rowIndex + 1}
                               </TableCell>
                               {/* Nama */}
@@ -433,14 +428,6 @@ export default function TransactionsPage() {
                                   {transaction.phoneNumber}
                                 </span>
                               </TableCell>
-                              {/* Kota */}
-                              <TableCell className="py-2">
-                                <span className="text-xs text-gray-700">{kota}</span>
-                              </TableCell>
-                              {/* Email */}
-                              <TableCell className="py-2">
-                                <span className="text-xs text-gray-700 break-all">{email}</span>
-                              </TableCell>
                               {/* No Rekening */}
                               <TableCell className="py-2">
                                 <div className="flex flex-col text-xs">
@@ -469,28 +456,6 @@ export default function TransactionsPage() {
                               {/* Status Pembayaran */}
                               <TableCell className="py-2">
                                 {getStatusBadge(transaction.paymentStatus)}
-                              </TableCell>
-                              {/* Status Akun */}
-                              <TableCell className="py-2">
-                                {user == null ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
-                                    Guest
-                                  </span>
-                                ) : isAkun ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-                                    Lengkap
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600">
-                                    Belum
-                                  </span>
-                                )}
-                              </TableCell>
-                              {/* IP */}
-                              <TableCell className="py-2">
-                                <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
-                                  {transaction.buyerIp || "-"}
-                                </span>
                               </TableCell>
                               <TableCell className="text-center">
                                 <div className="flex items-center justify-center gap-1">
@@ -567,6 +532,18 @@ export default function TransactionsPage() {
                                             <p className="text-2xl font-bold">
                                               Rp {transaction.amount.toLocaleString('id-ID')}
                                             </p>
+                                          </div>
+                                        </div>
+
+                                        {/* Email & Kota */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div className="bg-gray-50 p-4 rounded-lg">
+                                            <p className="text-sm text-gray-500 font-medium mb-1">Email</p>
+                                            <p className="text-sm text-gray-900 break-all">{email}</p>
+                                          </div>
+                                          <div className="bg-gray-50 p-4 rounded-lg">
+                                            <p className="text-sm text-gray-500 font-medium mb-1">Kota</p>
+                                            <p className="text-sm text-gray-900">{kota}</p>
                                           </div>
                                         </div>
 
@@ -716,7 +693,7 @@ export default function TransactionsPage() {
                           })
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={15} className="text-center py-12">
+                            <TableCell colSpan={11} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="bg-gray-100 rounded-full p-4">
                                   <Receipt className="w-12 h-12 text-gray-400" />
