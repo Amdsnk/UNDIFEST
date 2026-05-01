@@ -11,7 +11,6 @@ import banner01Url from "@assets/banner01_1763489481905.jpg";
 import undian01Url from "@assets/undian01_1763489504866.png";
 import undian02Url from "@assets/undian02_1763489504867.png";
 import bankUrl from "@assets/bank_1763489481904.png";
-import tombolBeliUrl from "@assets/tombol_beli_1763581173753.png";
 import kemensosLogoUrl from "@assets/logo kemensos_1763490013360.png";
 import thumbTestimoniUrl from "@assets/thumb-testimoni_1763489504865.png";
 import thumbVideoUrl from "@assets/thumb-video_1763489504866.png";
@@ -182,59 +181,23 @@ export default function HomePage() {
             ) : activeEvents.length > 0 ? (
               activeEvents.map((event) => {
                 const cardImageUrl = getEventCardImage(event);
-                const isTemplateCard = event.cardTemplate === "burgerKing" || event.cardTemplate === "yamahaNmax";
 
-                if (isTemplateCard) {
-                  return (
-                    <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
-                      <div className="bg-transparent rounded-2xl overflow-hidden transition-all">
-                        <div className="relative">
-                          <img
-                            src={cardImageUrl}
-                            alt={event.name}
-                            className="w-full h-auto"
-                            loading="lazy"
-                            decoding="async"
-                          />
-                          <button
-                            onClick={() => handlePurchase(event)}
-                            data-testid={`button-buy-${event.id}`}
-                            className="absolute bottom-4 right-4"
-                          >
-                            {/* Buy button: smaller on mobile (h-6), original on desktop (h-8) */}
-                            <img src={tombolBeliUrl} alt="Beli" className="h-6 md:h-8 mt-[13px] mb-[13px]" loading="lazy" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div key={event.id} data-testid={`event-card-${event.id}`} className="group relative">
-                      <div className="bg-transparent rounded-2xl overflow-hidden transition-all">
-                        <div className="relative">
-                          <img
-                            src={cardImageUrl}
-                            alt={event.name}
-                            className="w-full h-auto object-contain"
-                            style={{ paddingBottom: '15px' }}
-                            loading="lazy"
-                            decoding="async"
-                          />
-                          <div className="absolute bottom-4 right-4 z-20">
-                            <button
-                              onClick={() => handlePurchase(event)}
-                              data-testid={`button-buy-${event.id}`}
-                            >
-                              {/* Buy button: smaller on mobile (h-6), original on desktop (h-8) */}
-                              <img src={tombolBeliUrl} alt="Beli" className="h-6 md:h-8" loading="lazy" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
+                return (
+                  <button
+                    key={event.id}
+                    data-testid={`event-card-${event.id}`}
+                    onClick={() => handlePurchase(event)}
+                    className="w-full block rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
+                  >
+                    <img
+                      src={cardImageUrl}
+                      alt={event.name}
+                      className="w-full h-auto"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </button>
+                );
               })
             ) : (
               <div className="text-center text-gray-400 py-8">
