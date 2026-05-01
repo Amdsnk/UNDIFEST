@@ -63,12 +63,15 @@ export default function EventManagerPage() {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-  
+  // Full event data (with banner URLs) fetched separately when editing
+  const [fullEventData, setFullEventData] = useState<Event | null>(null);
+  const [loadingFullEvent, setLoadingFullEvent] = useState(false);
+
   const [bannerHomepageFile, setBannerHomepageFile] = useState<File | null>(null);
   const [bannerUndianFile, setBannerUndianFile] = useState<File | null>(null);
   const homepageBannerRef = useRef<HTMLInputElement>(null);
   const undianBannerRef = useRef<HTMLInputElement>(null);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -79,8 +82,9 @@ export default function EventManagerPage() {
     isRefundable: false,
   });
 
+  // Use admin endpoint to see ALL events (not just aktif), list view strips banners for speed
   const { data: events = [] } = useQuery<Event[]>({
-    queryKey: ["/api/events"],
+    queryKey: ["/api/admin/events"],
   });
 
   const currentEvents = events.filter(e => e.status === "aktif" || e.status === "nonaktif");
@@ -122,6 +126,7 @@ export default function EventManagerPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/events"] });
       toast({
         title: "Success",
         description: editingEventId ? "Event berhasil diupdate" : "Event berhasil dibuat",
@@ -150,10 +155,11 @@ export default function EventManagerPage() {
     setBannerHomepageFile(null);
     setBannerUndianFile(null);
     setCurrentEvent(null);
+    setFullEventData(null);
     setEditingEventId(null);
   };
 
-  const loadEventForEdit = (event: Event) => {
+  const loadEventForEdit = async (event: Event) => {
     setFormData({
       name: event.name,
       price: String(event.price),
@@ -165,7 +171,25 @@ export default function EventManagerPage() {
     });
     setCurrentEvent(event);
     setEditingEventId(event.id);
+    setBannerHomepageFile(null);
+    setBannerUndianFile(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Fetch full event data (includes bannerHomepage & bannerUndian URLs)
+    setLoadingFullEvent(true);
+    try {
+      const res = await fetch(`/api/admin/events/${event.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+      });
+      if (res.ok) {
+        const fullData = await res.json();
+        setFullEventData(fullData);
+      }
+    } catch {
+      // ignore — banners simply won't show preview
+    } finally {
+      setLoadingFullEvent(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -251,7 +275,21 @@ export default function EventManagerPage() {
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Banner Homepage</Label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {/* Show existing banner preview when editing */}
+                      {editingEventId && !bannerHomepageFile && (
+                        loadingFullEvent ? (
+                          <div className="w-32 h-20 bg-gray-100 rounded flex items-center justify-center">
+                            <span className="text-xs text-gray-400">Memuat...</span>
+                          </div>
+                        ) : fullEventData?.bannerHomepage ? (
+                          <img
+                            src={fullEventData.bannerHomepage}
+                            alt="Banner saat ini"
+                            className="w-32 h-20 object-cover rounded border"
+                          />
+                        ) : null
+                      )}
                       <input
                         ref={homepageBannerRef}
                         type="file"
@@ -267,17 +305,35 @@ export default function EventManagerPage() {
                         onClick={() => homepageBannerRef.current?.click()}
                         className="bg-blue-500 hover:bg-blue-600 text-white"
                       >
-                        Pilih File
+                        {editingEventId ? "Ganti File" : "Pilih File"}
                       </Button>
                       <span className="text-sm text-gray-500">
-                        {bannerHomepageFile ? bannerHomepageFile.name : "Tidak ada file yg di pilih"}
+                        {bannerHomepageFile
+                          ? bannerHomepageFile.name
+                          : editingEventId
+                          ? "Tidak ada perubahan (banner lama tetap dipakai)"
+                          : "Tidak ada file yg di pilih"}
                       </span>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Banner Halaman Undian 1</Label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {/* Show existing banner preview when editing */}
+                      {editingEventId && !bannerUndianFile && (
+                        loadingFullEvent ? (
+                          <div className="w-32 h-20 bg-gray-100 rounded flex items-center justify-center">
+                            <span className="text-xs text-gray-400">Memuat...</span>
+                          </div>
+                        ) : fullEventData?.bannerUndian ? (
+                          <img
+                            src={fullEventData.bannerUndian}
+                            alt="Banner saat ini"
+                            className="w-32 h-20 object-cover rounded border"
+                          />
+                        ) : null
+                      )}
                       <input
                         ref={undianBannerRef}
                         type="file"
@@ -293,10 +349,14 @@ export default function EventManagerPage() {
                         onClick={() => undianBannerRef.current?.click()}
                         className="bg-blue-500 hover:bg-blue-600 text-white"
                       >
-                        Pilih File
+                        {editingEventId ? "Ganti File" : "Pilih File"}
                       </Button>
                       <span className="text-sm text-gray-500">
-                        {bannerUndianFile ? bannerUndianFile.name : "Tidak ada file yg di pilih"}
+                        {bannerUndianFile
+                          ? bannerUndianFile.name
+                          : editingEventId
+                          ? "Tidak ada perubahan (banner lama tetap dipakai)"
+                          : "Tidak ada file yg di pilih"}
                       </span>
                     </div>
                   </div>
