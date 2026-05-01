@@ -112,7 +112,7 @@ export default function MembersPage() {
   return (
     <SidebarProvider>
       <AdminSidebar />
-      <div className="flex flex-col flex-1 min-h-screen admin-light bg-gray-50">
+      <div className="flex flex-col flex-1 min-h-screen min-w-0 admin-light bg-gray-50">
         <AdminPageHeader 
             title="Member"
             description="Daftar member yang terdaftar di platform"
@@ -198,7 +198,7 @@ export default function MembersPage() {
                   </div>
 
                   <div className="overflow-x-auto">
-                    <Table>
+                    <Table className="min-w-[900px]">
                       <TableHeader>
                         <TableRow className="bg-gray-50 hover:bg-gray-50">
                           <TableHead className="font-semibold text-gray-900">No</TableHead>
@@ -323,7 +323,7 @@ export default function MembersPage() {
                   </div>
 
                   <div className="overflow-x-auto">
-                    <Table>
+                    <Table className="min-w-[900px]">
                       <TableHeader>
                         <TableRow className="bg-gray-50 hover:bg-gray-50">
                           <TableHead className="font-semibold text-gray-900">No</TableHead>
