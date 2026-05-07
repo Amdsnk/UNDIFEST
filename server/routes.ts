@@ -2106,6 +2106,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/fonnte/connect-qr", requireAdmin, async (_req, res) => {
+    try {
+      const token =
+        (await storage.getSetting("fonnte_device_token").catch(() => undefined))?.value?.trim() ||
+        process.env.FONNTE_API_TOKEN;
+
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          error: "Fonnte token tidak ditemukan. Simpan fonnte_device dulu agar device token tersimpan.",
+        });
+      }
+
+      const qrResp = await fetch("https://api.fonnte.com/qr", {
+        method: "POST",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ type: "qr" }),
+      });
+
+      const qrData = await qrResp.json().catch(() => ({}));
+      if (!qrResp.ok || !qrData?.status || !qrData?.url) {
+        return res.status(400).json({
+          success: false,
+          error: qrData?.reason || qrData?.detail || "Gagal mendapatkan QR connect dari Fonnte",
+          detail: qrData,
+        });
+      }
+
+      return res.json({
+        success: true,
+        qrBase64: qrData.url,
+        message: "Scan QR ini dengan WhatsApp untuk connect device.",
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        error: error?.message || "Failed to request Fonnte QR",
+      });
+    }
+  });
+
   // Footer Settings API
   app.get("/api/admin/footer", requireAdmin, async (req, res) => {
     try {

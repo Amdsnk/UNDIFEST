@@ -81,6 +81,9 @@ export default function SettingsPage() {
 
   const [migrationResult, setMigrationResult] = useState<string[] | null>(null);
   const [isRunningMigration, setIsRunningMigration] = useState(false);
+  const [isLoadingFonnteQr, setIsLoadingFonnteQr] = useState(false);
+  const [fonnteQrBase64, setFonnteQrBase64] = useState<string>("");
+  const [fonnteQrError, setFonnteQrError] = useState<string>("");
 
   const runMigration = async () => {
     setIsRunningMigration(true);
@@ -114,6 +117,36 @@ export default function SettingsPage() {
       setCopiedIP(true);
       toast({ title: "IP berhasil disalin!" });
       setTimeout(() => setCopiedIP(false), 2000);
+    }
+  };
+
+  const handleConnectFonnte = async () => {
+    setIsLoadingFonnteQr(true);
+    setFonnteQrError("");
+    setFonnteQrBase64("");
+    try {
+      const response = await fetch("/api/admin/fonnte/connect-qr", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        const errMsg = data?.error || "Gagal mengambil QR connect Fonnte";
+        setFonnteQrError(errMsg);
+        toast({ variant: "destructive", title: "Gagal connect Fonnte", description: errMsg });
+        return;
+      }
+      setFonnteQrBase64(data.qrBase64 || "");
+      toast({ title: "QR Connect Fonnte berhasil dimuat" });
+    } catch (err: any) {
+      const errMsg = err?.message || "Gagal mengambil QR connect Fonnte";
+      setFonnteQrError(errMsg);
+      toast({ variant: "destructive", title: "Gagal connect Fonnte", description: errMsg });
+    } finally {
+      setIsLoadingFonnteQr(false);
     }
   };
 
@@ -304,6 +337,37 @@ export default function SettingsPage() {
                       placeholder="https://facebook.com/undifest"
                     />
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-emerald-200 bg-emerald-50">
+                <CardHeader>
+                  <CardTitle className="text-emerald-900">Connect WhatsApp Fonnte</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-emerald-800">
+                    Klik tombol di bawah untuk generate QR connect device Fonnte langsung dari admin dashboard.
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={handleConnectFonnte}
+                    disabled={isLoadingFonnteQr}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {isLoadingFonnteQr ? "Mengambil QR..." : "Connect WhatsApp via QR"}
+                  </Button>
+                  {fonnteQrError && (
+                    <p className="text-sm text-red-600">{fonnteQrError}</p>
+                  )}
+                  {fonnteQrBase64 && (
+                    <div className="bg-white border rounded-lg p-4 inline-block">
+                      <img
+                        src={`data:image/png;base64,${fonnteQrBase64}`}
+                        alt="Fonnte Connect QR"
+                        className="w-64 h-64 object-contain"
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
