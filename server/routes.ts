@@ -2108,39 +2108,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/fonnte/connect-qr", requireAdmin, async (_req, res) => {
     try {
-      const token =
-        (await storage.getSetting("fonnte_device_token").catch(() => undefined))?.value?.trim() ||
-        process.env.FONNTE_API_TOKEN;
-
-      if (!token) {
+      const accountToken = process.env.FONNTE_ACCOUNT_TOKEN;
+      if (!accountToken) {
         return res.status(400).json({
           success: false,
-          error: "Fonnte token tidak ditemukan. Simpan fonnte_device dulu agar device token tersimpan.",
+          error: "FONNTE_ACCOUNT_TOKEN belum di-set di backend.",
         });
       }
 
-      const qrResp = await fetch("https://api.fonnte.com/qr", {
+      const targetRaw = (await storage.getSetting("fonnte_device").catch(() => undefined))?.value?.trim() || "";
+      const targetNormalized = targetRaw.replace(/\D/g, "");
+      if (!targetNormalized) {
+        return res.status(400).json({
+          success: false,
+          error: "Nomor Fonnte Device belum diisi di Settings.",
+        });
+      }
+
+      const toCandidates = (n: string) => {
+        const set = new Set<string>();
+        if (!n) return set;
+        set.add(n);
+        if (n.startsWith("0")) set.add(`62${n.substring(1)}`);
+        if (n.startsWith("62")) set.add(`0${n.substring(2)}`);
+        return set;
+      };
+      const targetCandidates = toCandidates(targetNormalized);
+
+      const getDevicesResp = await fetch("https://api.fonnte.com/get-devices", {
         method: "POST",
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ type: "qr" }),
+        headers: { Authorization: accountToken },
       });
+      const getDevicesData = await getDevicesResp.json().catch(() => ({}));
+      const devices = Array.isArray(getDevicesData)
+        ? getDevicesData
+        : Array.isArray((getDevicesData as any)?.devices)
+          ? (getDevicesData as any).devices
+          : Array.isArray((getDevicesData as any)?.data)
+            ? (getDevicesData as any).data
+            : [];
 
-      const qrData = await qrResp.json().catch(() => ({}));
-      if (!qrResp.ok || !qrData?.status || !qrData?.url) {
+      const targetDevice = devices.find((d: any) =>
+        targetCandidates.has(String(d?.device || "").replace(/\D/g, ""))
+      );
+      if (!targetDevice?.token) {
         return res.status(400).json({
           success: false,
-          error: qrData?.reason || qrData?.detail || "Gagal mendapatkan QR connect dari Fonnte",
-          detail: qrData,
+          error: "Device target belum ditemukan di Fonnte. Simpan ulang Fonnte Device dulu agar dibuat otomatis.",
         });
       }
 
-      return res.json({
-        success: true,
-        qrBase64: qrData.url,
-        message: "Scan QR ini dengan WhatsApp untuk connect device.",
+      await storage.updateSettings([
+        { key: "fonnte_device_token", value: String(targetDevice.token) },
+      ]);
+
+      const requestQr = async () => {
+        const qrResp = await fetch("https://api.fonnte.com/qr", {
+          method: "POST",
+          headers: {
+            Authorization: String(targetDevice.token),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ type: "qr" }),
+        });
+        const qrData = await qrResp.json().catch(() => ({}));
+        return { qrResp, qrData };
+      };
+
+      let { qrResp, qrData } = await requestQr();
+      if (qrResp.ok && qrData?.status && qrData?.url) {
+        return res.json({
+          success: true,
+          qrBase64: qrData.url,
+          message: "Scan QR ini dengan WhatsApp untuk connect device target.",
+        });
+      }
+
+      const reason = String(qrData?.reason || qrData?.detail || "").toLowerCase();
+      if (reason.includes("already connect")) {
+        return res.json({
+          success: true,
+          alreadyConnected: true,
+          message: "Nomor target sudah connect di Fonnte.",
+        });
+      }
+
+      if (reason.includes("free device already connected")) {
+        const connectedDevices = devices.filter((d: any) => {
+          const status = String(d?.status || d?.connection || "").toLowerCase();
+          return status === "connect" || status === "connected";
+        });
+
+        for (const d of connectedDevices) {
+          const deviceNum = String(d?.device || "").replace(/\D/g, "");
+          if (targetCandidates.has(deviceNum)) continue;
+          if (!d?.token) continue;
+          await fetch("https://api.fonnte.com/disconnect", {
+            method: "POST",
+            headers: { Authorization: String(d.token) },
+          }).catch(() => null);
+        }
+
+        ({ qrResp, qrData } = await requestQr());
+        if (qrResp.ok && qrData?.status && qrData?.url) {
+          return res.json({
+            success: true,
+            qrBase64: qrData.url,
+            message: "Device lama berhasil diputus, scan QR untuk connect nomor target.",
+          });
+        }
+      }
+
+      return res.status(400).json({
+        success: false,
+        error: qrData?.reason || qrData?.detail || "Gagal mendapatkan QR connect dari Fonnte",
+        detail: qrData,
       });
     } catch (error: any) {
       return res.status(500).json({

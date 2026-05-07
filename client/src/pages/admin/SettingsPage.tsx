@@ -139,8 +139,12 @@ export default function SettingsPage() {
         toast({ variant: "destructive", title: "Gagal connect Fonnte", description: errMsg });
         return;
       }
+      if (data?.alreadyConnected) {
+        toast({ title: data?.message || "Nomor target sudah connect" });
+        return;
+      }
       setFonnteQrBase64(data.qrBase64 || "");
-      toast({ title: "QR Connect Fonnte berhasil dimuat" });
+      toast({ title: data?.message || "QR Connect Fonnte berhasil dimuat" });
     } catch (err: any) {
       const errMsg = err?.message || "Gagal mengambil QR connect Fonnte";
       setFonnteQrError(errMsg);
