@@ -2185,15 +2185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const reason = String(qrData?.reason || qrData?.detail || "").toLowerCase();
-      if (reason.includes("already connect")) {
-        return res.json({
-          success: true,
-          alreadyConnected: true,
-          message: "Nomor target sudah connect di Fonnte.",
-        });
-      }
 
-      if (reason.includes("free device already connected")) {
+      if (reason.includes("already connect") || reason.includes("free device already connected")) {
         const connectedDevices = devices.filter((d: any) => {
           const status = String(d?.status || d?.connection || "").toLowerCase();
           return status === "connect" || status === "connected";
