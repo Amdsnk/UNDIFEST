@@ -1996,7 +1996,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { settings } = req.body;
       await storage.updateSettings(settings);
-      res.json({ success: true });
+      // Optional: sync specific settings to external services
+      const updatedKeys = new Set<string>(
+        Array.isArray(settings) ? settings.map((s: any) => String(s?.key)) : []
+      );
+
+      let fonnteSync: { attempted: boolean; success?: boolean; detail?: any } | undefined;
+      if (updatedKeys.has("fonnte_device")) {
+        const token = process.env.FONNTE_API_TOKEN;
+        const deviceSetting = await storage.getSetting("fonnte_device");
+        const device = deviceSetting?.value?.trim();
+        fonnteSync = { attempted: true };
+
+        if (!token) {
+          fonnteSync.success = false;
+          fonnteSync.detail = "FONNTE_API_TOKEN not configured";
+        } else if (!device) {
+          fonnteSync.success = false;
+          fonnteSync.detail = "fonnte_device is empty";
+        } else {
+          try {
+            const payload = new URLSearchParams();
+            payload.set("name", "UNDIFEST");
+            payload.set("device", device);
+
+            const resp = await fetch("https://api.fonnte.com/update-device", {
+              method: "POST",
+              headers: {
+                Authorization: token,
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: payload.toString(),
+            });
+
+            const data = await resp.json().catch(() => ({}));
+            fonnteSync.success = !!data?.status;
+            fonnteSync.detail = data;
+          } catch (err: any) {
+            fonnteSync.success = false;
+            fonnteSync.detail = err?.message || String(err);
+          }
+        }
+      }
+
+      res.json({ success: true, fonnteSync });
     } catch (error) {
       res.status(500).json({ error: "Failed to update settings" });
     }
@@ -2240,6 +2283,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const otpStorage = new Map<string, { phoneNumber: string; expiresAt: number }>();
 
   // Generic WhatsApp message sender via Fonnte API
+  async function resolveFonnteDevice(): Promise<string | undefined> {
+    if (process.env.FONNTE_DEVICE) return process.env.FONNTE_DEVICE;
+    try {
+      const s = await storage.getSetting("fonnte_device");
+      const v = s?.value?.trim();
+      return v || undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   async function sendWhatsAppMessage(phoneNumber: string, message: string): Promise<boolean> {
     const FONNTE_TOKEN = process.env.FONNTE_API_TOKEN;
     if (!FONNTE_TOKEN) return false;
@@ -2250,7 +2304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (!formattedPhone.startsWith('62')) {
         formattedPhone = '62' + formattedPhone;
       }
-      const fonnteDevice = process.env.FONNTE_DEVICE;
+      const fonnteDevice = await resolveFonnteDevice();
       const payload: Record<string, string> = { target: formattedPhone, message, countryCode: '62' };
       if (fonnteDevice) payload.device = fonnteDevice;
       const response = await fetch('https://api.fonnte.com/send', {
@@ -2287,7 +2341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const message = `*UNDIFEST* - Kode OTP Anda adalah: *${otp}*\n\nKode ini berlaku selama 5 menit.\nJangan bagikan kode ini kepada siapapun.`;
 
-      const fonnteDevice = process.env.FONNTE_DEVICE;
+      const fonnteDevice = await resolveFonnteDevice();
       const otpPayload: Record<string, string> = { target: formattedPhone, message, countryCode: '62' };
       if (fonnteDevice) otpPayload.device = fonnteDevice;
       const response = await fetch('https://api.fonnte.com/send', {

@@ -202,6 +202,18 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
+                    <Label htmlFor="fonnte_device">Fonnte Device (Nomor WhatsApp Pengirim)</Label>
+                    <Input
+                      id="fonnte_device"
+                      value={settings.fonnte_device || ""}
+                      onChange={(e) => handleChange("fonnte_device", e.target.value)}
+                      placeholder="08123456789 atau 628123456789"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ini dipakai untuk memilih device Fonnte saat mengirim WhatsApp. Saat disimpan, backend akan mencoba sinkron ke Fonnte.
+                    </p>
+                  </div>
+                  <div>
                     <Label htmlFor="site_name">Nama Website</Label>
                     <Input
                       id="site_name"
