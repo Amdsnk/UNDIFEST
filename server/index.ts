@@ -187,7 +187,10 @@ app.use((req, res, next) => {
             log(`[PaymentSync] ✅ ${t.id} → paid`);
 
             // Send WhatsApp notification via Fonnte
-            if (t.phoneNumber && process.env.FONNTE_API_TOKEN) {
+            const fonnteToken =
+              (await storage.getSetting("fonnte_device_token").catch(() => undefined))?.value?.trim() ||
+              process.env.FONNTE_API_TOKEN;
+            if (t.phoneNumber && fonnteToken) {
               const baseUrl = process.env.APP_URL || "https://undifest.com";
               const downloadLink = `${baseUrl}/payment/success?trx=${t.id}`;
               const nomorUndian = `UND-${t.id.slice(0, 8).toUpperCase()}`;
@@ -205,7 +208,7 @@ app.use((req, res, next) => {
               fetch("https://api.fonnte.com/send", {
                 method: "POST",
                 headers: {
-                  Authorization: process.env.FONNTE_API_TOKEN,
+                  Authorization: fonnteToken,
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify(payload),
