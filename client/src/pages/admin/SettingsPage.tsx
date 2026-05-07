@@ -47,8 +47,24 @@ export default function SettingsPage() {
       if (!response.ok) throw new Error("Gagal mengupdate settings");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      const fonnteSync = result?.fonnteSync;
+      if (fonnteSync?.attempted && fonnteSync?.success === false) {
+        const detail = typeof fonnteSync.detail === "string"
+          ? fonnteSync.detail
+          : (fonnteSync.detail?.reason || fonnteSync.detail?.detail || "Unknown error");
+        toast({
+          variant: "destructive",
+          title: "Settings tersimpan, tapi sync Fonnte gagal",
+          description: String(detail),
+        });
+        return;
+      }
+      if (fonnteSync?.attempted && fonnteSync?.success === true) {
+        toast({ title: "Settings & sync Fonnte berhasil" });
+        return;
+      }
       toast({ title: "Settings berhasil diupdate" });
     },
   });

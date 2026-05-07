@@ -2030,8 +2030,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
 
             const data = await resp.json().catch(() => ({}));
-            fonnteSync.success = !!data?.status;
-            fonnteSync.detail = data;
+            fonnteSync.success = resp.ok && !!data?.status;
+            fonnteSync.detail = {
+              httpStatus: resp.status,
+              ...data,
+            };
           } catch (err: any) {
             fonnteSync.success = false;
             fonnteSync.detail = err?.message || String(err);
