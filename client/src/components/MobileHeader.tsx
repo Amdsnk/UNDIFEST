@@ -15,7 +15,6 @@ export function MobileHeader() {
           </Link>
           <div className="text-right">
             <div className="text-sm font-semibold text-white">PT. Undian Festival Indonesia</div>
-            <div className="text-xs text-gray-300 mt-0.5">Izin Resmi NOMOR : 303/5.5/PI.02/04/2026</div>
           </div>
         </div>
       </div>

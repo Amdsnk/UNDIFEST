@@ -172,7 +172,7 @@ export default function HomePage() {
         {/* Events Section - Dynamic rendering with cardTemplate support */}
         <div className="px-2 md:px-4 py-6 bg-[#16202a]">
           <h2 className="text-xl font-bold text-white mb-4">Produk Undifest</h2>
-          <div className="space-y-1">
+          <div className="space-y-4">
             {eventsLoading ? (
               <>
                 <div className="h-44 bg-gray-800/50 rounded-xl animate-pulse" />

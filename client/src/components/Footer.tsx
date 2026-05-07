@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { FooterSetting } from "@shared/schema";
 import logoUrl from "@assets/logo undifest_1763476451738.png";
-import kemensosLogoUrl from "@assets/logo kemensos_1763490013360.png";
 import iconFbUrl from "@assets/icon_fb_1763489481907.png";
 import iconIgUrl from "@assets/icon_ig_1763489481907.png";
 import iconXUrl from "@assets/icon_x_1763489481912.png";
@@ -94,15 +93,6 @@ export function Footer() {
             </a>
           </div>
         </div>
-      </div>
-
-      {/* Kemensos License Section */}
-      <div className="mt-6 mb-4">
-        <img src={kemensosLogoUrl} alt="Kementerian Sosial Republik Indonesia" className="h-16 mb-3" />
-        <p className="text-gray-300 text-xs leading-relaxed">
-          PT. Undian Festival Indonesia telah memperoleh Izin Penyelenggaraan dari Kementerian Sosial Republik Indonesia{" "}
-          <strong className="text-white">NOMOR : 303/5.5/PI.02/04/2026.</strong>
-        </p>
       </div>
 
       {/* Social Media */}
