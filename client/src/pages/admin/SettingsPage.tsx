@@ -394,7 +394,7 @@ export default function SettingsPage() {
                       value={testWaPhone}
                       onChange={(e) => setTestWaPhone(e.target.value)}
                       placeholder="08123456789 atau 628123456789"
-                      className="flex-1 bg-white"
+                      className="flex-1 bg-white text-gray-900 placeholder:text-gray-400 border-gray-300"
                       disabled={isSendingTestWa}
                     />
                     <Button
@@ -407,10 +407,20 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                   {testWaResult && (
-                    <div className={`rounded-lg p-3 border text-sm font-mono ${testWaResult.success ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
-                      {testWaResult.success
-                        ? `✅ ${testWaResult.message}`
-                        : `❌ ${testWaResult.error}`}
+                    <div className={`rounded-lg p-3 border text-sm space-y-1 ${testWaResult.success ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+                      <p className="font-semibold">
+                        {testWaResult.success ? `✅ ${testWaResult.message}` : `❌ ${testWaResult.error}`}
+                      </p>
+                      {!testWaResult.success && testWaResult.error?.toLowerCase().includes("disconnected") && (
+                        <p className="text-xs mt-1">
+                          💡 <strong>Device Fonnte terputus.</strong> Klik tombol <em>"Connect WhatsApp via QR"</em> di bawah, lalu scan QR-nya dengan WhatsApp pengirim untuk menyambungkan kembali.
+                        </p>
+                      )}
+                      {!testWaResult.success && testWaResult.error?.toLowerCase().includes("token") && (
+                        <p className="text-xs mt-1">
+                          💡 <strong>Token belum dikonfigurasi.</strong> Pastikan kolom <em>Fonnte Device</em> sudah diisi dan tersimpan, lalu coba lagi.
+                        </p>
+                      )}
                     </div>
                   )}
                 </CardContent>
