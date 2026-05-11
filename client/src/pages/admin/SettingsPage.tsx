@@ -84,6 +84,9 @@ export default function SettingsPage() {
   const [isLoadingFonnteQr, setIsLoadingFonnteQr] = useState(false);
   const [fonnteQrBase64, setFonnteQrBase64] = useState<string>("");
   const [fonnteQrError, setFonnteQrError] = useState<string>("");
+  const [testWaPhone, setTestWaPhone] = useState<string>("");
+  const [isSendingTestWa, setIsSendingTestWa] = useState(false);
+  const [testWaResult, setTestWaResult] = useState<{ success: boolean; message?: string; error?: string } | null>(null);
 
   const runMigration = async () => {
     setIsRunningMigration(true);
@@ -117,6 +120,38 @@ export default function SettingsPage() {
       setCopiedIP(true);
       toast({ title: "IP berhasil disalin!" });
       setTimeout(() => setCopiedIP(false), 2000);
+    }
+  };
+
+  const handleTestWaSend = async () => {
+    if (!testWaPhone.trim()) {
+      toast({ variant: "destructive", title: "Nomor HP wajib diisi" });
+      return;
+    }
+    setIsSendingTestWa(true);
+    setTestWaResult(null);
+    try {
+      const response = await fetch("/api/admin/fonnte/test-send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
+        },
+        body: JSON.stringify({ phoneNumber: testWaPhone.trim() }),
+      });
+      const data = await response.json();
+      setTestWaResult(data);
+      if (data.success) {
+        toast({ title: "✅ Pesan test berhasil dikirim!", description: data.message });
+      } else {
+        toast({ variant: "destructive", title: "❌ Gagal kirim test WA", description: data.error });
+      }
+    } catch (err: any) {
+      const msg = err?.message || "Error tidak diketahui";
+      setTestWaResult({ success: false, error: msg });
+      toast({ variant: "destructive", title: "Gagal", description: msg });
+    } finally {
+      setIsSendingTestWa(false);
     }
   };
 
@@ -341,6 +376,43 @@ export default function SettingsPage() {
                       placeholder="https://facebook.com/undifest"
                     />
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Test Kirim WhatsApp */}
+              <Card className="border-orange-200 bg-orange-50">
+                <CardHeader>
+                  <CardTitle className="text-orange-900">🧪 Test Kirim WhatsApp</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-orange-800">
+                    Kirim pesan test ke nomor HP tertentu untuk memastikan Fonnte berfungsi dengan benar.
+                    Nomor boleh pakai format <strong>08xx</strong> atau <strong>628xx</strong>.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={testWaPhone}
+                      onChange={(e) => setTestWaPhone(e.target.value)}
+                      placeholder="08123456789 atau 628123456789"
+                      className="flex-1 bg-white"
+                      disabled={isSendingTestWa}
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleTestWaSend}
+                      disabled={isSendingTestWa || !testWaPhone.trim()}
+                      className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap"
+                    >
+                      {isSendingTestWa ? "Mengirim..." : "Kirim Test"}
+                    </Button>
+                  </div>
+                  {testWaResult && (
+                    <div className={`rounded-lg p-3 border text-sm font-mono ${testWaResult.success ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+                      {testWaResult.success
+                        ? `✅ ${testWaResult.message}`
+                        : `❌ ${testWaResult.error}`}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

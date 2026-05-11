@@ -2487,7 +2487,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   async function sendWhatsAppMessage(phoneNumber: string, message: string): Promise<boolean> {
     const FONNTE_TOKEN = await resolveFonnteSendToken();
-    if (!FONNTE_TOKEN) return false;
+    if (!FONNTE_TOKEN) {
+      console.error("[WA] GAGAL: fonnte_device_token tidak ditemukan di settings dan FONNTE_API_TOKEN env tidak di-set");
+      return false;
+    }
     try {
       let formattedPhone = phoneNumber.replace(/\D/g, '');
       if (formattedPhone.startsWith('0')) {
@@ -2498,19 +2501,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fonnteDevice = await resolveFonnteDevice();
       const payload: Record<string, string> = { target: formattedPhone, message, countryCode: '62' };
       if (fonnteDevice) payload.device = fonnteDevice;
+      console.log(`[WA] Mengirim ke ${formattedPhone}, device: ${fonnteDevice || '(default)'}, token: ${FONNTE_TOKEN.slice(0, 6)}...`);
       const response = await fetch('https://api.fonnte.com/send', {
         method: 'POST',
         headers: { 'Authorization': FONNTE_TOKEN, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const result = await response.json();
-      console.log(`[WA] Sent to ${formattedPhone}:`, result.status ? 'Success' : `Failed - ${JSON.stringify(result)}`);
+      if (result.status === true) {
+        console.log(`[WA] ✅ Terkirim ke ${formattedPhone}`);
+      } else {
+        console.error(`[WA] ❌ Gagal ke ${formattedPhone}: HTTP ${response.status} – ${JSON.stringify(result)}`);
+      }
       return result.status === true;
     } catch (error) {
-      console.error("[WA] Failed to send WhatsApp:", error);
+      console.error(`[WA] ❌ Error fetch Fonnte ke ${phoneNumber}:`, error);
       return false;
     }
   }
+
+  // Test kirim WhatsApp (admin only)
+  app.post("/api/admin/fonnte/test-send", requireAdmin, async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      if (!phoneNumber) {
+        return res.status(400).json({ success: false, error: "phoneNumber wajib diisi" });
+      }
+      const FONNTE_TOKEN = await resolveFonnteSendToken();
+      if (!FONNTE_TOKEN) {
+        return res.status(400).json({
+          success: false,
+          error: "Token Fonnte belum dikonfigurasi. Pastikan fonnte_device_token sudah tersimpan di Settings, atau set environment variable FONNTE_API_TOKEN.",
+        });
+      }
+      let formattedPhone = phoneNumber.replace(/\D/g, '');
+      if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.substring(1);
+      else if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone;
+
+      const fonnteDevice = await resolveFonnteDevice();
+      const payload: Record<string, string> = {
+        target: formattedPhone,
+        message: `✅ *Test WhatsApp Undifest*\n\nIni adalah pesan percobaan dari sistem Undifest.\nJika Anda menerima pesan ini, berarti konfigurasi Fonnte sudah benar! 🎉\n\nWaktu: ${new Date().toLocaleString('id-ID')}`,
+        countryCode: '62',
+      };
+      if (fonnteDevice) payload.device = fonnteDevice;
+
+      console.log(`[WA Test] Mengirim ke ${formattedPhone}, device: ${fonnteDevice || '(default)'}`);
+      const response = await fetch('https://api.fonnte.com/send', {
+        method: 'POST',
+        headers: { 'Authorization': FONNTE_TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      console.log(`[WA Test] Response Fonnte:`, JSON.stringify(result));
+
+      if (result.status === true) {
+        return res.json({ success: true, message: `Pesan test berhasil dikirim ke ${formattedPhone}` });
+      } else {
+        return res.json({
+          success: false,
+          error: `Fonnte menolak pengiriman: ${result.reason || result.detail || result.message || JSON.stringify(result)}`,
+          detail: result,
+        });
+      }
+    } catch (error: any) {
+      console.error("[WA Test] Error:", error);
+      return res.status(500).json({ success: false, error: error?.message || "Internal error" });
+    }
+  });
 
   // Function to send OTP via WhatsApp using Fonnte API
   async function sendWhatsAppOTP(phoneNumber: string, otp: string): Promise<boolean> {

@@ -199,11 +199,18 @@ app.use((req, res, next) => {
               const waMsg = hasEbook
                 ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${t.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
                 : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${t.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+              // Format phone number: strip non-digits, convert 08xx → 628xx
+              let formattedPhone = t.phoneNumber.replace(/\D/g, '');
+              if (formattedPhone.startsWith('0')) {
+                formattedPhone = '62' + formattedPhone.substring(1);
+              } else if (!formattedPhone.startsWith('62')) {
+                formattedPhone = '62' + formattedPhone;
+              }
               const fonnteDevice =
                 process.env.FONNTE_DEVICE ||
                 (await storage.getSetting("fonnte_device").catch(() => undefined))?.value?.trim() ||
                 undefined;
-              const payload: Record<string, string> = { target: t.phoneNumber, message: waMsg };
+              const payload: Record<string, string> = { target: formattedPhone, message: waMsg, countryCode: '62' };
               if (fonnteDevice) payload.device = fonnteDevice;
               fetch("https://api.fonnte.com/send", {
                 method: "POST",
@@ -212,7 +219,12 @@ app.use((req, res, next) => {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify(payload),
-              }).catch(() => {});
+              }).then(async (r) => {
+                const result = await r.json().catch(() => ({}));
+                log(`[PaymentSync WA] → ${formattedPhone}: ${result.status ? 'terkirim ✅' : `gagal ❌ – ${JSON.stringify(result)}`}`);
+              }).catch((err) => {
+                log(`[PaymentSync WA] fetch error → ${formattedPhone}: ${err?.message}`);
+              });
             }
           } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
             await storage.updateTransaction(t.id, { paymentStatus: "failed" });
