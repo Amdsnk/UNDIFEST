@@ -114,12 +114,9 @@ export default function LivePage() {
                               <Play className="w-8 h-8 text-black ml-1" fill="currentColor" />
                             </div>
                           </div>
-                          <div className="absolute top-4 left-4 bg-purple-700 text-white px-3 py-1 rounded text-xs font-bold">
-                            Video
-                          </div>
                         </div>
                         <div className="p-4">
-                          <span className="text-xs text-gray-400">Live</span>
+                          <span className="text-xs text-gray-400">Video</span>
                           <h3 className="text-white font-semibold">{video.title}</h3>
                         </div>
                       </div>
