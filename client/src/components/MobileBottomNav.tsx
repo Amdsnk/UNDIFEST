@@ -2,8 +2,8 @@ import { Link, useLocation } from "wouter";
 import iconBarUrl from "@assets/iconbar_undifest_1763502958255.png";
 import homeActiveUrl from "@assets/iconbar_Home-active_1763504048853.png";
 import homeNormalUrl from "@assets/iconbar_Home-normal_1763504048854.png";
-import liveActiveUrl from "@assets/iconbar_Live-active_1763505361235.png";
-import liveNormalUrl from "@assets/iconbar_Live-normal_1763505361244.png";
+import liveActiveUrl from "@assets/iconbar_Video-active_1778683805387.png";
+import liveNormalUrl from "@assets/iconbar_Video-normal_1778683805389.png";
 import historyActiveUrl from "@assets/iconbar_History-active_1763505897762.png";
 import historyNormalUrl from "@assets/iconbar_History-normal_1763505897763.png";
 import accountActiveUrl from "@assets/iconbar_Account-active_1763506111500.png";
@@ -53,7 +53,7 @@ export function MobileBottomNav() {
           >
             <img
               src={isActive("/live") ? liveActiveUrl : liveNormalUrl}
-              alt="Live"
+              alt="Video"
               className="object-contain"
               style={{ width: '46px', height: '46px' }}
             />

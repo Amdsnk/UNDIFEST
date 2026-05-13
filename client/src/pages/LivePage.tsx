@@ -55,7 +55,7 @@ export default function LivePage() {
                   : "bg-gradient-to-r from-purple-900/40 to-purple-800/40 text-gray-400"
               }`}
             >
-              Live
+              Video
             </button>
             <button
               onClick={() => setActiveTab("video")}
@@ -66,7 +66,7 @@ export default function LivePage() {
                   : "bg-gradient-to-r from-purple-900/40 to-purple-800/40 text-gray-400"
               }`}
             >
-              Video
+              Lainnya
             </button>
           </div>
         </div>
@@ -114,8 +114,8 @@ export default function LivePage() {
                               <Play className="w-8 h-8 text-black ml-1" fill="currentColor" />
                             </div>
                           </div>
-                          <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded text-xs font-bold animate-pulse">
-                            LIVE
+                          <div className="absolute top-4 left-4 bg-purple-700 text-white px-3 py-1 rounded text-xs font-bold">
+                            Video
                           </div>
                         </div>
                         <div className="p-4">
