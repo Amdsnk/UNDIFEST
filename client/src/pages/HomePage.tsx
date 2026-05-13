@@ -50,9 +50,11 @@ export default function HomePage() {
     }
   }, [selectedVideo, closeVideoAndGoHome]);
 
-  const handlePurchase = (event: Event) => {
-    // Navigate directly to payment page
-    window.location.href = `/payment/${event.id}`;
+  const handlePurchase = (event: Event, undianType?: string) => {
+    const url = undianType
+      ? `/payment/${event.id}?undian=${undianType}`
+      : `/payment/${event.id}`;
+    window.location.href = url;
   };
 
   const { data: banners, isLoading: bannersLoading } = useQuery<Banner[]>({
@@ -181,22 +183,53 @@ export default function HomePage() {
             ) : activeEvents.length > 0 ? (
               activeEvents.map((event) => {
                 const cardImageUrl = getEventCardImage(event);
+                const ev = event as any;
 
                 return (
-                  <button
-                    key={event.id}
-                    data-testid={`event-card-${event.id}`}
-                    onClick={() => handlePurchase(event)}
-                    className="w-full block rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
-                  >
-                    <img
-                      src={cardImageUrl}
-                      alt={event.name}
-                      className="w-full h-auto"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </button>
+                  <div key={event.id} data-testid={`event-card-${event.id}`}>
+                    {ev.hasMultipleUndian ? (
+                      /* Dual undian layout */
+                      <div className="rounded-2xl overflow-hidden">
+                        <img
+                          src={cardImageUrl}
+                          alt={event.name}
+                          className="w-full h-auto"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                        <div className="bg-[#1a2332] px-4 py-3 flex gap-3">
+                          <button
+                            onClick={() => handlePurchase(event, "A")}
+                            className="flex-1 py-3 rounded-xl font-bold text-white text-base active:scale-[0.97] transition-transform"
+                            style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)" }}
+                          >
+                            {ev.undianALabel || "Undian A"}
+                          </button>
+                          <button
+                            onClick={() => handlePurchase(event, "B")}
+                            className="flex-1 py-3 rounded-xl font-bold text-white text-base active:scale-[0.97] transition-transform"
+                            style={{ background: "linear-gradient(135deg, #db2777 0%, #9333ea 100%)" }}
+                          >
+                            {ev.undianBLabel || "Undian B"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Single undian — original card button */
+                      <button
+                        onClick={() => handlePurchase(event)}
+                        className="w-full block rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
+                      >
+                        <img
+                          src={cardImageUrl}
+                          alt={event.name}
+                          className="w-full h-auto"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </button>
+                    )}
+                  </div>
                 );
               })
             ) : (

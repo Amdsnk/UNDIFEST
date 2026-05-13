@@ -38,6 +38,11 @@ export const events = pgTable("events", {
   isRefundable: boolean("is_refundable").notNull().default(false),
   ebookFile: text("ebook_file"), // Path to uploaded E-book file
   ebookTitle: text("ebook_title"), // Title of the E-book
+  // Dual undian fields
+  hasMultipleUndian: boolean("has_multiple_undian").notNull().default(false),
+  undianALabel: text("undian_a_label").default("Undian A"),
+  undianBLabel: text("undian_b_label").default("Undian B"),
+  allowCustomAmount: boolean("allow_custom_amount").notNull().default(false),
   // Recurring schedule fields
   scheduleType: varchar("schedule_type", { length: 20 }).default("none"), // none | daily | weekly | monthly
   scheduleTime: varchar("schedule_time", { length: 5 }), // HH:MM e.g. "19:00"
@@ -90,6 +95,7 @@ export const transactions = pgTable("transactions", {
   paymentNumber: varchar("payment_number", { length: 100 }), // VA Number atau nomor rekening tujuan
   paymentUrl: text("payment_url"), // iPaymu payment URL
   paidAt: timestamp("paid_at"),
+  undianType: varchar("undian_type", { length: 10 }), // "A" | "B" | null
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

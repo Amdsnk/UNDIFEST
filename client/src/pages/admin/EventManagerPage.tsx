@@ -54,6 +54,10 @@ interface Event {
   isRefundable?: boolean;
   bannerHomepage?: string;
   bannerUndian?: string;
+  hasMultipleUndian?: boolean;
+  undianALabel?: string;
+  undianBLabel?: string;
+  allowCustomAmount?: boolean;
 }
 
 
@@ -80,6 +84,10 @@ export default function EventManagerPage() {
     endDate: "",
     isActive: true,
     isRefundable: false,
+    hasMultipleUndian: false,
+    undianALabel: "Undian A",
+    undianBLabel: "Undian B",
+    allowCustomAmount: false,
   });
 
   // Use admin endpoint to see ALL events (not just aktif), list view strips banners for speed
@@ -151,6 +159,10 @@ export default function EventManagerPage() {
       endDate: "",
       isActive: true,
       isRefundable: false,
+      hasMultipleUndian: false,
+      undianALabel: "Undian A",
+      undianBLabel: "Undian B",
+      allowCustomAmount: false,
     });
     setBannerHomepageFile(null);
     setBannerUndianFile(null);
@@ -168,6 +180,10 @@ export default function EventManagerPage() {
       endDate: new Date(event.endDate).toISOString().slice(0, 16),
       isActive: true,
       isRefundable: event.isRefundable || false,
+      hasMultipleUndian: event.hasMultipleUndian || false,
+      undianALabel: event.undianALabel || "Undian A",
+      undianBLabel: event.undianBLabel || "Undian B",
+      allowCustomAmount: event.allowCustomAmount || false,
     });
     setCurrentEvent(event);
     setEditingEventId(event.id);
@@ -202,6 +218,10 @@ export default function EventManagerPage() {
     formDataToSend.append("startDate", formData.startDate);
     formDataToSend.append("endDate", formData.endDate);
     formDataToSend.append("isRefundable", formData.isRefundable.toString());
+    formDataToSend.append("hasMultipleUndian", formData.hasMultipleUndian.toString());
+    formDataToSend.append("undianALabel", formData.undianALabel);
+    formDataToSend.append("undianBLabel", formData.undianBLabel);
+    formDataToSend.append("allowCustomAmount", formData.allowCustomAmount.toString());
     
     if (bannerHomepageFile) {
       formDataToSend.append("bannerHomepage", bannerHomepageFile);
@@ -390,6 +410,56 @@ export default function EventManagerPage() {
                         onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                         required
                       />
+                    </div>
+                  </div>
+
+                  {/* Dual Undian Settings */}
+                  <div className="space-y-4 border-2 border-purple-200 rounded-xl p-4 bg-purple-50">
+                    <p className="text-sm font-bold text-purple-800">Pengaturan Dual Undian</p>
+
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={formData.hasMultipleUndian}
+                        onCheckedChange={(checked) => setFormData({ ...formData, hasMultipleUndian: checked })}
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                      <Label className="text-sm">
+                        {formData.hasMultipleUndian ? "Aktif: 2 Undian per Event" : "Nonaktif: 1 Undian per Event"}
+                      </Label>
+                    </div>
+
+                    {formData.hasMultipleUndian && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-purple-700">Label Undian A</Label>
+                          <Input
+                            value={formData.undianALabel}
+                            onChange={(e) => setFormData({ ...formData, undianALabel: e.target.value })}
+                            placeholder="Undian A"
+                            className="border-purple-300 focus:border-purple-600"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-purple-700">Label Undian B</Label>
+                          <Input
+                            value={formData.undianBLabel}
+                            onChange={(e) => setFormData({ ...formData, undianBLabel: e.target.value })}
+                            placeholder="Undian B"
+                            className="border-purple-300 focus:border-purple-600"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={formData.allowCustomAmount}
+                        onCheckedChange={(checked) => setFormData({ ...formData, allowCustomAmount: checked })}
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                      <Label className="text-sm">
+                        {formData.allowCustomAmount ? "Aktif: Nominal custom (≥ harga tiket)" : "Nonaktif: Nominal tetap sesuai harga tiket"}
+                      </Label>
                     </div>
                   </div>
 

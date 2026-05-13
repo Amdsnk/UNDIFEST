@@ -57,6 +57,11 @@ export default function PaymentPage() {
   const [showBuyerForm, setShowBuyerForm] = useState(false);
   const [buyerData, setBuyerData] = useState<BuyerData | null>(null);
 
+  // Dual undian / custom amount support
+  const undianType = new URLSearchParams(window.location.search).get("undian"); // "A" | "B" | null
+  const [customAmount, setCustomAmount] = useState<string>("");
+  const [customAmountConfirmed, setCustomAmountConfirmed] = useState(false);
+
   const { data: event, isLoading: eventLoading } = useQuery<Event>({
     queryKey: ["/api/events", eventId],
     enabled: !!eventId,
@@ -126,17 +131,22 @@ export default function PaymentPage() {
         ? "/api/transactions/midtrans/qris"
         : "/api/transactions/midtrans/va";
 
+      const finalAmount = (event as any).allowCustomAmount && customAmountConfirmed && customAmount
+        ? parseInt(customAmount.replace(/\D/g, ""))
+        : event.price;
+
       const response = await fetch(midtransEndpoint, {
         method: "POST",
         headers,
         body: JSON.stringify({
           eventId: event.id,
-          amount: event.price,
+          amount: finalAmount,
           eventName: event.name,
           paymentChannel: paymentChannel,
           buyerName: data.name,
           buyerPhone: data.phone,
           buyerEmail: data.email,
+          undianType: undianType || undefined,
         }),
       });
 
@@ -275,8 +285,63 @@ export default function PaymentPage() {
           </div>
         )}
 
+        {/* Undian type badge */}
+        {undianType && !paymentDetails && (
+          <div className="px-4 pb-1">
+            <span
+              className="inline-block text-xs font-bold px-3 py-1 rounded-full text-white"
+              style={{ background: undianType === "A" ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : "linear-gradient(135deg,#db2777,#9333ea)" }}
+            >
+              {undianType === "A"
+                ? ((event as any)?.undianALabel || "Undian A")
+                : ((event as any)?.undianBLabel || "Undian B")}
+            </span>
+          </div>
+        )}
+
+        {/* Custom Amount Step */}
+        {!paymentDetails && (event as any)?.allowCustomAmount && !customAmountConfirmed && (
+          <div className="px-4 py-4">
+            <div className="bg-[#1a2332] rounded-2xl p-5 space-y-4">
+              <h3 className="text-white text-lg font-bold">Masukkan Nominal Donasi</h3>
+              <p className="text-gray-400 text-sm">
+                Minimal Rp {event!.price.toLocaleString("id-ID")}
+              </p>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 font-semibold">Rp</span>
+                <input
+                  type="number"
+                  min={event!.price}
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(e.target.value)}
+                  placeholder={event!.price.toString()}
+                  className="w-full pl-12 pr-4 py-3 bg-[#0d1520] border border-gray-600 rounded-xl text-white text-lg font-semibold focus:outline-none focus:border-[#7c3aed]"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  const val = parseInt(customAmount || "0");
+                  if (val < event!.price) {
+                    toast({
+                      variant: "destructive",
+                      title: "Nominal Kurang",
+                      description: `Minimal Rp ${event!.price.toLocaleString("id-ID")}`,
+                    });
+                    return;
+                  }
+                  setCustomAmountConfirmed(true);
+                }}
+                className="w-full py-3 rounded-xl font-bold text-white text-base"
+                style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)" }}
+              >
+                Lanjutkan
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Payment Details or Payment Method Selection */}
-        {paymentDetails ? (
+        {!paymentDetails && (event as any)?.allowCustomAmount && !customAmountConfirmed ? null : paymentDetails ? (
           /* Payment Details Display */
           <div className="px-4 py-4 space-y-4">
             {/* QR Code for QRIS */}

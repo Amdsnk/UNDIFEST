@@ -362,6 +362,7 @@ export default function TransactionsPage() {
                           <TableHead className="font-bold text-gray-700">No Rekening</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Tiket</TableHead>
                           <TableHead className="font-bold text-gray-700">Total Rp</TableHead>
+                          <TableHead className="font-bold text-gray-700 text-center">Undian</TableHead>
                           <TableHead className="font-bold text-gray-700">Status</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Aksi</TableHead>
                         </TableRow>
@@ -452,6 +453,23 @@ export default function TransactionsPage() {
                                 <span className="inline-flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2 py-1 rounded-full text-xs font-bold shadow-sm whitespace-nowrap">
                                   {new Intl.NumberFormat("id-ID").format(transaction.amount)}
                                 </span>
+                              </TableCell>
+                              {/* Undian Type */}
+                              <TableCell className="py-2 text-center">
+                                {(transaction as any).undianType ? (
+                                  <span
+                                    className="inline-block text-xs font-bold px-2 py-1 rounded-full text-white"
+                                    style={{
+                                      background: (transaction as any).undianType === "A"
+                                        ? "linear-gradient(135deg,#7c3aed,#4f46e5)"
+                                        : "linear-gradient(135deg,#db2777,#9333ea)"
+                                    }}
+                                  >
+                                    {(transaction as any).undianType}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400 text-xs">-</span>
+                                )}
                               </TableCell>
                               {/* Status Pembayaran */}
                               <TableCell className="py-2">

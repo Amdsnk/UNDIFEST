@@ -232,6 +232,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scheduleType: req.body.scheduleType || "none",
         scheduleTime: req.body.scheduleTime || null,
         scheduleDay: (req.body.scheduleDay !== undefined && req.body.scheduleDay !== "") ? parseInt(req.body.scheduleDay) : null,
+        hasMultipleUndian: req.body.hasMultipleUndian === "true",
+        undianALabel: req.body.undianALabel || "Undian A",
+        undianBLabel: req.body.undianBLabel || "Undian B",
+        allowCustomAmount: req.body.allowCustomAmount === "true",
       };
 
       const validated = insertEventSchema.parse(data);
@@ -264,6 +268,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...(req.body.announcementDate && { announcementDate: new Date(req.body.announcementDate) }),
         ...(req.body.isRefundable !== undefined && { isRefundable: req.body.isRefundable === "true" }),
         ...(req.body.scheduleDay !== undefined && req.body.scheduleDay !== "" && { scheduleDay: parseInt(req.body.scheduleDay) }),
+        ...(req.body.hasMultipleUndian !== undefined && { hasMultipleUndian: req.body.hasMultipleUndian === "true" }),
+        ...(req.body.allowCustomAmount !== undefined && { allowCustomAmount: req.body.allowCustomAmount === "true" }),
       };
 
       // Convert uploaded files to base64 for permanent storage
@@ -1061,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const { eventId, amount, eventName, paymentChannel, buyerName, buyerPhone, buyerEmail, buyerBankName, buyerAccountNumber } = req.body;
+      const { eventId, amount, eventName, paymentChannel, buyerName, buyerPhone, buyerEmail, buyerBankName, buyerAccountNumber, undianType } = req.body;
 
       // Use buyer data if provided
       if (buyerName) userName = buyerName;
@@ -1089,6 +1095,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Event is not active" });
       }
 
+      // Validate amount: must be >= event.price
+      if (parseInt(amount) < event.price) {
+        return res.status(400).json({ error: `Nominal minimal Rp ${event.price.toLocaleString("id-ID")}` });
+      }
+
       // Create transaction
       const transaction = await storage.createTransaction({
         userId: userId || undefined,
@@ -1104,6 +1115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentMethod: "va",
         paymentChannel: paymentChannel.toUpperCase(),
         buyerIp: getClientIp(req) || null,
+        undianType: undianType || null,
       });
 
       // SIMULATION MODE
@@ -1218,7 +1230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const { eventId, amount, eventName, buyerName, buyerPhone, buyerEmail, buyerBankName, buyerAccountNumber } = req.body;
+      const { eventId, amount, eventName, buyerName, buyerPhone, buyerEmail, buyerBankName, buyerAccountNumber, undianType: undianTypeQris } = req.body;
 
       if (buyerName) userName = buyerName;
       if (buyerPhone) phoneNumber = buyerPhone;
@@ -1234,6 +1246,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (event.status !== "aktif") {
         return res.status(400).json({ error: "Event is not active" });
+      }
+
+      // Validate amount: must be >= event.price
+      if (parseInt(amount) < event.price) {
+        return res.status(400).json({ error: `Nominal minimal Rp ${event.price.toLocaleString("id-ID")}` });
       }
 
       const { paymentChannel: reqChannel } = req.body;
@@ -1253,6 +1270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentMethod: isGopay ? "gopay" : "qris",
         paymentChannel: isGopay ? "GOPAY" : "QRIS",
         buyerIp: getClientIp(req) || null,
+        undianType: undianTypeQris || null,
       });
 
       // SIMULATION MODE
