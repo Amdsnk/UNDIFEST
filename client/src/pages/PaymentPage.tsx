@@ -303,7 +303,7 @@ export default function PaymentPage() {
         {!paymentDetails && (event as any)?.allowCustomAmount && !customAmountConfirmed && (
           <div className="px-4 py-4">
             <div className="bg-[#1a2332] rounded-2xl p-5 space-y-4">
-              <h3 className="text-white text-lg font-bold">Masukkan Nominal Donasi</h3>
+              <h3 className="text-white text-lg font-bold">Masukkan Nominal Undian</h3>
               <p className="text-gray-400 text-sm">
                 Minimal Rp {event!.price.toLocaleString("id-ID")}
               </p>
