@@ -182,7 +182,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/events", requireAdmin, requireWrite, upload.fields([
     { name: "bannerHomepage", maxCount: 1 },
     { name: "bannerUndian", maxCount: 1 },
-    { name: "ebookFile", maxCount: 1 }
+    { name: "ebookFile", maxCount: 1 },
+    { name: "undianAImage", maxCount: 1 },
+    { name: "undianBImage", maxCount: 1 },
   ]), async (req, res) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -191,24 +193,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let bannerHomepageUrl = "";
       let bannerUndianUrl = "";
       let ebookFileData = "";
+      let undianAImageUrl = "";
+      let undianBImageUrl = "";
 
       if (files?.bannerHomepage?.[0]) {
         const file = files.bannerHomepage[0];
         const fileBuffer = fs.readFileSync(file.path);
         bannerHomepageUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
-        fs.unlinkSync(file.path); // Delete temp file
+        fs.unlinkSync(file.path);
       }
       if (files?.bannerUndian?.[0]) {
         const file = files.bannerUndian[0];
         const fileBuffer = fs.readFileSync(file.path);
         bannerUndianUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
-        fs.unlinkSync(file.path); // Delete temp file
+        fs.unlinkSync(file.path);
       }
       if (files?.ebookFile?.[0]) {
         const file = files.ebookFile[0];
         const fileBuffer = fs.readFileSync(file.path);
         ebookFileData = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
-        fs.unlinkSync(file.path); // Delete temp file
+        fs.unlinkSync(file.path);
+      }
+      if (files?.undianAImage?.[0]) {
+        const file = files.undianAImage[0];
+        const fileBuffer = fs.readFileSync(file.path);
+        undianAImageUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(file.path);
+      }
+      if (files?.undianBImage?.[0]) {
+        const file = files.undianBImage[0];
+        const fileBuffer = fs.readFileSync(file.path);
+        undianBImageUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(file.path);
       }
 
       const data = {
@@ -235,6 +251,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasMultipleUndian: req.body.hasMultipleUndian === "true",
         undianALabel: req.body.undianALabel || "Undian A",
         undianBLabel: req.body.undianBLabel || "Undian B",
+        undianAImage: undianAImageUrl || undefined,
+        undianBImage: undianBImageUrl || undefined,
         allowCustomAmount: req.body.allowCustomAmount === "true",
       };
 
@@ -253,7 +271,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/events/:id", requireAdmin, requireWrite, upload.fields([
     { name: "bannerHomepage", maxCount: 1 },
     { name: "bannerUndian", maxCount: 1 },
-    { name: "ebookFile", maxCount: 1 }
+    { name: "ebookFile", maxCount: 1 },
+    { name: "undianAImage", maxCount: 1 },
+    { name: "undianBImage", maxCount: 1 },
   ]), async (req, res) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -278,19 +298,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const fileBuffer = fs.readFileSync(file.path);
         data.bannerHomepage = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
         data.imageUrl = data.bannerHomepage;
-        fs.unlinkSync(file.path); // Delete temp file
+        fs.unlinkSync(file.path);
       }
       if (files?.bannerUndian?.[0]) {
         const file = files.bannerUndian[0];
         const fileBuffer = fs.readFileSync(file.path);
         data.bannerUndian = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
-        fs.unlinkSync(file.path); // Delete temp file
+        fs.unlinkSync(file.path);
       }
       if (files?.ebookFile?.[0]) {
         const file = files.ebookFile[0];
         const fileBuffer = fs.readFileSync(file.path);
         data.ebookFile = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
-        fs.unlinkSync(file.path); // Delete temp file
+        fs.unlinkSync(file.path);
+      }
+      if (files?.undianAImage?.[0]) {
+        const file = files.undianAImage[0];
+        const fileBuffer = fs.readFileSync(file.path);
+        data.undianAImage = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(file.path);
+      }
+      if (files?.undianBImage?.[0]) {
+        const file = files.undianBImage[0];
+        const fileBuffer = fs.readFileSync(file.path);
+        data.undianBImage = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(file.path);
       }
 
       // Clean up URL fields from the data object

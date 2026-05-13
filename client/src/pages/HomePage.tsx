@@ -188,31 +188,34 @@ export default function HomePage() {
                 return (
                   <div key={event.id} data-testid={`event-card-${event.id}`}>
                     {ev.hasMultipleUndian ? (
-                      /* Dual undian layout */
-                      <div className="rounded-2xl overflow-hidden">
-                        <img
-                          src={cardImageUrl}
-                          alt={event.name}
-                          className="w-full h-auto"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                        <div className="bg-[#1a2332] px-4 py-3 flex gap-3">
-                          <button
-                            onClick={() => handlePurchase(event, "A")}
-                            className="flex-1 py-3 rounded-xl font-bold text-white text-base active:scale-[0.97] transition-transform"
-                            style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)" }}
-                          >
-                            {ev.undianALabel || "Undian A"}
-                          </button>
-                          <button
-                            onClick={() => handlePurchase(event, "B")}
-                            className="flex-1 py-3 rounded-xl font-bold text-white text-base active:scale-[0.97] transition-transform"
-                            style={{ background: "linear-gradient(135deg, #db2777 0%, #9333ea 100%)" }}
-                          >
-                            {ev.undianBLabel || "Undian B"}
-                          </button>
-                        </div>
+                      /* Dual undian layout — two separate image cards */
+                      <div className="flex gap-2">
+                        {/* Undian A card */}
+                        <button
+                          onClick={() => handlePurchase(event, "A")}
+                          className="flex-1 block rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
+                        >
+                          <img
+                            src={ev.undianAImage || cardImageUrl}
+                            alt={ev.undianALabel || "Undian A"}
+                            className="w-full h-auto"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </button>
+                        {/* Undian B card */}
+                        <button
+                          onClick={() => handlePurchase(event, "B")}
+                          className="flex-1 block rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
+                        >
+                          <img
+                            src={ev.undianBImage || cardImageUrl}
+                            alt={ev.undianBLabel || "Undian B"}
+                            className="w-full h-auto"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </button>
                       </div>
                     ) : (
                       /* Single undian — original card button */

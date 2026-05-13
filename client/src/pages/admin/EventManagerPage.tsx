@@ -57,6 +57,8 @@ interface Event {
   hasMultipleUndian?: boolean;
   undianALabel?: string;
   undianBLabel?: string;
+  undianAImage?: string;
+  undianBImage?: string;
   allowCustomAmount?: boolean;
 }
 
@@ -73,8 +75,12 @@ export default function EventManagerPage() {
 
   const [bannerHomepageFile, setBannerHomepageFile] = useState<File | null>(null);
   const [bannerUndianFile, setBannerUndianFile] = useState<File | null>(null);
+  const [undianAImageFile, setUndianAImageFile] = useState<File | null>(null);
+  const [undianBImageFile, setUndianBImageFile] = useState<File | null>(null);
   const homepageBannerRef = useRef<HTMLInputElement>(null);
   const undianBannerRef = useRef<HTMLInputElement>(null);
+  const undianAImageRef = useRef<HTMLInputElement>(null);
+  const undianBImageRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -166,6 +172,8 @@ export default function EventManagerPage() {
     });
     setBannerHomepageFile(null);
     setBannerUndianFile(null);
+    setUndianAImageFile(null);
+    setUndianBImageFile(null);
     setCurrentEvent(null);
     setFullEventData(null);
     setEditingEventId(null);
@@ -189,6 +197,8 @@ export default function EventManagerPage() {
     setEditingEventId(event.id);
     setBannerHomepageFile(null);
     setBannerUndianFile(null);
+    setUndianAImageFile(null);
+    setUndianBImageFile(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Fetch full event data (includes bannerHomepage & bannerUndian URLs)
@@ -223,6 +233,12 @@ export default function EventManagerPage() {
     formDataToSend.append("undianBLabel", formData.undianBLabel);
     formDataToSend.append("allowCustomAmount", formData.allowCustomAmount.toString());
     
+    if (undianAImageFile) {
+      formDataToSend.append("undianAImage", undianAImageFile);
+    }
+    if (undianBImageFile) {
+      formDataToSend.append("undianBImage", undianBImageFile);
+    }
     if (bannerHomepageFile) {
       formDataToSend.append("bannerHomepage", bannerHomepageFile);
     }
@@ -429,24 +445,72 @@ export default function EventManagerPage() {
                     </div>
 
                     {formData.hasMultipleUndian && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs font-medium text-purple-700">Label Undian A</Label>
-                          <Input
-                            value={formData.undianALabel}
-                            onChange={(e) => setFormData({ ...formData, undianALabel: e.target.value })}
-                            placeholder="Undian A"
-                            className="border-purple-300 focus:border-purple-600"
-                          />
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-purple-700">Label Undian A</Label>
+                            <Input
+                              value={formData.undianALabel}
+                              onChange={(e) => setFormData({ ...formData, undianALabel: e.target.value })}
+                              placeholder="Undian A"
+                              className="border-purple-300 focus:border-purple-600"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-purple-700">Label Undian B</Label>
+                            <Input
+                              value={formData.undianBLabel}
+                              onChange={(e) => setFormData({ ...formData, undianBLabel: e.target.value })}
+                              placeholder="Undian B"
+                              className="border-purple-300 focus:border-purple-600"
+                            />
+                          </div>
                         </div>
+
+                        {/* Undian A Image */}
                         <div className="space-y-1">
-                          <Label className="text-xs font-medium text-purple-700">Label Undian B</Label>
-                          <Input
-                            value={formData.undianBLabel}
-                            onChange={(e) => setFormData({ ...formData, undianBLabel: e.target.value })}
-                            placeholder="Undian B"
-                            className="border-purple-300 focus:border-purple-600"
-                          />
+                          <Label className="text-xs font-medium text-purple-700">Gambar Kartu Undian A</Label>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            {editingEventId && !undianAImageFile && fullEventData?.undianAImage && (
+                              <img src={fullEventData.undianAImage} alt="Undian A" className="w-24 h-16 object-cover rounded border" />
+                            )}
+                            <input
+                              ref={undianAImageRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => { const f = e.target.files?.[0]; if (f) setUndianAImageFile(f); }}
+                              className="hidden"
+                            />
+                            <Button type="button" onClick={() => undianAImageRef.current?.click()} className="bg-purple-500 hover:bg-purple-600 text-white text-xs">
+                              {editingEventId ? "Ganti Gambar A" : "Pilih Gambar A"}
+                            </Button>
+                            <span className="text-sm text-gray-500">
+                              {undianAImageFile ? undianAImageFile.name : editingEventId ? "Gambar lama tetap dipakai" : "Belum ada file"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Undian B Image */}
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-purple-700">Gambar Kartu Undian B</Label>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            {editingEventId && !undianBImageFile && fullEventData?.undianBImage && (
+                              <img src={fullEventData.undianBImage} alt="Undian B" className="w-24 h-16 object-cover rounded border" />
+                            )}
+                            <input
+                              ref={undianBImageRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => { const f = e.target.files?.[0]; if (f) setUndianBImageFile(f); }}
+                              className="hidden"
+                            />
+                            <Button type="button" onClick={() => undianBImageRef.current?.click()} className="bg-pink-500 hover:bg-pink-600 text-white text-xs">
+                              {editingEventId ? "Ganti Gambar B" : "Pilih Gambar B"}
+                            </Button>
+                            <span className="text-sm text-gray-500">
+                              {undianBImageFile ? undianBImageFile.name : editingEventId ? "Gambar lama tetap dipakai" : "Belum ada file"}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )}

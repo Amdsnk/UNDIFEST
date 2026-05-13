@@ -42,6 +42,8 @@ export const events = pgTable("events", {
   hasMultipleUndian: boolean("has_multiple_undian").notNull().default(false),
   undianALabel: text("undian_a_label").default("Undian A"),
   undianBLabel: text("undian_b_label").default("Undian B"),
+  undianAImage: text("undian_a_image"),
+  undianBImage: text("undian_b_image"),
   allowCustomAmount: boolean("allow_custom_amount").notNull().default(false),
   // Recurring schedule fields
   scheduleType: varchar("schedule_type", { length: 20 }).default("none"), // none | daily | weekly | monthly
