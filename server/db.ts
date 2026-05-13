@@ -22,15 +22,16 @@ console.log("Connection string format:", connectionString.replace(/:[^:@]+@/, ':
 
 const url = new URL(connectionString);
 
+const sslDisabled = connectionString.includes('sslmode=disable');
+const isLocalDb = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === 'helium';
+
 export const pool = new Pool({
   user: url.username,
   password: url.password,
   host: url.hostname,
   port: parseInt(url.port || '5432'),
-  database: url.pathname.slice(1),
-  ssl: {
-    rejectUnauthorized: false
-  },
+  database: url.pathname.slice(1).split('?')[0],
+  ssl: (sslDisabled || isLocalDb) ? false : { rejectUnauthorized: false },
   // Force IPv4
   family: 4,
 });
