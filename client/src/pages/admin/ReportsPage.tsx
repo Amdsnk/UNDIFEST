@@ -179,15 +179,22 @@ export default function ReportsPage() {
       }));
       filename = 'laporan-overview';
     } else if (reportType === "transactions") {
-      headers = ["No", "Tanggal", "Event", "Nomor Telepon", "Jumlah", "Status"];
-      data = filteredTransactions.map((t, index) => ({
-        "No": index + 1,
-        "Tanggal": new Date(t.createdAt).toLocaleDateString('id-ID'),
-        "Event": t.eventName,
-        "Nomor Telepon": t.phoneNumber,
-        "Jumlah": t.amount,
-        "Status": t.status
-      }));
+      headers = ["No", "Tanggal", "Event", "Nama", "Email", "Nomor Telepon", "Jumlah", "Status"];
+      data = filteredTransactions.map((t, index) => {
+        const user = users?.find(u => u.id === t.userId);
+        const nama = t.buyerName || user?.name || '-';
+        const email = t.buyerEmail || user?.email || '-';
+        return {
+          "No": index + 1,
+          "Tanggal": new Date(t.createdAt).toLocaleDateString('id-ID'),
+          "Event": t.eventName,
+          "Nama": nama,
+          "Email": email,
+          "Nomor Telepon": t.phoneNumber,
+          "Jumlah": t.amount,
+          "Status": t.paymentStatus
+        };
+      });
       filename = 'laporan-transaksi';
     } else if (reportType === "winners") {
       headers = ["No", "Tanggal", "Event", "Nama", "Nomor Telepon"];
@@ -468,13 +475,19 @@ export default function ReportsPage() {
                           <TableHead className="font-bold">No</TableHead>
                           <TableHead className="font-bold">Tanggal</TableHead>
                           <TableHead className="font-bold">Event</TableHead>
+                          <TableHead className="font-bold">Nama</TableHead>
+                          <TableHead className="font-bold">Email</TableHead>
                           <TableHead className="font-bold">Nomor Telepon</TableHead>
                           <TableHead className="font-bold">Jumlah</TableHead>
                           <TableHead className="font-bold">Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredTransactions.map((transaction, index) => (
+                        {filteredTransactions.map((transaction, index) => {
+                          const user = users?.find(u => u.id === transaction.userId);
+                          const nama = transaction.buyerName || user?.name || '-';
+                          const email = transaction.buyerEmail || user?.email || '-';
+                          return (
                           <TableRow key={transaction.id} className="hover:bg-gray-50">
                             <TableCell className="font-semibold">{index + 1}</TableCell>
                             <TableCell>
@@ -485,6 +498,8 @@ export default function ReportsPage() {
                               })}
                             </TableCell>
                             <TableCell className="font-medium">{transaction.eventName}</TableCell>
+                            <TableCell className="font-medium">{nama}</TableCell>
+                            <TableCell className="text-gray-600">{email}</TableCell>
                             <TableCell>
                               <span className="font-mono bg-gray-100 px-3 py-1 rounded-full text-sm">
                                 {transaction.phoneNumber}
@@ -495,17 +510,20 @@ export default function ReportsPage() {
                             </TableCell>
                             <TableCell>
                               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                transaction.status === 'completed'
+                                transaction.paymentStatus === 'paid'
                                   ? 'bg-green-100 text-green-700'
-                                  : transaction.status === 'pending'
+                                  : transaction.paymentStatus === 'pending'
                                   ? 'bg-yellow-100 text-yellow-700'
+                                  : transaction.paymentStatus === 'expired'
+                                  ? 'bg-gray-100 text-gray-600'
                                   : 'bg-red-100 text-red-700'
                               }`}>
-                                {transaction.status}
+                                {transaction.paymentStatus}
                               </span>
                             </TableCell>
                           </TableRow>
-                        ))}
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
