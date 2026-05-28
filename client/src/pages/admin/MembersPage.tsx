@@ -18,6 +18,7 @@ import { Search, Users, ShoppingCart, Calendar, Trash2, CheckCircle, XCircle, Us
 import { useState } from "react";
 import type { User, Transaction } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { SendWAButton } from "@/components/SendWADialog";
 
 export default function MembersPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -261,14 +262,20 @@ export default function MembersPage() {
                                 })}
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDelete(user.id, user.phoneNumber)}
-                                  className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                                <div className="flex items-center justify-end gap-1">
+                                  <SendWAButton
+                                    phoneNumber={user.phoneNumber}
+                                    recipientName={user.name || undefined}
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDelete(user.id, user.phoneNumber)}
+                                    className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -388,19 +395,23 @@ export default function MembersPage() {
                                 })}
                               </TableCell>
                               <TableCell>
-                                {t.paymentStatus === "pending" ? (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => syncOneMutation.mutate(t.id)}
-                                    disabled={syncOneMutation.isPending}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-3 py-1"
-                                  >
-                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                    Cek Midtrans
-                                  </Button>
-                                ) : (
-                                  <span className="text-gray-400 text-xs">-</span>
-                                )}
+                                <div className="flex items-center gap-1">
+                                  <SendWAButton
+                                    phoneNumber={t.phoneNumber}
+                                    recipientName={t.buyerName || undefined}
+                                  />
+                                  {t.paymentStatus === "pending" ? (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => syncOneMutation.mutate(t.id)}
+                                      disabled={syncOneMutation.isPending}
+                                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-3 py-1"
+                                    >
+                                      <CheckCircle className="w-3 h-3 mr-1" />
+                                      Cek Midtrans
+                                    </Button>
+                                  ) : null}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))

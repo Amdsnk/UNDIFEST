@@ -2620,6 +2620,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Kirim pesan WA custom ke peserta
+  app.post("/api/admin/send-whatsapp", requireAdmin, async (req, res) => {
+    try {
+      const { phoneNumber, message } = req.body;
+      if (!phoneNumber || !message) {
+        return res.status(400).json({ success: false, error: "phoneNumber dan message wajib diisi" });
+      }
+      if (typeof message !== "string" || message.trim().length === 0) {
+        return res.status(400).json({ success: false, error: "Pesan tidak boleh kosong" });
+      }
+      const FONNTE_TOKEN = await resolveFonnteSendToken();
+      if (!FONNTE_TOKEN) {
+        return res.status(503).json({ success: false, error: "Fonnte belum dikonfigurasi. Silakan set token di Settings." });
+      }
+      const ok = await sendWhatsAppMessage(phoneNumber, message.trim());
+      if (ok) {
+        return res.json({ success: true, message: `Pesan berhasil dikirim ke ${phoneNumber}` });
+      } else {
+        return res.status(500).json({ success: false, error: "Gagal mengirim pesan. Cek konfigurasi Fonnte di Settings." });
+      }
+    } catch (error: any) {
+      console.error("[Admin WA] Error:", error);
+      return res.status(500).json({ success: false, error: error?.message || "Internal error" });
+    }
+  });
+
   // Function to send OTP via WhatsApp using Fonnte API
   async function sendWhatsAppOTP(phoneNumber: string, otp: string): Promise<boolean> {
     const FONNTE_TOKEN = await resolveFonnteSendToken();

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, Search, Trophy, FileDown, RefreshCw } from "lucide-react";
+import { SendWAButton } from "@/components/SendWADialog";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -797,49 +798,55 @@ export default function EventParticipantsPage() {
                                 <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">{ip}</span>
                               </TableCell>
                               <TableCell>
-                                {row.kind === "registered" ? (
-                                  !isWinner ? (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => nominateWinnerMutation.mutate({ userId: row.user.id, eventId: eventId! })}
-                                      disabled={nominateWinnerMutation.isPending}
-                                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                                    >
-                                      <Trophy className="w-3 h-3 mr-1" />
-                                      Nominasi
-                                    </Button>
+                                <div className="flex items-center gap-1">
+                                  <SendWAButton
+                                    phoneNumber={noWa}
+                                    recipientName={nama !== "-" ? nama : undefined}
+                                  />
+                                  {row.kind === "registered" ? (
+                                    !isWinner ? (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => nominateWinnerMutation.mutate({ userId: row.user.id, eventId: eventId! })}
+                                        disabled={nominateWinnerMutation.isPending}
+                                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                      >
+                                        <Trophy className="w-3 h-3 mr-1" />
+                                        Nominasi
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => cancelNominationMutation.mutate({ userId: row.user.id, eventId: eventId! })}
+                                        disabled={cancelNominationMutation.isPending}
+                                        className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                      >
+                                        ❌ Batalkan
+                                      </Button>
+                                    )
                                   ) : (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => cancelNominationMutation.mutate({ userId: row.user.id, eventId: eventId! })}
-                                      disabled={cancelNominationMutation.isPending}
-                                      className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                                    >
-                                      ❌ Batalkan
-                                    </Button>
-                                  )
-                                ) : (
-                                  !isWinner ? (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => nominateGuestMutation.mutate({ transactionId: row.transaction.id, eventId: eventId! })}
-                                      disabled={nominateGuestMutation.isPending}
-                                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                                    >
-                                      <Trophy className="w-3 h-3 mr-1" />
-                                      Nominasi
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => cancelGuestNominationMutation.mutate({ transactionId: row.transaction.id, eventId: eventId! })}
-                                      disabled={cancelGuestNominationMutation.isPending}
-                                      className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
-                                    >
-                                      ❌ Batalkan
-                                    </Button>
-                                  )
-                                )}
+                                    !isWinner ? (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => nominateGuestMutation.mutate({ transactionId: row.transaction.id, eventId: eventId! })}
+                                        disabled={nominateGuestMutation.isPending}
+                                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                      >
+                                        <Trophy className="w-3 h-3 mr-1" />
+                                        Nominasi
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => cancelGuestNominationMutation.mutate({ transactionId: row.transaction.id, eventId: eventId! })}
+                                        disabled={cancelGuestNominationMutation.isPending}
+                                        className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                                      >
+                                        ❌ Batalkan
+                                      </Button>
+                                    )
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           );
