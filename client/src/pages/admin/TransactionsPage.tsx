@@ -397,9 +397,14 @@ export default function TransactionsPage() {
                               </TableCell>
                               {/* ID Transaksi */}
                               <TableCell className="py-2">
-                                <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
-                                  {transaction.id.slice(0, 8)}...
-                                </span>
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
+                                    {transaction.id.slice(0, 8)}...
+                                  </span>
+                                  <span className="font-mono text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-bold">
+                                    UND-{transaction.id.slice(0, 8).toUpperCase()}
+                                  </span>
+                                </div>
                               </TableCell>
                               {/* Event */}
                               <TableCell className="py-2">
@@ -520,6 +525,13 @@ export default function TransactionsPage() {
                                         </DialogTitle>
                                       </DialogHeader>
                                       <div className="space-y-4 mt-4 overflow-y-auto pr-1">
+                                        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 rounded-lg text-white">
+                                          <p className="text-sm text-purple-100 font-medium mb-1">Nomor Undian</p>
+                                          <p className="font-mono text-2xl font-bold tracking-wider">
+                                            UND-{transaction.id.slice(0, 8).toUpperCase()}
+                                          </p>
+                                        </div>
+
                                         <div className="grid grid-cols-2 gap-4">
                                           <div className="bg-gray-50 p-4 rounded-lg">
                                             <p className="text-sm text-gray-500 font-medium mb-1">ID Transaksi</p>

@@ -179,13 +179,15 @@ export default function ReportsPage() {
       }));
       filename = 'laporan-overview';
     } else if (reportType === "transactions") {
-      headers = ["No", "Tanggal", "Event", "Nama", "Email", "Nomor Telepon", "Jumlah", "Status"];
+      headers = ["No", "Nomor Undian", "Tanggal", "Event", "Nama", "Email", "Nomor Telepon", "Jumlah", "Status"];
       data = filteredTransactions.map((t, index) => {
         const user = users?.find(u => u.id === t.userId);
         const nama = t.buyerName || user?.name || '-';
         const email = t.buyerEmail || user?.email || '-';
+        const nomorUndian = `UND-${t.id.slice(0, 8).toUpperCase()}`;
         return {
           "No": index + 1,
+          "Nomor Undian": nomorUndian,
           "Tanggal": new Date(t.createdAt).toLocaleDateString('id-ID'),
           "Event": t.eventName,
           "Nama": nama,
@@ -473,6 +475,7 @@ export default function ReportsPage() {
                       <TableHeader>
                         <TableRow className="bg-gray-50">
                           <TableHead className="font-bold">No</TableHead>
+                          <TableHead className="font-bold">Nomor Undian</TableHead>
                           <TableHead className="font-bold">Tanggal</TableHead>
                           <TableHead className="font-bold">Event</TableHead>
                           <TableHead className="font-bold">Nama</TableHead>
@@ -487,9 +490,15 @@ export default function ReportsPage() {
                           const user = users?.find(u => u.id === transaction.userId);
                           const nama = transaction.buyerName || user?.name || '-';
                           const email = transaction.buyerEmail || user?.email || '-';
+                          const nomorUndian = `UND-${transaction.id.slice(0, 8).toUpperCase()}`;
                           return (
                           <TableRow key={transaction.id} className="hover:bg-gray-50">
                             <TableCell className="font-semibold">{index + 1}</TableCell>
+                            <TableCell>
+                              <span className="font-mono bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs font-bold">
+                                {nomorUndian}
+                              </span>
+                            </TableCell>
                             <TableCell>
                               {new Date(transaction.createdAt).toLocaleDateString('id-ID', {
                                 day: 'numeric',
