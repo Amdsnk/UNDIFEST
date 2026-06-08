@@ -1,9 +1,9 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --legacy-peer-deps 2>&1 || (echo "=== NPM ERROR LOG ===" && cat /root/.npm/_logs/*.log && exit 1)
+RUN NODE_ENV=development npm install --legacy-peer-deps
 COPY . .
-RUN npm run build
+RUN NODE_ENV=development npm run build
 
 FROM node:20-slim AS runner
 WORKDIR /app
