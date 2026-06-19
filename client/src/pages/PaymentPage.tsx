@@ -10,20 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import undian01Url from "@assets/undian01_1763489504866.png";
 import undian02Url from "@assets/undian02_1763489504867.png";
 import qrisIconUrl from "@assets/qris_default.png";
-import bankIconUrl from "@assets/bank.png";
-import cstoreIconUrl from "@assets/cstore.png";
-import debitIconUrl from "@assets/debitonline.png";
-// Bank logos
-import bagLogoUrl from "@assets/arthagraha.png";
-import bcaLogoUrl from "@assets/bca.png";
-import bniLogoUrl from "@assets/bni.png";
-import briLogoUrl from "@assets/bri.png";
-import mandiriLogoUrl from "@assets/mandiri.png";
-import bmiLogoUrl from "@assets/bmi.png";
-import permataLogoUrl from "@assets/permata.png";
-import bsiLogoUrl from "@assets/bsi.png";
-import cimbLogoUrl from "@assets/niaga.png";
-import danamonLogoUrl from "@assets/danamon.png";
 
 interface PaymentDetails {
   paymentNo: string;
@@ -50,7 +36,7 @@ export default function PaymentPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'va' | 'qris' | 'directdebit' | 'cstore' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'qris' | null>(null);
   const [paymentChannel, setPaymentChannel] = useState<string>('');
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [copied, setCopied] = useState(false);
@@ -474,7 +460,7 @@ export default function PaymentPage() {
             </button>
           </div>
         ) : paymentMethod === null ? (
-          /* Payment Method Selection - New Design matching screenshot */
+          /* Payment Method Selection - QRIS Only */
           <>
           <div className="px-4 py-4">
             <div className="bg-[#2952CC] rounded-t-2xl p-5">
@@ -487,26 +473,8 @@ export default function PaymentPage() {
               <span className="text-white text-base font-semibold">Favorite in Indonesia</span>
             </div>
 
-            {/* Payment Method Options */}
+            {/* Payment Method Options - QRIS Only */}
             <div className="bg-[#2952CC] px-5 pb-5 rounded-b-2xl space-y-3">
-              {/* Virtual Account (VA) */}
-              <button
-                onClick={() => {
-                  const s = document.createElement('script');
-                  s.innerHTML = "fbq('track', 'AddPaymentInfo');";
-                  document.head.appendChild(s);
-                  setPaymentMethod('va');
-                }}
-                disabled={isProcessing}
-                className="w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all hover:shadow-lg disabled:opacity-50"
-              >
-                <span className="text-gray-900 font-semibold text-base">Virtual Account (VA)</span>
-                <div className="flex items-center gap-2">
-                  <img src={bankIconUrl} alt="Bank" className="h-6" />
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                </div>
-              </button>
-
               {/* QRIS */}
               <button
                 onClick={() => handlePaymentMethodSelect('qris', 'QRIS')}
@@ -564,89 +532,7 @@ export default function PaymentPage() {
               eventPrice={event.price}
             />
           </div>
-        ) : (
-          /* Bank/Channel Selection */
-          <div className="px-4 py-4">
-            {/* Virtual Account Bank Selection */}
-            {paymentMethod === 'va' && (
-              <div className="bg-white rounded-2xl p-6 space-y-4">
-                <h3 className="text-gray-800 text-lg font-bold text-center mb-4">Pilih Bank Virtual Account</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {/* BCA - Disabled (Dalam Verifikasi) */}
-                  <div className="relative">
-                    <button
-                      onClick={() => {
-                        toast({
-                          title: "BCA Sedang Dalam Verifikasi",
-                          description: "Silakan pilih bank lain untuk sementara waktu.",
-                          variant: "destructive",
-                        });
-                      }}
-                      disabled={true}
-                      className="w-full p-4 border-2 border-gray-200 rounded-lg opacity-40 cursor-not-allowed flex items-center justify-center"
-                    >
-                      <img src={bcaLogoUrl} alt="BCA" className="h-8 w-auto object-contain" />
-                    </button>
-                    <span className="absolute -top-2 -right-2 bg-yellow-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Verifikasi
-                    </span>
-                  </div>
-
-                  {/* BNI - Active */}
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'BNI')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={bniLogoUrl} alt="BNI" className="h-8 w-auto object-contain" />
-                  </button>
-
-                  {/* BRI - Active */}
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'BRI')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={briLogoUrl} alt="BRI" className="h-8 w-auto object-contain" />
-                  </button>
-
-                  {/* Mandiri - Active */}
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'MANDIRI')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={mandiriLogoUrl} alt="Mandiri" className="h-8 w-auto object-contain" />
-                  </button>
-
-                  {/* Permata - Active */}
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'PERMATA')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={permataLogoUrl} alt="Permata" className="h-8 w-auto object-contain" />
-                  </button>
-
-                  {/* CIMB Niaga - Active */}
-                  <button
-                    onClick={() => handlePaymentMethodSelect('va', 'CIMB')}
-                    disabled={isProcessing}
-                    className="p-4 border-2 border-gray-300 rounded-lg hover:border-[#4169E1] transition-all disabled:opacity-50 flex items-center justify-center"
-                  >
-                    <img src={cimbLogoUrl} alt="CIMB" className="h-8 w-auto object-contain" />
-                  </button>
-                </div>
-                <button
-                  onClick={() => setPaymentMethod(null)}
-                  className="w-full mt-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
-                >
-                  Kembali
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        ) : null}
 
         <MobileBottomNav />
       </div>
