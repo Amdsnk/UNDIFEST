@@ -1365,31 +1365,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } else {
-        // QRIS: gunakan dynamic payment link tanpa filter enabled_payments
-        // agar semua metode aktif tampil (termasuk QRIS) dan transaksi ter-track via order ID
-        console.log("[Midtrans QRIS] Production mode - QRIS via dynamic payment link (no payment filter)");
+        // QRIS: gunakan Snap Transaction dengan enabled_payments=['other_qris']
+        // 'other_qris' adalah identifier QRIS yang benar untuk Snap API
+        console.log("[Midtrans QRIS] Production mode - QRIS via Snap (other_qris)");
         try {
           const baseUrl = process.env.APP_URL || "https://undifest.com";
-          const linkResult = await createPaymentLink({
+          const snapResult = await createSnapTransaction({
             orderId: transaction.id,
             grossAmount: amount,
             customerName: userName,
             customerEmail: userEmail,
             customerPhone: phoneNumber,
             itemName: `Tiket ${eventName}`,
-            enabledPayments: ['qris'],
+            enabledPayments: ['other_qris'],
             finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
             errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
             pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           });
-          console.log("[Midtrans QRIS] Dynamic payment link:", linkResult.paymentUrl);
+          console.log("[Midtrans QRIS] Snap token:", snapResult.token, "url:", snapResult.redirectUrl);
           await storage.updateTransaction(transaction.id, {
-            paymentId: transaction.id,
-            paymentUrl: linkResult.paymentUrl,
+            paymentId: snapResult.token,
+            paymentUrl: snapResult.redirectUrl,
           });
           return res.status(201).json({
             ...transaction,
-            redirectUrl: linkResult.paymentUrl,
+            snapToken: snapResult.token,
+            redirectUrl: snapResult.redirectUrl,
             channel: "QRIS",
           });
         } catch (paymentError: any) {
