@@ -1377,8 +1377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customerEmail: userEmail,
             customerPhone: phoneNumber,
             itemName: `Tiket ${eventName}`,
-            // Tidak ada enabledPayments — tampilkan semua metode aktif di akun Midtrans
-            // Redirect ke /payment/success agar user langsung melihat halaman download setelah bayar
+            enabledPayments: ['qris'],
             finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
             errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
             pendingUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
