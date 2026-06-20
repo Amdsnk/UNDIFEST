@@ -61,19 +61,19 @@ export default function TransactionsPage() {
     queryKey: ["/api/users"],
   });
 
-  // Build lookup maps: by userId (number) and by normalized phone
+  // Build lookup maps: by userId (string UUID) and by normalized phone
   const normalizePhone = (p: string) => {
     if (!p) return "";
     const d = p.replace(/\D/g, "");
     if (d.startsWith("62")) return "0" + d.slice(2);
     return d.startsWith("0") ? d : d;
   };
-  const userById = new Map<number, User>(users?.map(u => [u.id as number, u]) ?? []);
+  const userById = new Map<string, User>(users?.map(u => [String(u.id), u]) ?? []);
   const userByPhone = new Map<string, User>(users?.map(u => [normalizePhone(u.phoneNumber), u]) ?? []);
 
   const getUser = (tx: Transaction): User | undefined => {
     if (tx.userId != null) {
-      const u = userById.get(tx.userId as number);
+      const u = userById.get(String(tx.userId));
       if (u) return u;
     }
     return userByPhone.get(normalizePhone(tx.phoneNumber));
@@ -477,22 +477,25 @@ export default function TransactionsPage() {
                                   {new Intl.NumberFormat("id-ID").format(transaction.amount)}
                                 </span>
                               </TableCell>
-                              {/* Undian Type */}
+                              {/* Nomor Undian */}
                               <TableCell className="py-2 text-center">
-                                {(transaction as any).undianType ? (
-                                  <span
-                                    className="inline-block text-xs font-bold px-2 py-1 rounded-full text-white"
-                                    style={{
-                                      background: (transaction as any).undianType === "A"
-                                        ? "linear-gradient(135deg,#7c3aed,#4f46e5)"
-                                        : "linear-gradient(135deg,#db2777,#9333ea)"
-                                    }}
-                                  >
-                                    {(transaction as any).undianType}
+                                <div className="flex flex-col items-center gap-0.5">
+                                  <span className="font-mono text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
+                                    UND-{transaction.id.slice(0, 8).toUpperCase()}
                                   </span>
-                                ) : (
-                                  <span className="text-gray-400 text-xs">-</span>
-                                )}
+                                  {transaction.undianType && (
+                                    <span
+                                      className="inline-block text-xs font-bold px-1.5 py-0.5 rounded-full text-white"
+                                      style={{
+                                        background: transaction.undianType === "A"
+                                          ? "linear-gradient(135deg,#7c3aed,#4f46e5)"
+                                          : "linear-gradient(135deg,#db2777,#9333ea)"
+                                      }}
+                                    >
+                                      {transaction.undianType}
+                                    </span>
+                                  )}
+                                </div>
                               </TableCell>
                               {/* Status Pembayaran */}
                               <TableCell className="py-2">
