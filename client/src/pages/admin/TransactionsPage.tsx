@@ -379,7 +379,6 @@ export default function TransactionsPage() {
                           <TableHead className="font-bold text-gray-700">No Rekening</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Tiket</TableHead>
                           <TableHead className="font-bold text-gray-700">Total Rp</TableHead>
-                          <TableHead className="font-bold text-gray-700 text-center">Undian</TableHead>
                           <TableHead className="font-bold text-gray-700">Status</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">WA</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Aksi</TableHead>
@@ -476,26 +475,6 @@ export default function TransactionsPage() {
                                 <span className="inline-flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2 py-1 rounded-full text-xs font-bold shadow-sm whitespace-nowrap">
                                   {new Intl.NumberFormat("id-ID").format(transaction.amount)}
                                 </span>
-                              </TableCell>
-                              {/* Nomor Undian */}
-                              <TableCell className="py-2 text-center">
-                                <div className="flex flex-col items-center gap-0.5">
-                                  <span className="font-mono text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
-                                    UND-{transaction.id.slice(0, 8).toUpperCase()}
-                                  </span>
-                                  {transaction.undianType && (
-                                    <span
-                                      className="inline-block text-xs font-bold px-1.5 py-0.5 rounded-full text-white"
-                                      style={{
-                                        background: transaction.undianType === "A"
-                                          ? "linear-gradient(135deg,#7c3aed,#4f46e5)"
-                                          : "linear-gradient(135deg,#db2777,#9333ea)"
-                                      }}
-                                    >
-                                      {transaction.undianType}
-                                    </span>
-                                  )}
-                                </div>
                               </TableCell>
                               {/* Status Pembayaran */}
                               <TableCell className="py-2">
