@@ -1486,9 +1486,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Midtrans Notification callback (webhook)
+  // IMPORTANT: Always respond HTTP 200 immediately so Midtrans considers the
+  // notification delivered. All processing happens after the response is sent.
   app.post("/api/payments/midtrans/notification", async (req, res) => {
+    // Acknowledge receipt immediately — Midtrans marks webhook failed on any non-2xx
+    res.status(200).json({ success: true });
+
+    // Process notification asynchronously after response is sent
     try {
-      console.log("[Midtrans Notification] Received:", req.body);
+      const body = req.body || {};
+      console.log("[Webhook] Received notification, order_id:", body.order_id, "status:", body.transaction_status);
 
       const {
         order_id,
@@ -1497,24 +1504,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         signature_key,
         transaction_status,
         fraud_status,
-      } = req.body;
+      } = body;
 
       if (!order_id) {
-        console.error("[Midtrans Notification] Missing order_id");
-        return res.status(400).json({ error: "Missing order_id" });
+        console.error("[Webhook] Missing order_id in notification body");
+        return;
       }
 
-      // Verify signature
-      if (signature_key && !verifyMidtransSignature(order_id, status_code, gross_amount, signature_key)) {
-        console.error("[Midtrans Notification] Invalid signature for order:", order_id);
-        return res.status(403).json({ error: "Invalid signature" });
+      // Verify signature — log mismatch but continue processing
+      // (some Midtrans retry payloads may have signature issues)
+      if (signature_key) {
+        const valid = verifyMidtransSignature(order_id, status_code, gross_amount, signature_key);
+        if (!valid) {
+          console.error("[Webhook] Signature mismatch for order:", order_id, "— processing anyway via API re-check");
+          // Re-verify by pulling status directly from Midtrans API as double-check
+          const apiStatus = await checkMidtransStatusWithFallback(order_id, null);
+          if (!apiStatus || apiStatus.transactionStatus === "not_found") {
+            console.error("[Webhook] API re-check also failed for order:", order_id);
+            return;
+          }
+          // Use API result instead of webhook body
+          const resolvedStatus = apiStatus.transactionStatus === "settlement" ||
+            (apiStatus.transactionStatus === "capture" && apiStatus.fraudStatus === "accept")
+            ? "paid"
+            : apiStatus.transactionStatus === "expire" ? "expired"
+            : ["deny", "cancel", "failure"].includes(apiStatus.transactionStatus) ? "failed"
+            : "pending";
+          const tx = await storage.getTransaction(order_id);
+          if (!tx) { console.error("[Webhook] Transaction not found after re-check:", order_id); return; }
+          if (resolvedStatus !== "pending" && tx.paymentStatus !== resolvedStatus) {
+            await storage.updateTransaction(tx.id, { paymentStatus: resolvedStatus, paidAt: resolvedStatus === "paid" ? new Date() : undefined });
+            console.log("[Webhook] Updated via API re-check:", order_id, "→", resolvedStatus);
+          }
+          return;
+        }
       }
 
       // Find transaction
       const dbTransaction = await storage.getTransaction(order_id);
       if (!dbTransaction) {
-        console.error("[Midtrans Notification] Transaction not found:", order_id);
-        return res.status(404).json({ error: "Transaction not found" });
+        console.error("[Webhook] Transaction not found:", order_id);
+        return;
       }
 
       // Map Midtrans status to our status
@@ -1534,16 +1564,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paidAt: paymentStatus === "paid" ? new Date() : undefined,
       });
 
-      // Increment event ticket count only once per transaction
-      if (paymentStatus === "paid" && wasNotPaid) {
-        try {
-          await storage.incrementEventTickets(dbTransaction.eventId);
-          console.log("[Midtrans Notification] Event tickets incremented for event:", dbTransaction.eventId);
-        } catch (ticketErr) {
-          console.error("[Midtrans Notification] Failed to increment event tickets:", ticketErr);
-        }
+      console.log("[Webhook] Transaction updated:", dbTransaction.id, "→", paymentStatus);
 
-        // Send WhatsApp notification with download link + nomor undian (1 pesan gabungan)
+      // Increment event ticket count and send WA only on first payment confirmation
+      if (paymentStatus === "paid" && wasNotPaid) {
+        await storage.incrementEventTickets(dbTransaction.eventId).catch(e =>
+          console.error("[Webhook] Failed to increment tickets:", e)
+        );
+
         if (dbTransaction.phoneNumber) {
           const baseUrl = process.env.APP_URL || "https://undifest.com";
           const downloadLink = `${baseUrl}/payment/success?trx=${dbTransaction.id}`;
@@ -1555,18 +1583,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${dbTransaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
           sendWhatsAppMessage(dbTransaction.phoneNumber, waMessage).then(ok => {
             if (ok) storage.updateTransaction(dbTransaction.id, { waSentAt: new Date() }).catch(() => {});
-          }).catch(e =>
-            console.error("[Midtrans Notification] Failed to send WA notification:", e)
-          );
+          }).catch(e => console.error("[Webhook] Failed to send WA:", e));
         }
       }
-
-      console.log("[Midtrans Notification] Transaction updated:", dbTransaction.id, "Status:", paymentStatus);
-
-      res.json({ success: true });
     } catch (error) {
-      console.error("[Midtrans Notification] Error:", error);
-      res.status(500).json({ error: "Notification processing failed" });
+      console.error("[Webhook] Processing error (response already sent 200):", error);
     }
   });
 
