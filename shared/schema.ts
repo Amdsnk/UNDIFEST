@@ -97,6 +97,7 @@ export const transactions = pgTable("transactions", {
   paymentNumber: varchar("payment_number", { length: 100 }), // VA Number atau nomor rekening tujuan
   paymentUrl: text("payment_url"), // iPaymu payment URL
   paidAt: timestamp("paid_at"),
+  waSentAt: timestamp("wa_sent_at"),
   undianType: varchar("undian_type", { length: 10 }), // "A" | "B" | null
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

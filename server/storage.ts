@@ -331,6 +331,7 @@ export class MemStorage implements IStorage {
       paymentNumber: insertTransaction.paymentNumber || null,
       paymentUrl: insertTransaction.paymentUrl || null,
       paidAt: insertTransaction.paidAt || null,
+      waSentAt: insertTransaction.waSentAt || null,
       createdAt: new Date(),
     };
     this.transactions.set(id, transaction);

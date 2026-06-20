@@ -592,7 +592,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const waMsg = hasEbook
                     ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${t.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
                     : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${t.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
-                  sendWhatsAppMessage(t.phoneNumber, waMsg).catch(() => {});
+                  sendWhatsAppMessage(t.phoneNumber, waMsg).then(ok => {
+                    if (ok) storage.updateTransaction(t.id, { waSentAt: new Date() }).catch(() => {});
+                  }).catch(() => {});
                 }
               } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
                 await storage.updateTransaction(t.id, { paymentStatus: "failed" });
@@ -652,7 +654,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const waMsg = hasEbook
                   ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${t.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
                   : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${t.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
-                sendWhatsAppMessage(t.phoneNumber, waMsg).catch(() => {});
+                sendWhatsAppMessage(t.phoneNumber, waMsg).then(ok => {
+                  if (ok) storage.updateTransaction(t.id, { waSentAt: new Date() }).catch(() => {});
+                }).catch(() => {});
               }
             } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
               await storage.updateTransaction(t.id, { paymentStatus: "failed" });
@@ -676,6 +680,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[Sync Pending] Error:", error);
       res.status(500).json({ error: "Failed to sync pending transactions" });
+    }
+  });
+
+  // Manual WhatsApp send for a transaction (admin only)
+  app.post("/api/admin/transactions/:id/send-wa", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const transaction = await storage.getTransaction(id);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+      if (!transaction.phoneNumber) {
+        return res.status(400).json({ error: "Transaction has no phone number" });
+      }
+
+      const baseUrl = process.env.APP_URL || "https://undifest.com";
+      const downloadLink = `${baseUrl}/payment/success?trx=${transaction.id}`;
+      const nomorUndian = `UND-${transaction.id.slice(0, 8).toUpperCase()}`;
+      const ev = await storage.getEvent(transaction.eventId).catch(() => null);
+      const hasEbook = !!(ev?.ebookFile);
+      const waMsg = hasEbook
+        ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
+        : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+
+      const sent = await sendWhatsAppMessage(transaction.phoneNumber, waMsg);
+      let waSentAt: Date | null = null;
+      if (sent) {
+        waSentAt = new Date();
+        await storage.updateTransaction(id, { waSentAt });
+      }
+
+      console.log(`[Manual WA] Transaction ${id} → ${sent ? "✅ sent" : "❌ failed"}`);
+      res.json({
+        success: sent,
+        message: sent
+          ? `WA berhasil dikirim ke ${transaction.phoneNumber}`
+          : "Gagal mengirim WA — cek konfigurasi Fonnte di Settings",
+        waSentAt,
+      });
+    } catch (error) {
+      console.error("[Manual WA] Error:", error);
+      res.status(500).json({ error: "Failed to send WhatsApp message" });
     }
   });
 
@@ -848,7 +894,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const waMsg = hasEbook
                   ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
                   : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
-                sendWhatsAppMessage(transaction.phoneNumber, waMsg).catch(() => {});
+                sendWhatsAppMessage(transaction.phoneNumber, waMsg).then(ok => {
+                  if (ok) storage.updateTransaction(transactionId, { waSentAt: new Date() }).catch(() => {});
+                }).catch(() => {});
               }
               console.log("[Payment Status] Updated to paid via direct Midtrans check:", transactionId);
             } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
@@ -919,7 +967,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const waMsg = hasEbook
             ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
             : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${transaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
-          sendWhatsAppMessage(transaction.phoneNumber, waMsg).catch(() => {});
+          sendWhatsAppMessage(transaction.phoneNumber, waMsg).then(ok => {
+            if (ok) storage.updateTransaction(transactionId, { waSentAt: new Date() }).catch(() => {});
+          }).catch(() => {});
         }
 
         console.log("[Confirm Paid] Transaction marked as paid from redirect:", transactionId);
@@ -1502,7 +1552,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const waMessage = hasEbook
             ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${dbTransaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
             : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${dbTransaction.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
-          sendWhatsAppMessage(dbTransaction.phoneNumber, waMessage).catch(e =>
+          sendWhatsAppMessage(dbTransaction.phoneNumber, waMessage).then(ok => {
+            if (ok) storage.updateTransaction(dbTransaction.id, { waSentAt: new Date() }).catch(() => {});
+          }).catch(e =>
             console.error("[Midtrans Notification] Failed to send WA notification:", e)
           );
         }

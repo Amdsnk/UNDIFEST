@@ -222,6 +222,9 @@ app.use((req, res, next) => {
               }).then(async (r) => {
                 const result = await r.json().catch(() => ({}));
                 log(`[PaymentSync WA] → ${formattedPhone}: ${result.status ? 'terkirim ✅' : `gagal ❌ – ${JSON.stringify(result)}`}`);
+                if (result.status === true) {
+                  await storage.updateTransaction(t.id, { waSentAt: new Date() }).catch(() => {});
+                }
               }).catch((err) => {
                 log(`[PaymentSync WA] fetch error → ${formattedPhone}: ${err?.message}`);
               });

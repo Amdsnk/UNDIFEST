@@ -38,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, DollarSign, TrendingUp, Calendar, Receipt, Eye, Trash2, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw, ExternalLink, Copy } from "lucide-react";
+import { Search, DollarSign, TrendingUp, Calendar, Receipt, Eye, Trash2, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw, ExternalLink, Copy, MessageCircle, Send } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -165,6 +165,23 @@ export default function TransactionsPage() {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  const sendWaMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/admin/transactions/${id}/send-wa`, { method: "POST" });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      if (data?.success) {
+        toast({ title: "✅ WA berhasil dikirim!", description: data?.message });
+      } else {
+        toast({ variant: "destructive", title: "❌ Gagal kirim WA", description: data?.message || "Cek konfigurasi Fonnte di Settings" });
+      }
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "❌ Gagal kirim WA", description: "Terjadi kesalahan server" });
     },
   });
 
@@ -364,13 +381,14 @@ export default function TransactionsPage() {
                           <TableHead className="font-bold text-gray-700">Total Rp</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Undian</TableHead>
                           <TableHead className="font-bold text-gray-700">Status</TableHead>
+                          <TableHead className="font-bold text-gray-700 text-center">WA</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {isLoading ? (
                           <TableRow>
-                            <TableCell colSpan={11} className="text-center py-12">
+                            <TableCell colSpan={12} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                                 <p className="text-gray-500 font-medium">Memuat data transaksi...</p>
@@ -480,6 +498,25 @@ export default function TransactionsPage() {
                               <TableCell className="py-2">
                                 {getStatusBadge(transaction.paymentStatus)}
                               </TableCell>
+                              {/* Status WA Fonnte */}
+                              <TableCell className="py-2 text-center">
+                                {transaction.waSentAt ? (
+                                  <div className="flex flex-col items-center gap-0.5">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                                      <MessageCircle className="w-3 h-3" /> Terkirim
+                                    </span>
+                                    <span className="text-xs text-gray-400">
+                                      {new Date(transaction.waSentAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                ) : transaction.paymentStatus === "paid" ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                                    <MessageCircle className="w-3 h-3" /> Belum
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-300 text-xs">-</span>
+                                )}
+                              </TableCell>
                               <TableCell className="text-center">
                                 <div className="flex items-center justify-center gap-1">
                                   {transaction.paymentStatus === "pending" && (
@@ -507,6 +544,19 @@ export default function TransactionsPage() {
                                         Konfirmasi
                                       </Button>
                                     </>
+                                  )}
+                                  {transaction.paymentStatus === "paid" && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => sendWaMutation.mutate(transaction.id)}
+                                      disabled={sendWaMutation.isPending}
+                                      className="bg-green-600 text-white border-0 hover:bg-green-700 shadow-md text-xs px-2"
+                                      title="Kirim nomor undian via WhatsApp"
+                                    >
+                                      <Send className="w-3 h-3 mr-1" />
+                                      WA
+                                    </Button>
                                   )}
                                   <Dialog>
                                     <DialogTrigger asChild>
@@ -654,6 +704,45 @@ export default function TransactionsPage() {
                                           </div>
                                         )}
 
+                                        {/* WA Fonnte Status */}
+                                        <div className={`p-4 rounded-lg border ${transaction.waSentAt ? "bg-green-50 border-green-200" : "bg-orange-50 border-orange-200"}`}>
+                                          <div className="flex items-center justify-between mb-2">
+                                            <p className={`text-sm font-medium ${transaction.waSentAt ? "text-green-800" : "text-orange-800"}`}>
+                                              Status Pengiriman WA (Fonnte):
+                                            </p>
+                                            {transaction.paymentStatus === "paid" && (
+                                              <Button
+                                                size="sm"
+                                                onClick={() => sendWaMutation.mutate(transaction.id)}
+                                                disabled={sendWaMutation.isPending}
+                                                className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                                              >
+                                                <Send className="w-3 h-3 mr-1" />
+                                                {sendWaMutation.isPending ? "Mengirim..." : transaction.waSentAt ? "Kirim Ulang" : "Kirim WA"}
+                                              </Button>
+                                            )}
+                                          </div>
+                                          {transaction.waSentAt ? (
+                                            <div className="flex items-center gap-2">
+                                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-green-200 text-green-800">
+                                                <MessageCircle className="w-3 h-3" /> Terkirim
+                                              </span>
+                                              <span className="text-sm text-green-700 font-medium">
+                                                {new Date(transaction.waSentAt).toLocaleString('id-ID', {
+                                                  day: '2-digit', month: 'short', year: 'numeric',
+                                                  hour: '2-digit', minute: '2-digit', second: '2-digit'
+                                                })} WIB
+                                              </span>
+                                            </div>
+                                          ) : (
+                                            <p className="text-sm text-orange-700">
+                                              {transaction.paymentStatus === "paid"
+                                                ? "⚠️ WA belum terkirim ke nomor ini. Klik tombol Kirim WA untuk mengirim sekarang."
+                                                : "WA hanya dikirim untuk transaksi yang sudah Lunas."}
+                                            </p>
+                                          )}
+                                        </div>
+
                                         {/* Manual status update buttons */}
                                         <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                                           <p className="text-sm text-yellow-800 font-medium mb-3">Update Status Pembayaran Manual:</p>
@@ -723,7 +812,7 @@ export default function TransactionsPage() {
                           })
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={11} className="text-center py-12">
+                            <TableCell colSpan={12} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="bg-gray-100 rounded-full p-4">
                                   <Receipt className="w-12 h-12 text-gray-400" />
