@@ -152,16 +152,18 @@ app.use((req, res, next) => {
   runRecurringScheduler(); // run immediately on startup
 
   // ── Midtrans Payment Auto-Sync ──────────────────────────────────────────
-  // Runs every 5 minutes to sync ALL pending transactions with Midtrans.
-  // This is a safety net for when the Midtrans webhook is delayed or missed.
+  // Runs every 1 minute to sync pending transactions with Midtrans.
+  // Only checks transactions that have been pending for at least 2 minutes
+  // to give webhooks time to arrive first. Sequential with small delays
+  // to avoid Midtrans rate limiting.
   async function runPaymentSyncScheduler() {
     if (!isMidtransConfigured()) return;
     try {
       const allTransactions = await storage.getAllTransactions();
-      // Include ALL pending transactions — even those without paymentId
-      // Some Midtrans orders may exist under transaction.id even if paymentId wasn't stored
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      // Only check pending transactions older than 2 minutes (webhook window)
       const pending = allTransactions.filter(
-        (t) => t.paymentStatus === "pending"
+        (t) => t.paymentStatus === "pending" && new Date(t.createdAt) < twoMinutesAgo
       );
       if (pending.length === 0) return;
 
@@ -169,9 +171,14 @@ app.use((req, res, next) => {
 
       for (const t of pending) {
         try {
+          // Small delay between requests to avoid Midtrans rate limiting
+          await new Promise(r => setTimeout(r, 300));
           // Use unified helper: tries transaction.id first, then paymentId as fallback
           const midtransStatus = await checkMidtransStatusWithFallback(t.id, t.paymentId);
-          if (!midtransStatus) continue;
+          if (!midtransStatus) {
+            log(`[PaymentSync] ⚠️ ${t.id.slice(0, 8)} — koneksi ke Midtrans gagal, skip`);
+            continue;
+          }
 
           const { transactionStatus, fraudStatus } = midtransStatus;
 
@@ -246,7 +253,7 @@ app.use((req, res, next) => {
       console.error("[PaymentSync] Scheduler error:", err);
     }
   }
-  setInterval(runPaymentSyncScheduler, 5 * 60 * 1000); // every 5 minutes
+  setInterval(runPaymentSyncScheduler, 60 * 1000); // every 1 minute
   runPaymentSyncScheduler(); // run immediately on startup
 
   const server = await registerRoutes(app);

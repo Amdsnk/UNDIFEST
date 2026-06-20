@@ -555,34 +555,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Transactions API (admin - all transactions, auto-sync pending with Midtrans)
+  // Transactions API (admin - all transactions)
+  // Data is returned immediately, then a background sync with Midtrans runs
+  // for pending transactions so the page loads fast without blocking on API calls.
   app.get("/api/transactions", requireAdmin, async (req, res) => {
     try {
       const transactions = await storage.getAllTransactions();
 
-      // Auto-sync all pending transactions with Midtrans in real-time.
-      // Only update if Midtrans gives a definitive status (paid/failed/expired).
-      // NEVER auto-expire based on 'not_found' — Midtrans API can return not_found
-      // temporarily even for settled payments (API glitch, wrong env, race condition).
+      // Send data to client immediately — do NOT block on Midtrans API calls.
+      // The 1-minute background scheduler handles syncing; this just triggers
+      // an extra check for any pending transactions older than 30 seconds.
+      res.json(transactions);
+
+      // Fire-and-forget background sync (does not affect response time)
+      const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
       const pendingTransactions = transactions.filter(
-        (t) => t.paymentStatus === "pending"
+        (t) => t.paymentStatus === "pending" && new Date(t.createdAt) < thirtySecondsAgo
       );
 
-      if (pendingTransactions.length > 0) {
-        await Promise.all(
-          pendingTransactions.map(async (t) => {
+      if (pendingTransactions.length > 0 && isMidtransConfigured()) {
+        (async () => {
+          for (const t of pendingTransactions) {
             try {
+              await new Promise(r => setTimeout(r, 200));
               const midtransStatus = await checkMidtransStatusWithFallback(t.id, t.paymentId);
-              if (!midtransStatus) return;
+              if (!midtransStatus) continue;
               const { transactionStatus, fraudStatus } = midtransStatus;
               if (
                 transactionStatus === "settlement" ||
                 (transactionStatus === "capture" && fraudStatus === "accept")
               ) {
                 await storage.updateTransaction(t.id, { paymentStatus: "paid", paidAt: new Date() });
-                t.paymentStatus = "paid";
                 await storage.incrementEventTickets(t.eventId).catch(() => {});
-                // Send WhatsApp notification
+                log(`[TxSync] ✅ ${t.id.slice(0, 8)} → paid (triggered by page load)`);
                 if (t.phoneNumber) {
                   const baseUrl = process.env.APP_URL || "https://undifest.com";
                   const downloadLink = `${baseUrl}/payment/success?trx=${t.id}`;
@@ -598,21 +603,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               } else if (["deny", "cancel", "failure"].includes(transactionStatus)) {
                 await storage.updateTransaction(t.id, { paymentStatus: "failed" });
-                t.paymentStatus = "failed";
+                log(`[TxSync] ❌ ${t.id.slice(0, 8)} → failed`);
               } else if (transactionStatus === "expire") {
-                // Only expire if Midtrans EXPLICITLY says expire — never based on not_found
                 await storage.updateTransaction(t.id, { paymentStatus: "expired" });
-                t.paymentStatus = "expired";
+                log(`[TxSync] ⏰ ${t.id.slice(0, 8)} → expired`);
               }
-              // not_found → do nothing, leave as pending
             } catch {
-              // non-fatal: skip if Midtrans check fails for this transaction
+              // non-fatal
             }
-          })
-        );
+          }
+        })().catch(() => {});
       }
-
-      res.json(transactions);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch transactions" });
     }
