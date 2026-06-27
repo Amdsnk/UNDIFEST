@@ -2633,39 +2633,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return process.env.FONNTE_API_TOKEN;
   }
 
+  function normalizePhone(phone: string): string {
+    let p = phone.replace(/\D/g, '');
+    if (p.startsWith('0')) p = '62' + p.substring(1);
+    else if (!p.startsWith('62')) p = '62' + p;
+    return p;
+  }
+
+  async function fonntePost(
+    token: string,
+    payload: Record<string, string>,
+    label: string,
+  ): Promise<{ ok: boolean; status: number; result: any }> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 detik timeout
+    try {
+      const response = await fetch('https://api.fonnte.com/send', {
+        method: 'POST',
+        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const result = await response.json();
+      return { ok: result.status === true, status: response.status, result };
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error?.name === 'AbortError') {
+        console.error(`[${label}] ❌ Timeout: Fonnte tidak merespons dalam 15 detik`);
+      } else {
+        console.error(`[${label}] ❌ Fetch error ke Fonnte:`, error?.message || error);
+      }
+      return { ok: false, status: 0, result: null };
+    }
+  }
+
   async function sendWhatsAppMessage(phoneNumber: string, message: string): Promise<boolean> {
     const FONNTE_TOKEN = await resolveFonnteSendToken();
     if (!FONNTE_TOKEN) {
       console.error("[WA] GAGAL: fonnte_device_token tidak ditemukan di settings dan FONNTE_API_TOKEN env tidak di-set");
       return false;
     }
-    try {
-      let formattedPhone = phoneNumber.replace(/\D/g, '');
-      if (formattedPhone.startsWith('0')) {
-        formattedPhone = '62' + formattedPhone.substring(1);
-      } else if (!formattedPhone.startsWith('62')) {
-        formattedPhone = '62' + formattedPhone;
-      }
-      const fonnteDevice = await resolveFonnteDevice();
-      const payload: Record<string, string> = { target: formattedPhone, message, countryCode: '62' };
-      if (fonnteDevice) payload.device = fonnteDevice;
-      console.log(`[WA] Mengirim ke ${formattedPhone}, device: ${fonnteDevice || '(default)'}, token: ${FONNTE_TOKEN.slice(0, 6)}...`);
-      const response = await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: { 'Authorization': FONNTE_TOKEN, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
-      if (result.status === true) {
-        console.log(`[WA] ✅ Terkirim ke ${formattedPhone}`);
-      } else {
-        console.error(`[WA] ❌ Gagal ke ${formattedPhone}: HTTP ${response.status} – ${JSON.stringify(result)}`);
-      }
-      return result.status === true;
-    } catch (error) {
-      console.error(`[WA] ❌ Error fetch Fonnte ke ${phoneNumber}:`, error);
-      return false;
+    const formattedPhone = normalizePhone(phoneNumber);
+    const fonnteDevice = await resolveFonnteDevice();
+    const payload: Record<string, string> = { target: formattedPhone, message, countryCode: '62' };
+    if (fonnteDevice) payload.device = fonnteDevice;
+    console.log(`[WA] Mengirim ke ${formattedPhone}, device: ${fonnteDevice || '(default)'}, token: ${FONNTE_TOKEN.slice(0, 6)}...`);
+    const { ok, status, result } = await fonntePost(FONNTE_TOKEN, payload, 'WA');
+    if (ok) {
+      console.log(`[WA] ✅ Terkirim ke ${formattedPhone}`);
+    } else {
+      console.error(`[WA] ❌ Gagal ke ${formattedPhone}: HTTP ${status} – ${JSON.stringify(result)}`);
     }
+    return ok;
   }
 
   // Test kirim WhatsApp (admin only)
@@ -2682,10 +2702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: "Token Fonnte belum dikonfigurasi. Pastikan fonnte_device_token sudah tersimpan di Settings, atau set environment variable FONNTE_API_TOKEN.",
         });
       }
-      let formattedPhone = phoneNumber.replace(/\D/g, '');
-      if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.substring(1);
-      else if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone;
-
+      const formattedPhone = normalizePhone(phoneNumber);
       const fonnteDevice = await resolveFonnteDevice();
       const payload: Record<string, string> = {
         target: formattedPhone,
@@ -2695,20 +2712,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (fonnteDevice) payload.device = fonnteDevice;
 
       console.log(`[WA Test] Mengirim ke ${formattedPhone}, device: ${fonnteDevice || '(default)'}`);
-      const response = await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: { 'Authorization': FONNTE_TOKEN, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
+      const { ok, status, result } = await fonntePost(FONNTE_TOKEN, payload, 'WA Test');
       console.log(`[WA Test] Response Fonnte:`, JSON.stringify(result));
 
-      if (result.status === true) {
+      if (ok) {
         return res.json({ success: true, message: `Pesan test berhasil dikirim ke ${formattedPhone}` });
       } else {
         return res.json({
           success: false,
-          error: `Fonnte menolak pengiriman: ${result.reason || result.detail || result.message || JSON.stringify(result)}`,
+          error: status === 0
+            ? "Timeout: Fonnte tidak merespons dalam 15 detik. Cek koneksi device Fonnte."
+            : `Fonnte menolak pengiriman: ${result?.reason || result?.detail || result?.message || JSON.stringify(result)}`,
           detail: result,
         });
       }
@@ -2753,36 +2767,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return false;
     }
 
-    try {
-      // Format phone number for WhatsApp (remove leading 0, add 62 for Indonesia)
-      let formattedPhone = phoneNumber.replace(/\D/g, '');
-      if (formattedPhone.startsWith('0')) {
-        formattedPhone = '62' + formattedPhone.substring(1);
-      } else if (!formattedPhone.startsWith('62')) {
-        formattedPhone = '62' + formattedPhone;
-      }
+    const formattedPhone = normalizePhone(phoneNumber);
+    const message = `*UNDIFEST* - Kode OTP Anda adalah: *${otp}*\n\nKode ini berlaku selama 5 menit.\nJangan bagikan kode ini kepada siapapun.`;
+    const fonnteDevice = await resolveFonnteDevice();
+    const otpPayload: Record<string, string> = { target: formattedPhone, message, countryCode: '62' };
+    if (fonnteDevice) otpPayload.device = fonnteDevice;
 
-      const message = `*UNDIFEST* - Kode OTP Anda adalah: *${otp}*\n\nKode ini berlaku selama 5 menit.\nJangan bagikan kode ini kepada siapapun.`;
-
-      const fonnteDevice = await resolveFonnteDevice();
-      const otpPayload: Record<string, string> = { target: formattedPhone, message, countryCode: '62' };
-      if (fonnteDevice) otpPayload.device = fonnteDevice;
-      const response = await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': FONNTE_TOKEN,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(otpPayload),
-      });
-
-      const result = await response.json();
-      console.log(`[OTP] WhatsApp sent to ${formattedPhone}:`, result.status ? 'Success' : 'Failed');
-      return result.status === true;
-    } catch (error) {
-      console.error("[OTP] Failed to send WhatsApp:", error);
-      return false;
+    const { ok, status, result } = await fonntePost(FONNTE_TOKEN, otpPayload, 'OTP');
+    if (ok) {
+      console.log(`[OTP] ✅ Terkirim ke ${formattedPhone}`);
+    } else {
+      console.error(`[OTP] ❌ Gagal ke ${formattedPhone}: HTTP ${status} – ${JSON.stringify(result)}`);
     }
+    return ok;
   }
 
   app.post("/api/users/send-otp", async (req, res) => {
@@ -2792,11 +2789,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Phone number is required" });
       }
 
+      // Normalize and store phone number consistently
+      const normalizedPhone = normalizePhone(phoneNumber);
+
       // Generate a random 6-digit OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-      otpStorage.set(otp, { phoneNumber, expiresAt });
+      // Store normalized phone so verify-otp comparison always works
+      otpStorage.set(otp, { phoneNumber: normalizedPhone, expiresAt });
 
       // Auto-cleanup expired OTPs
       setTimeout(() => {
@@ -2807,11 +2808,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send OTP via WhatsApp whenever Fonnte is configured
       if (hasFonnteToken) {
-        const sent = await sendWhatsAppOTP(phoneNumber, otp);
+        const sent = await sendWhatsAppOTP(normalizedPhone, otp);
         if (!sent) {
-          console.error(`[OTP] Failed to send WhatsApp OTP to ${phoneNumber}`);
+          // WA gagal — hapus OTP agar user bisa coba lagi
+          otpStorage.delete(otp);
+          console.error(`[OTP] ❌ Gagal mengirim OTP via WhatsApp ke ${normalizedPhone}`);
+          return res.status(503).json({
+            error: "Gagal mengirim OTP via WhatsApp. Pastikan nomor aktif dan coba lagi.",
+          });
         }
-        console.log(`[OTP] OTP sent via WhatsApp to ${phoneNumber}`);
         return res.json({
           success: true,
           message: "Kode OTP telah dikirim ke WhatsApp Anda"
@@ -2819,16 +2824,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Development mode OR no Fonnte token: Return OTP in response for testing
-      console.log(`[DEMO MODE] OTP for ${phoneNumber}: ${otp} (expires in 5 minutes)`);
+      console.log(`[DEMO MODE] OTP for ${normalizedPhone}: ${otp} (expires in 5 minutes)`);
 
-      const response: any = {
+      const demoResponse: any = {
         success: true,
         message: "OTP sent successfully",
         otp: otp, // Include OTP for demo/testing
         _demoWarning: "OTP included in response for demo purposes only"
       };
 
-      res.json(response);
+      res.json(demoResponse);
     } catch (error) {
       console.error("[OTP] Error:", error);
       res.status(500).json({ error: "Failed to send OTP" });
@@ -2855,13 +2860,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // SECURITY: Verify the phone number matches the one that requested the OTP
-      if (otpData.phoneNumber !== phoneNumber) {
+      // Both sides normalized to 62xxx so format variations (08xxx vs 628xxx) won't fail
+      if (otpData.phoneNumber !== normalizePhone(phoneNumber)) {
         return res.status(400).json({ error: "Invalid OTP for this phone number" });
       }
 
       // OTP is valid, create or get user
       const clientIp = getClientIp(req);
-      let user = await storage.getUserByPhoneNumber(phoneNumber);
+      const normalizedForLookup = normalizePhone(phoneNumber);
+      let user = await storage.getUserByPhoneNumber(normalizedForLookup) || await storage.getUserByPhoneNumber(phoneNumber);
       if (!user) {
         user = await storage.createUser({ phoneNumber, ip: clientIp || undefined });
       } else {
@@ -2906,23 +2913,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Kode OTP sudah kadaluarsa" });
       }
 
-      // Normalize and compare phone numbers
-      const normalizePhone = (p: string) => {
-        let n = p.replace(/[\s\-\+\(\)]/g, "");
-        if (n.startsWith("62")) n = "0" + n.slice(2);
-        return n;
-      };
-      if (normalizePhone(otpData.phoneNumber) !== normalizePhone(phoneNumber)) {
+      // Normalize and compare phone numbers (both sides to 62xxx format)
+      if (otpData.phoneNumber !== normalizePhone(phoneNumber)) {
         return res.status(400).json({ error: "OTP tidak sesuai dengan nomor telepon ini" });
       }
 
       // OTP valid - delete immediately to prevent reuse
       otpStorage.delete(otp);
 
+      // Normalize helper for loose matching across stored formats (628xx / 08xx)
+      const looseNormalize = (p: string) => {
+        let n = p.replace(/\D/g, "");
+        if (n.startsWith("62")) n = "0" + n.slice(2);
+        return n;
+      };
+
       // Lookup all transactions for this phone
       const allTransactions = await storage.getAllTransactions();
       const phoneMatched = allTransactions.filter(
-        (t) => normalizePhone(t.phoneNumber) === normalizePhone(phoneNumber)
+        (t) => looseNormalize(t.phoneNumber) === looseNormalize(phoneNumber)
       );
 
       // For pending transactions, check Midtrans directly and update status in real-time
