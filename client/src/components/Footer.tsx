@@ -49,7 +49,7 @@ export function Footer() {
             <div className="flex items-center gap-3 text-gray-400 text-xs md:text-sm">
               <img src={iconTeleponUrl} alt="" className="w-5 h-5" />
               <span className="text-[#ffffff] font-medium">
-                {getSetting("phone", "021 252515")}
+                {getSetting("phone", "08889988616")}
               </span>
             </div>
             {/* WhatsApp: smaller text on mobile (text-xs), original on desktop (text-sm) */}
@@ -62,6 +62,18 @@ export function Footer() {
                 className="text-[#ffffff] font-medium hover:text-green-400 transition-colors"
               >
                 {getSetting("whatsapp", "08811111898")}
+              </a>
+            </div>
+            {/* Telegram */}
+            <div className="flex items-center gap-3 text-gray-400 text-xs md:text-sm">
+              <img src={iconTelegramUrl} alt="" className="w-5 h-5" />
+              <a
+                href={`https://t.me/${getSetting("telegram_username", "undifest")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#ffffff] font-medium hover:text-blue-400 transition-colors"
+              >
+                {getSetting("telegram_username", "@undifest")}
               </a>
             </div>
           </div>
