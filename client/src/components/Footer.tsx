@@ -49,19 +49,19 @@ export function Footer() {
             <div className="flex items-center gap-3 text-gray-400 text-xs md:text-sm">
               <img src={iconTeleponUrl} alt="" className="w-5 h-5" />
               <span className="text-[#ffffff] font-medium">
-                {getSetting("phone", "08889988616")}
+                {getSetting("phone", "021 252515")}
               </span>
             </div>
             {/* WhatsApp: smaller text on mobile (text-xs), original on desktop (text-sm) */}
             <div className="flex items-center gap-3 text-gray-400 text-xs md:text-sm">
               <img src={iconWAUrl} alt="" className="w-5 h-5" />
               <a
-                href={`https://wa.me/${getSetting("whatsapp", "08811111898").replace(/\D/g, "").replace(/^0/, "62")}`}
+                href={`https://wa.me/${getSetting("whatsapp", "08889988616").replace(/\D/g, "").replace(/^0/, "62")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#ffffff] font-medium hover:text-green-400 transition-colors"
               >
-                {getSetting("whatsapp", "08811111898")}
+                {getSetting("whatsapp", "08889988616")}
               </a>
             </div>
             {/* Telegram */}
