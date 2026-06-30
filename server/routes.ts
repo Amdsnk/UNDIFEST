@@ -2374,6 +2374,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Footer Settings API
+  // Public endpoint — used by the frontend Footer component
+  app.get("/api/footer-settings", async (req, res) => {
+    try {
+      const settings = await storage.getAllFooterSettings();
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch footer settings" });
+    }
+  });
+
   app.get("/api/admin/footer", requireAdmin, async (req, res) => {
     try {
       const settings = await storage.getAllFooterSettings();
