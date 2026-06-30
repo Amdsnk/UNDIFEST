@@ -117,7 +117,7 @@ export function Footer() {
           <a href={getSetting("twitter", "https://twitter.com/undifest")} className="hover-elevate" data-testid="social-x" target="_blank" rel="noopener noreferrer">
             <img src={iconXUrl} alt="X/Twitter" className="w-10 h-10" />
           </a>
-          <a href={getSetting("instagram", "https://instagram.com/undifest")} className="hover-elevate" data-testid="social-instagram" target="_blank" rel="noopener noreferrer">
+          <a href={getSetting("instagram", "https://www.instagram.com/undifest_/")} className="hover-elevate" data-testid="social-instagram" target="_blank" rel="noopener noreferrer">
             <img src={iconIgUrl} alt="Instagram" className="w-10 h-10" />
           </a>
           <a href={getSetting("youtube", "https://youtube.com/@undifest")} className="hover-elevate" data-testid="social-youtube" target="_blank" rel="noopener noreferrer">
