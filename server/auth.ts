@@ -4,7 +4,7 @@ import type { Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "undifest-secret-key-change-in-production";
-const JWT_EXPIRES_IN = "7d";
+const JWT_EXPIRES_IN = "30d";
 
 export interface JWTPayload {
   adminId: string;
