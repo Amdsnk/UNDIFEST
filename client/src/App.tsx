@@ -19,6 +19,7 @@ const HistoryPage = lazy(() => import("@/pages/HistoryPage"));
 const PaymentPage = lazy(() => import("@/pages/PaymentPage"));
 const PaymentSuccessPage = lazy(() => import("@/pages/PaymentSuccessPage"));
 const PaymentCancelPage = lazy(() => import("@/pages/PaymentCancelPage"));
+const TebakUndianPage = lazy(() => import("@/pages/TebakUndianPage"));
 const CheckOrderPage = lazy(() => import("@/pages/CheckOrderPage"));
 const TermsPage = lazy(() => import("@/pages/TermsPage"));
 const PrivacyPage = lazy(() => import("@/pages/PrivacyPage"));
@@ -86,6 +87,7 @@ function Router() {
       {/* Payment Routes - Must be before /payment/:eventId to avoid matching */}
       <Route path="/payment/success" component={PaymentSuccessPage} />
       <Route path="/payment/cancel" component={PaymentCancelPage} />
+      <Route path="/tebak-undian/:eventId" component={TebakUndianPage} />
       <Route path="/payment/:eventId" component={PaymentPage} />
       <Route path="/cek-pesanan" component={CheckOrderPage} />
 

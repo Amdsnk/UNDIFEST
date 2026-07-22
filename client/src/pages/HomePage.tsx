@@ -54,10 +54,12 @@ export default function HomePage() {
   }, [selectedVideo, closeVideoAndGoHome]);
 
   const handlePurchase = (event: Event, undianType?: string) => {
-    const url = undianType
-      ? `/payment/${event.id}?undian=${undianType}`
-      : `/payment/${event.id}`;
-    window.location.href = url;
+    // Dual undian: go to Tebak Undian page first so user can confirm/enter nominal
+    if (undianType) {
+      window.location.href = `/tebak-undian/${event.id}?undian=${undianType}`;
+      return;
+    }
+    window.location.href = `/payment/${event.id}`;
   };
 
   const { data: banners, isLoading: bannersLoading } = useQuery<Banner[]>({

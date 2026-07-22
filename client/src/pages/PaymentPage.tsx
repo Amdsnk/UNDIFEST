@@ -44,9 +44,12 @@ export default function PaymentPage() {
   const [buyerData, setBuyerData] = useState<BuyerData | null>(null);
 
   // Dual undian / custom amount support
-  const undianType = new URLSearchParams(window.location.search).get("undian"); // "A" | "B" | null
-  const [customAmount, setCustomAmount] = useState<string>("");
-  const [customAmountConfirmed, setCustomAmountConfirmed] = useState(false);
+  const searchParams = new URLSearchParams(window.location.search);
+  const undianType = searchParams.get("undian"); // "A" | "B" | null
+  // amount pre-passed from TebakUndianPage — if present, skip the custom amount step
+  const preAmount = searchParams.get("amount");
+  const [customAmount, setCustomAmount] = useState<string>(preAmount || "");
+  const [customAmountConfirmed, setCustomAmountConfirmed] = useState(!!preAmount);
 
   const { data: event, isLoading: eventLoading } = useQuery<Event>({
     queryKey: ["/api/events", eventId],
