@@ -69,6 +69,13 @@ export default function PaymentPage() {
     } else if (event.cardTemplate === "yamahaNmax") {
       return undian02Url;
     }
+    // If dual undian and a payment-specific image was uploaded, use that first
+    if (undianType === "A" && (event as any).undianAPaymentImage) {
+      return (event as any).undianAPaymentImage;
+    }
+    if (undianType === "B" && (event as any).undianBPaymentImage) {
+      return (event as any).undianBPaymentImage;
+    }
     // Prefer bannerUndian (specific to the undian/payment page),
     // fall back to imageUrl (same as bannerHomepage) if no undian banner is set
     return (event as any).bannerUndian || event.imageUrl;

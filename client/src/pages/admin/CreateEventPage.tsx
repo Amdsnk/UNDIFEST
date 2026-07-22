@@ -46,6 +46,8 @@ export default function CreateEventPage() {
   const [bannerUndianFile, setBannerUndianFile] = useState<File | null>(null);
   const [undianAImageFile, setUndianAImageFile] = useState<File | null>(null);
   const [undianBImageFile, setUndianBImageFile] = useState<File | null>(null);
+  const [undianAPaymentImageFile, setUndianAPaymentImageFile] = useState<File | null>(null);
+  const [undianBPaymentImageFile, setUndianBPaymentImageFile] = useState<File | null>(null);
   const [ebookFile, setEbookFile] = useState<File | null>(null);
   const [scheduleType, setScheduleType] = useState<string>("none");
   const [scheduleTime, setScheduleTime] = useState<string>("19:00");
@@ -54,6 +56,8 @@ export default function CreateEventPage() {
   const undianBannerRef = useRef<HTMLInputElement>(null);
   const undianAImageRef = useRef<HTMLInputElement>(null);
   const undianBImageRef = useRef<HTMLInputElement>(null);
+  const undianAPaymentImageRef = useRef<HTMLInputElement>(null);
+  const undianBPaymentImageRef = useRef<HTMLInputElement>(null);
   const ebookFileRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormData>({
@@ -129,6 +133,12 @@ export default function CreateEventPage() {
       }
       if (undianBImageFile) {
         formData.append("undianBImage", undianBImageFile);
+      }
+      if (undianAPaymentImageFile) {
+        formData.append("undianAPaymentImage", undianAPaymentImageFile);
+      }
+      if (undianBPaymentImageFile) {
+        formData.append("undianBPaymentImage", undianBPaymentImageFile);
       }
 
       // Handle E-book file
@@ -482,6 +492,48 @@ export default function CreateEventPage() {
                             <span className="text-sm text-gray-500">
                               {undianBImageFile ? undianBImageFile.name : "Belum ada file"}
                             </span>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-purple-200 pt-3 mt-1">
+                          <p className="text-xs font-semibold text-purple-800 mb-2">🖼️ Gambar Halaman Payment (berbeda dari gambar depan)</p>
+
+                          <div className="space-y-1 mb-3">
+                            <Label className="text-xs font-medium text-purple-700">Gambar Payment Undian A</Label>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <input
+                                ref={undianAPaymentImageRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => { const f = e.target.files?.[0]; if (f) setUndianAPaymentImageFile(f); }}
+                                className="hidden"
+                              />
+                              <Button type="button" onClick={() => undianAPaymentImageRef.current?.click()} className="bg-purple-500 hover:bg-purple-600 text-white text-xs">
+                                Pilih Gambar Payment A
+                              </Button>
+                              <span className="text-sm text-gray-500">
+                                {undianAPaymentImageFile ? undianAPaymentImageFile.name : "Belum ada file"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-purple-700">Gambar Payment Undian B</Label>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <input
+                                ref={undianBPaymentImageRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => { const f = e.target.files?.[0]; if (f) setUndianBPaymentImageFile(f); }}
+                                className="hidden"
+                              />
+                              <Button type="button" onClick={() => undianBPaymentImageRef.current?.click()} className="bg-pink-500 hover:bg-pink-600 text-white text-xs">
+                                Pilih Gambar Payment B
+                              </Button>
+                              <span className="text-sm text-gray-500">
+                                {undianBPaymentImageFile ? undianBPaymentImageFile.name : "Belum ada file"}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>

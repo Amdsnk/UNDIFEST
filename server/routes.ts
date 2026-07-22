@@ -185,6 +185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     { name: "ebookFile", maxCount: 1 },
     { name: "undianAImage", maxCount: 1 },
     { name: "undianBImage", maxCount: 1 },
+    { name: "undianAPaymentImage", maxCount: 1 },
+    { name: "undianBPaymentImage", maxCount: 1 },
   ]), async (req, res) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -195,6 +197,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let ebookFileData = "";
       let undianAImageUrl = "";
       let undianBImageUrl = "";
+      let undianAPaymentImageUrl = "";
+      let undianBPaymentImageUrl = "";
 
       if (files?.bannerHomepage?.[0]) {
         const file = files.bannerHomepage[0];
@@ -226,6 +230,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         undianBImageUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
         fs.unlinkSync(file.path);
       }
+      if (files?.undianAPaymentImage?.[0]) {
+        const file = files.undianAPaymentImage[0];
+        const fileBuffer = fs.readFileSync(file.path);
+        undianAPaymentImageUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(file.path);
+      }
+      if (files?.undianBPaymentImage?.[0]) {
+        const file = files.undianBPaymentImage[0];
+        const fileBuffer = fs.readFileSync(file.path);
+        undianBPaymentImageUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(file.path);
+      }
 
       const data = {
         name: req.body.name,
@@ -253,6 +269,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         undianBLabel: req.body.undianBLabel || "Undian B",
         undianAImage: undianAImageUrl || undefined,
         undianBImage: undianBImageUrl || undefined,
+        undianAPaymentImage: undianAPaymentImageUrl || undefined,
+        undianBPaymentImage: undianBPaymentImageUrl || undefined,
         allowCustomAmount: req.body.allowCustomAmount === "true",
       };
 
@@ -274,6 +292,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     { name: "ebookFile", maxCount: 1 },
     { name: "undianAImage", maxCount: 1 },
     { name: "undianBImage", maxCount: 1 },
+    { name: "undianAPaymentImage", maxCount: 1 },
+    { name: "undianBPaymentImage", maxCount: 1 },
   ]), async (req, res) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -322,6 +342,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const file = files.undianBImage[0];
         const fileBuffer = fs.readFileSync(file.path);
         data.undianBImage = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(file.path);
+      }
+      if (files?.undianAPaymentImage?.[0]) {
+        const file = files.undianAPaymentImage[0];
+        const fileBuffer = fs.readFileSync(file.path);
+        data.undianAPaymentImage = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(file.path);
+      }
+      if (files?.undianBPaymentImage?.[0]) {
+        const file = files.undianBPaymentImage[0];
+        const fileBuffer = fs.readFileSync(file.path);
+        data.undianBPaymentImage = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
         fs.unlinkSync(file.path);
       }
 
