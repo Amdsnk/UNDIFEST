@@ -205,27 +205,27 @@ export default function HomePage() {
                         decoding="async"
                       />
                       {/* Choice cards overlaid on the purple content area */}
-                      <div className="absolute left-[3%] right-[3%] bottom-[4%] top-[34%] flex gap-3">
+                      <div className="absolute left-[3%] right-[3%] bottom-[5%] top-[34%] flex gap-3 items-stretch overflow-hidden">
                         <button
                           onClick={() => handlePurchase(event, "A")}
-                          className="flex-1 active:scale-[0.97] transition-transform"
+                          className="flex-1 active:scale-[0.97] transition-transform min-w-0"
                         >
                           <img
                             src={choice1Url}
                             alt={ev.undianALabel || "Besar"}
-                            className="w-full h-auto rounded-xl"
+                            className="w-full h-full object-contain rounded-xl"
                             loading="lazy"
                             decoding="async"
                           />
                         </button>
                         <button
                           onClick={() => handlePurchase(event, "B")}
-                          className="flex-1 active:scale-[0.97] transition-transform"
+                          className="flex-1 active:scale-[0.97] transition-transform min-w-0"
                         >
                           <img
                             src={choice2Url}
                             alt={ev.undianBLabel || "Kecil"}
-                            className="w-full h-auto rounded-xl"
+                            className="w-full h-full object-contain rounded-xl"
                             loading="lazy"
                             decoding="async"
                           />
