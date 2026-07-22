@@ -31,6 +31,10 @@ const formSchema = z.object({
   startDate: z.string().min(1, "Jadwal mulai wajib diisi"),
   endDate: z.string().min(1, "Jadwal selesai wajib diisi"),
   isRefundable: z.boolean().default(false),
+  hasMultipleUndian: z.boolean().default(false),
+  undianALabel: z.string().optional(),
+  undianBLabel: z.string().optional(),
+  allowCustomAmount: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -40,12 +44,16 @@ export default function CreateEventPage() {
   const { toast } = useToast();
   const [bannerHomepageFile, setBannerHomepageFile] = useState<File | null>(null);
   const [bannerUndianFile, setBannerUndianFile] = useState<File | null>(null);
+  const [undianAImageFile, setUndianAImageFile] = useState<File | null>(null);
+  const [undianBImageFile, setUndianBImageFile] = useState<File | null>(null);
   const [ebookFile, setEbookFile] = useState<File | null>(null);
   const [scheduleType, setScheduleType] = useState<string>("none");
   const [scheduleTime, setScheduleTime] = useState<string>("19:00");
   const [scheduleDay, setScheduleDay] = useState<string>("1");
   const homepageBannerRef = useRef<HTMLInputElement>(null);
   const undianBannerRef = useRef<HTMLInputElement>(null);
+  const undianAImageRef = useRef<HTMLInputElement>(null);
+  const undianBImageRef = useRef<HTMLInputElement>(null);
   const ebookFileRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormData>({
@@ -60,10 +68,16 @@ export default function CreateEventPage() {
       startDate: "",
       endDate: "",
       isRefundable: false,
+      hasMultipleUndian: false,
+      undianALabel: "Undian A",
+      undianBLabel: "Undian B",
+      allowCustomAmount: false,
     },
   });
 
   const isRefundable = watch("isRefundable");
+  const hasMultipleUndian = watch("hasMultipleUndian");
+  const allowCustomAmount = watch("allowCustomAmount");
 
   const handleHomepageBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -91,6 +105,10 @@ export default function CreateEventPage() {
       formData.append("startDate", data.startDate);
       formData.append("endDate", data.endDate);
       formData.append("isRefundable", data.isRefundable.toString());
+      formData.append("hasMultipleUndian", data.hasMultipleUndian.toString());
+      formData.append("undianALabel", data.undianALabel || "Undian A");
+      formData.append("undianBLabel", data.undianBLabel || "Undian B");
+      formData.append("allowCustomAmount", data.allowCustomAmount.toString());
       formData.append("scheduleType", scheduleType);
       if (scheduleType !== "none") {
         formData.append("scheduleTime", scheduleTime);
@@ -105,6 +123,12 @@ export default function CreateEventPage() {
       }
       if (bannerUndianFile) {
         formData.append("bannerUndian", bannerUndianFile);
+      }
+      if (undianAImageFile) {
+        formData.append("undianAImage", undianAImageFile);
+      }
+      if (undianBImageFile) {
+        formData.append("undianBImage", undianBImageFile);
       }
 
       // Handle E-book file
@@ -384,6 +408,94 @@ export default function CreateEventPage() {
                           <Input type="number" min={1} max={28} value={scheduleDay} onChange={e => setScheduleDay(e.target.value)} className="w-full" />
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Dual Undian Settings */}
+                  <div className="space-y-4 border-2 border-purple-200 rounded-xl p-4 bg-purple-50">
+                    <p className="text-sm font-bold text-purple-800">Pengaturan Dual Undian</p>
+
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={hasMultipleUndian}
+                        onCheckedChange={(checked) => setValue("hasMultipleUndian", checked)}
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                      <Label className="text-sm">
+                        {hasMultipleUndian ? "Aktif: 2 Undian per Event" : "Nonaktif: 1 Undian per Event"}
+                      </Label>
+                    </div>
+
+                    {hasMultipleUndian && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-purple-700">Label Undian A</Label>
+                            <Input
+                              {...register("undianALabel")}
+                              placeholder="Undian A"
+                              className="border-purple-300 focus:border-purple-600"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-purple-700">Label Undian B</Label>
+                            <Input
+                              {...register("undianBLabel")}
+                              placeholder="Undian B"
+                              className="border-purple-300 focus:border-purple-600"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-purple-700">Gambar Kartu Undian A</Label>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <input
+                              ref={undianAImageRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => { const f = e.target.files?.[0]; if (f) setUndianAImageFile(f); }}
+                              className="hidden"
+                            />
+                            <Button type="button" onClick={() => undianAImageRef.current?.click()} className="bg-purple-500 hover:bg-purple-600 text-white text-xs">
+                              Pilih Gambar A
+                            </Button>
+                            <span className="text-sm text-gray-500">
+                              {undianAImageFile ? undianAImageFile.name : "Belum ada file"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-purple-700">Gambar Kartu Undian B</Label>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <input
+                              ref={undianBImageRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => { const f = e.target.files?.[0]; if (f) setUndianBImageFile(f); }}
+                              className="hidden"
+                            />
+                            <Button type="button" onClick={() => undianBImageRef.current?.click()} className="bg-pink-500 hover:bg-pink-600 text-white text-xs">
+                              Pilih Gambar B
+                            </Button>
+                            <span className="text-sm text-gray-500">
+                              {undianBImageFile ? undianBImageFile.name : "Belum ada file"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={allowCustomAmount}
+                        onCheckedChange={(checked) => setValue("allowCustomAmount", checked)}
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                      <Label className="text-sm">
+                        {allowCustomAmount ? "Aktif: Nominal custom (≥ harga tiket)" : "Nonaktif: Nominal tetap sesuai harga tiket"}
+                      </Label>
                     </div>
                   </div>
 
