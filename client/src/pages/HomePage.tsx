@@ -10,6 +10,9 @@ import logoUrl from "@assets/logo undifest_1763476451738.png";
 import banner01Url from "@assets/banner01_1763489481905.jpg";
 import undian01Url from "@assets/undian01_1763489504866.png";
 import undian02Url from "@assets/undian02_1763489504867.png";
+import prizePanelUrl from "@assets/prize-panel_1784728157091.webp";
+import choice1Url from "@assets/choice1_1784728157093.webp";
+import choice2Url from "@assets/choice2_1784728157093.webp";
 import bankUrl from "@assets/bank_1763489481904.png";
 import kemensosLogoUrl from "@assets/logo kemensos_1763490013360.png";
 import thumbTestimoniUrl from "@assets/thumb-testimoni_1763489504865.png";
@@ -171,76 +174,120 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Events Section - Dynamic rendering with cardTemplate support */}
+        {/* Events Section - grouped by schedule type */}
         <div className="px-2 md:px-4 py-6 bg-[#16202a]">
-          <h2 className="text-xl font-bold text-white mb-4">Produk Undifest</h2>
-          <div className="space-y-4">
-            {eventsLoading ? (
-              <>
-                <div className="h-44 bg-gray-800/50 rounded-xl animate-pulse" />
-                <div className="h-44 bg-gray-800/50 rounded-xl animate-pulse" />
-              </>
-            ) : activeEvents.length > 0 ? (
-              activeEvents.map((event) => {
+          {eventsLoading ? (
+            <div className="space-y-4">
+              <div className="h-44 bg-gray-800/50 rounded-xl animate-pulse" />
+              <div className="h-44 bg-gray-800/50 rounded-xl animate-pulse" />
+            </div>
+          ) : activeEvents.length > 0 ? (
+            (() => {
+              const dailyEvents = activeEvents.filter(e => e.scheduleType === "daily");
+              const weeklyEvents = activeEvents.filter(e => e.scheduleType === "weekly");
+              const monthlyEvents = activeEvents.filter(e => e.scheduleType === "monthly");
+              const otherEvents = activeEvents.filter(e => !["daily", "weekly", "monthly"].includes(e.scheduleType ?? ""));
+
+              const renderEventCard = (event: Event) => {
                 const cardImageUrl = getEventCardImage(event);
                 const ev = event as any;
 
-                return (
-                  <div key={event.id} data-testid={`event-card-${event.id}`}>
-                    {ev.hasMultipleUndian ? (
-                      /* Dual undian layout — two separate image cards */
-                      <div className="flex gap-2">
-                        {/* Undian A card */}
+                if (ev.hasMultipleUndian) {
+                  /* TEBAK UNDIAN panel — daily dual-option design */
+                  return (
+                    <div key={event.id} data-testid={`event-card-${event.id}`} className="relative">
+                      {/* Prize panel background image */}
+                      <img
+                        src={prizePanelUrl}
+                        alt="Tebak Undian"
+                        className="w-full h-auto block"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      {/* Choice cards overlaid on the purple content area */}
+                      <div className="absolute left-[3%] right-[3%] bottom-[4%] top-[34%] flex gap-3">
                         <button
                           onClick={() => handlePurchase(event, "A")}
-                          className="flex-1 block rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
+                          className="flex-1 active:scale-[0.97] transition-transform"
                         >
                           <img
-                            src={ev.undianAImage || cardImageUrl}
-                            alt={ev.undianALabel || "Undian A"}
-                            className="w-full h-auto"
+                            src={choice1Url}
+                            alt={ev.undianALabel || "Besar"}
+                            className="w-full h-auto rounded-xl"
                             loading="lazy"
                             decoding="async"
                           />
                         </button>
-                        {/* Undian B card */}
                         <button
                           onClick={() => handlePurchase(event, "B")}
-                          className="flex-1 block rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
+                          className="flex-1 active:scale-[0.97] transition-transform"
                         >
                           <img
-                            src={ev.undianBImage || cardImageUrl}
-                            alt={ev.undianBLabel || "Undian B"}
-                            className="w-full h-auto"
+                            src={choice2Url}
+                            alt={ev.undianBLabel || "Kecil"}
+                            className="w-full h-auto rounded-xl"
                             loading="lazy"
                             decoding="async"
                           />
                         </button>
                       </div>
-                    ) : (
-                      /* Single undian — original card button */
-                      <button
-                        onClick={() => handlePurchase(event)}
-                        className="w-full block rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
-                      >
-                        <img
-                          src={cardImageUrl}
-                          alt={event.name}
-                          className="w-full h-auto"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </button>
-                    )}
+                    </div>
+                  );
+                }
+
+                /* Standard single-undian card */
+                return (
+                  <div key={event.id} data-testid={`event-card-${event.id}`}>
+                    <button
+                      onClick={() => handlePurchase(event)}
+                      className="w-full block rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
+                    >
+                      <img
+                        src={cardImageUrl}
+                        alt={event.name}
+                        className="w-full h-auto"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </button>
                   </div>
                 );
-              })
-            ) : (
-              <div className="text-center text-gray-400 py-8">
-                Belum ada undian aktif
-              </div>
-            )}
-          </div>
+              };
+
+              return (
+                <div className="space-y-6">
+                  {dailyEvents.length > 0 && (
+                    <div>
+                      <h2 className="text-xl font-bold text-white mb-3">Undian Harian</h2>
+                      <div className="space-y-4">{dailyEvents.map(renderEventCard)}</div>
+                    </div>
+                  )}
+                  {weeklyEvents.length > 0 && (
+                    <div>
+                      <h2 className="text-xl font-bold text-white mb-3">Undian Mingguan</h2>
+                      <div className="space-y-4">{weeklyEvents.map(renderEventCard)}</div>
+                    </div>
+                  )}
+                  {monthlyEvents.length > 0 && (
+                    <div>
+                      <h2 className="text-xl font-bold text-white mb-3">Undian Bulanan</h2>
+                      <div className="space-y-4">{monthlyEvents.map(renderEventCard)}</div>
+                    </div>
+                  )}
+                  {otherEvents.length > 0 && (
+                    <div>
+                      <h2 className="text-xl font-bold text-white mb-3">Produk Undifest</h2>
+                      <div className="space-y-4">{otherEvents.map(renderEventCard)}</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
+          ) : (
+            <div className="text-center text-gray-400 py-8">
+              Belum ada undian aktif
+            </div>
+          )}
         </div>
 
         {/* Undifest Video */}
