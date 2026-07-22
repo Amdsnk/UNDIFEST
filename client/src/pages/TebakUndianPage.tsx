@@ -23,9 +23,10 @@ export default function TebakUndianPage() {
   const label = undianType === "A"
     ? (ev?.undianALabel || "Undian A")
     : (ev?.undianBLabel || "Undian B");
+  // Prefer payment-specific image; fallback to front card image
   const image = undianType === "A"
-    ? ev?.undianAImage
-    : ev?.undianBImage;
+    ? (ev?.undianAPaymentImage || ev?.undianAImage)
+    : (ev?.undianBPaymentImage || ev?.undianBImage);
   const minPrice = event?.price ?? 0;
 
   const handleLanjutkan = () => {
