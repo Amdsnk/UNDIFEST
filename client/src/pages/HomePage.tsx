@@ -195,7 +195,7 @@ export default function HomePage() {
                 if (ev.hasMultipleUndian) {
                   /* TEBAK UNDIAN panel — daily dual-option design */
                   return (
-                    <div key={event.id} data-testid={`event-card-${event.id}`} className="relative">
+                    <div key={event.id} data-testid={`event-card-${event.id}`} className="relative overflow-hidden rounded-xl">
                       {/* Prize panel background image */}
                       <img
                         src={prizePanelUrl}
@@ -204,28 +204,28 @@ export default function HomePage() {
                         loading="lazy"
                         decoding="async"
                       />
-                      {/* Choice cards overlaid on the purple content area */}
-                      <div className="absolute left-[3%] right-[3%] bottom-[5%] top-[34%] flex gap-3 items-stretch overflow-hidden">
+                      {/* Choice cards overlaid on the purple content area — kept inside box */}
+                      <div className="absolute left-[4%] right-[4%] bottom-[8%] top-[36%] flex gap-2 items-center">
                         <button
                           onClick={() => handlePurchase(event, "A")}
-                          className="flex-1 active:scale-[0.97] transition-transform min-w-0"
+                          className="flex-1 active:scale-[0.97] transition-transform min-w-0 h-full"
                         >
                           <img
                             src={choice1Url}
                             alt={ev.undianALabel || "Besar"}
-                            className="w-full h-full object-contain rounded-xl"
+                            className="w-full h-full object-contain"
                             loading="lazy"
                             decoding="async"
                           />
                         </button>
                         <button
                           onClick={() => handlePurchase(event, "B")}
-                          className="flex-1 active:scale-[0.97] transition-transform min-w-0"
+                          className="flex-1 active:scale-[0.97] transition-transform min-w-0 h-full"
                         >
                           <img
                             src={choice2Url}
                             alt={ev.undianBLabel || "Kecil"}
-                            className="w-full h-full object-contain rounded-xl"
+                            className="w-full h-full object-contain"
                             loading="lazy"
                             decoding="async"
                           />
