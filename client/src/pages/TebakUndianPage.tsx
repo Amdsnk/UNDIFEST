@@ -94,7 +94,7 @@ export default function TebakUndianPage() {
                     <img
                       src={image}
                       alt={label}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     /* Placeholder if no image uploaded */
@@ -102,20 +102,6 @@ export default function TebakUndianPage() {
                       <span className="text-6xl">🎁</span>
                     </div>
                   )}
-
-                  {/* Label badge — top left */}
-                  <div className="absolute top-3 left-3">
-                    <span className="bg-green-400 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow">
-                      {label}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Bottom label bar */}
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 py-3 px-4 text-center">
-                  <span className="text-white text-base font-extrabold tracking-widest">
-                    {label}
-                  </span>
                 </div>
               </div>
             </div>
