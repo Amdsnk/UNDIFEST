@@ -87,22 +87,19 @@ export default function TebakUndianPage() {
           <div className="flex justify-center">
             <div className="relative w-56">
               {/* Card container */}
-              <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-                {/* Image area */}
-                <div className="relative bg-gradient-to-br from-orange-100 to-orange-200 aspect-[3/3.2]">
-                  {image ? (
-                    <img
-                      src={image}
-                      alt={label}
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    /* Placeholder if no image uploaded */
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-200 to-pink-200">
-                      <span className="text-6xl">🎁</span>
-                    </div>
-                  )}
-                </div>
+              <div className="aspect-[3/3.2]">
+                {image ? (
+                  <img
+                    src={image}
+                    alt={label}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  /* Placeholder if no image uploaded */
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-6xl">🎁</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
