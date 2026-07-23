@@ -14,7 +14,7 @@ export function MobileHeader() {
             </div>
           </Link>
           <div className="text-right">
-            <div className="text-sm font-semibold text-white">PT. Undian Festival Indonesia</div>
+            <div className="text-sm font-semibold text-white">PT UNDIAN FESTIVAL INDONESIA</div>
           </div>
         </div>
       </div>
