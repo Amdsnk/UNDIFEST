@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 
 const formSchema = z.object({
   name: z.string().min(1, "Nama event wajib diisi"),
-  price: z.number().int().min(0, "Harga tiket tidak boleh negatif"),
+  price: z.number().int().min(10000, "Harga tiket minimal Rp 10.000"),
   ticketCount: z.number().int().positive("Jumlah tiket harus lebih dari 0"),
   hadiah: z.number().int().positive("Hadiah harus lebih dari 0"),
   category: z.string().min(1, "Kategori wajib dipilih"),
