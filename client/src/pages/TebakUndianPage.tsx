@@ -161,7 +161,7 @@ export default function TebakUndianPage() {
           </div>
 
           {/* Syarat & Ketentuan */}
-          <div className="bg-[#1a2332] rounded-2xl p-5 space-y-4">
+          <div className="bg-[#1a2332] rounded-2xl p-5 space-y-4 border border-gray-600">
             <h3 className="text-white text-lg font-bold">Syarat &amp; Ketentuan</h3>
 
             <div className="space-y-1">
