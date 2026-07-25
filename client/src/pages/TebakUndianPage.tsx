@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import type { Event } from "@shared/schema";
 
+const PLATFORM_MIN = 10_000;
+
 export default function TebakUndianPage() {
   const [, params] = useRoute("/tebak-undian/:eventId");
   const [, navigate] = useLocation();
@@ -12,7 +14,8 @@ export default function TebakUndianPage() {
   const eventId = params?.eventId;
 
   const undianType = new URLSearchParams(window.location.search).get("undian"); // "A" | "B"
-  const [amount, setAmount] = useState<string>("");
+  const [rawAmount, setRawAmount] = useState<string>("");
+  const [displayAmount, setDisplayAmount] = useState<string>("");
 
   const { data: event, isLoading } = useQuery<Event>({
     queryKey: ["/api/events", eventId],
@@ -23,14 +26,24 @@ export default function TebakUndianPage() {
   const label = undianType === "A"
     ? (ev?.undianALabel || "Undian A")
     : (ev?.undianBLabel || "Undian B");
-  // Prefer payment-specific image; fallback to front card image
   const image = undianType === "A"
     ? (ev?.undianAPaymentImage || ev?.undianAImage)
     : (ev?.undianBPaymentImage || ev?.undianBImage);
-  const minPrice = event?.price ?? 0;
+  const eventMin = event?.price ?? 0;
+  const minPrice = Math.max(eventMin, PLATFORM_MIN);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\./g, "").replace(/[^0-9]/g, "");
+    setRawAmount(raw);
+    if (raw) {
+      setDisplayAmount(parseInt(raw, 10).toLocaleString("id-ID"));
+    } else {
+      setDisplayAmount("");
+    }
+  };
 
   const handleLanjutkan = () => {
-    const val = parseInt(amount || "0");
+    const val = parseInt(rawAmount || "0", 10);
     if (!event) return;
 
     if (event.allowCustomAmount) {
@@ -83,10 +96,9 @@ export default function TebakUndianPage() {
           {/* Heading */}
           <h1 className="text-white text-xl font-bold">Tebak Undian</h1>
 
-          {/* Undian Card */}
+          {/* Undian Card — slightly smaller so S&K fits below */}
           <div className="flex justify-center">
-            <div className="relative w-56">
-              {/* Card container */}
+            <div className="relative w-40">
               <div className="aspect-[3/3.2]">
                 {image ? (
                   <img
@@ -95,7 +107,6 @@ export default function TebakUndianPage() {
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  /* Placeholder if no image uploaded */
                   <div className="w-full h-full flex items-center justify-center">
                     <span className="text-6xl">🎁</span>
                   </div>
@@ -117,16 +128,16 @@ export default function TebakUndianPage() {
                   Rp
                 </span>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   min={minPrice}
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder={minPrice.toString()}
+                  value={displayAmount}
+                  onChange={handleAmountChange}
+                  placeholder={minPrice.toLocaleString("id-ID")}
                   className="w-full pl-12 pr-4 py-3 bg-[#0d1520] border border-gray-600 rounded-xl text-white text-lg font-semibold focus:outline-none focus:border-purple-500"
                 />
               </div>
             ) : (
-              /* Fixed price — show read-only */
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 font-semibold">
                   Rp
@@ -147,6 +158,34 @@ export default function TebakUndianPage() {
             >
               Lanjutkan
             </button>
+          </div>
+
+          {/* Syarat & Ketentuan */}
+          <div className="bg-[#1a2332] rounded-2xl p-5 space-y-4">
+            <h3 className="text-white text-lg font-bold">Syarat &amp; Ketentuan</h3>
+
+            <div className="space-y-1">
+              <p className="text-gray-400 text-sm">Hadiah</p>
+              <p className="text-white text-sm">Sesuai nominal partisipasi yang dipilih.</p>
+              <p className="text-white text-sm mt-1">Contoh:</p>
+              <p className="text-white text-sm">• Pasang Rp 100.000 → Hadiah Rp 100.000</p>
+              <p className="text-white text-sm">• Pasang Rp 1.000.000 → Hadiah Rp 1.000.000</p>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-gray-400 text-sm">Harga</p>
+              <p className="text-white text-sm">Minimal Rp 10.000</p>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-gray-400 text-sm">Refund</p>
+              <p className="text-white text-sm">Tidak</p>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-gray-400 text-sm">Pengumuman Pemenang</p>
+              <p className="text-white text-sm">Setiap hari pukul 20.00 WIB.</p>
+            </div>
           </div>
         </div>
       </div>
