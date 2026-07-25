@@ -295,6 +295,7 @@ export default function EditEventPage() {
                         placeholder="50.000"
                         className="mt-1"
                       />
+                      <p className="text-gray-400 text-xs mt-1">Minimal Rp 10.000</p>
                       {errors.price && (
                         <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
                       )}
