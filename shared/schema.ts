@@ -121,6 +121,7 @@ export const manualWinnerHistory = pgTable("manual_winner_history", {
   displayName: varchar("display_name", { length: 255 }),
   amount: varchar("amount", { length: 500 }).notNull(),
   eventName: text("event_name").notNull(),
+  hasil: varchar("hasil", { length: 255 }),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

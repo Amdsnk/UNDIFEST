@@ -88,8 +88,16 @@ export default function WinnersPage() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadFileName, setUploadFileName] = useState("");
   const [manualForm, setManualForm] = useState({
-    winDate: "", phoneNumber: "", displayName: "", amount: "", eventName: "",
+    winDate: "", phoneNumber: "", displayName: "", amount: "", eventName: "", hasil: "",
   });
+  const [hasilMode, setHasilMode] = useState<"generate" | "custom">("generate");
+
+  const generateHasilCode = () => {
+    const chars = "ABCDEF0123456789";
+    let code = "UND-";
+    for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  };
 
   const { data: manualHistory, refetch: refetchManual } = useQuery<ManualWinnerHistory[]>({
     queryKey: ["/api/manual-winner-history"],
@@ -293,7 +301,8 @@ export default function WinnersPage() {
 
   const openAddManual = () => {
     setEditingManual(null);
-    setManualForm({ winDate: new Date().toISOString().slice(0, 10), phoneNumber: "", displayName: "", amount: "", eventName: "" });
+    setManualForm({ winDate: new Date().toISOString().slice(0, 10), phoneNumber: "", displayName: "", amount: "", eventName: "", hasil: "" });
+    setHasilMode("generate");
     setManualDialogOpen(true);
   };
 
@@ -305,15 +314,21 @@ export default function WinnersPage() {
       displayName: entry.displayName || "",
       amount: String(entry.amount),
       eventName: entry.eventName,
+      hasil: (entry as any).hasil || "",
     });
+    setHasilMode((entry as any).hasil ? "custom" : "generate");
     setManualDialogOpen(true);
   };
 
   const submitManualForm = () => {
+    const formData = {
+      ...manualForm,
+      hasil: hasilMode === "generate" ? generateHasilCode() : manualForm.hasil,
+    };
     if (editingManual) {
-      updateManualMutation.mutate({ id: editingManual.id, data: manualForm });
+      updateManualMutation.mutate({ id: editingManual.id, data: formData });
     } else {
-      createManualMutation.mutate(manualForm);
+      createManualMutation.mutate(formData);
     }
   };
 
@@ -820,6 +835,7 @@ export default function WinnersPage() {
                           <TableRow>
                             <TableHead>Tanggal</TableHead>
                             <TableHead>No. Telepon</TableHead>
+                            <TableHead>Hasil</TableHead>
                             <TableHead>Hadiah</TableHead>
                             <TableHead>Event</TableHead>
                             <TableHead>Aksi</TableHead>
@@ -830,6 +846,7 @@ export default function WinnersPage() {
                             <TableRow key={entry.id}>
                               <TableCell>{new Date(entry.winDate).toLocaleDateString("id-ID")}</TableCell>
                               <TableCell>{entry.phoneNumber}</TableCell>
+                              <TableCell className="font-mono text-xs text-yellow-600">{(entry as any).hasil ?? `UND-${entry.id.slice(0, 8).toUpperCase()}`}</TableCell>
                               <TableCell>{entry.amount}</TableCell>
                               <TableCell>{entry.eventName}</TableCell>
                               <TableCell>
@@ -877,6 +894,36 @@ export default function WinnersPage() {
             <div>
               <Label>Nama Event</Label>
               <Input placeholder="Nama event" value={manualForm.eventName} onChange={e => setManualForm(f => ({ ...f, eventName: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Hasil</Label>
+              <div className="flex gap-2 mt-1 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setHasilMode("generate")}
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${hasilMode === "generate" ? "bg-yellow-400 text-black border-yellow-400" : "bg-transparent text-gray-500 border-gray-300 hover:border-yellow-400"}`}
+                >
+                  Generate Kode
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHasilMode("custom")}
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${hasilMode === "custom" ? "bg-yellow-400 text-black border-yellow-400" : "bg-transparent text-gray-500 border-gray-300 hover:border-yellow-400"}`}
+                >
+                  Ketik Sendiri
+                </button>
+              </div>
+              {hasilMode === "generate" ? (
+                <p className="text-xs text-gray-400 mt-1">Kode UND-XXXXXXXX akan di-generate otomatis saat disimpan.</p>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setManualForm(f => ({ ...f, hasil: "BESAR" }))} className={`px-3 py-1 rounded text-xs font-bold border ${manualForm.hasil === "BESAR" ? "bg-yellow-400 text-black border-yellow-400" : "border-gray-300 text-gray-600 hover:border-yellow-400"}`}>BESAR</button>
+                    <button type="button" onClick={() => setManualForm(f => ({ ...f, hasil: "KECIL" }))} className={`px-3 py-1 rounded text-xs font-bold border ${manualForm.hasil === "KECIL" ? "bg-yellow-400 text-black border-yellow-400" : "border-gray-300 text-gray-600 hover:border-yellow-400"}`}>KECIL</button>
+                  </div>
+                  <Input placeholder="atau ketik sendiri, contoh: BESAR / UND-ABC123" value={manualForm.hasil} onChange={e => setManualForm(f => ({ ...f, hasil: e.target.value }))} />
+                </div>
+              )}
             </div>
             <div className="flex gap-2 pt-2">
               <Button onClick={submitManualForm} disabled={createManualMutation.isPending || updateManualMutation.isPending} className="flex-1 bg-green-600 hover:bg-green-700">

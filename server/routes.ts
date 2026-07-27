@@ -3468,6 +3468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         displayName: req.body.displayName || null,
         amount: String(req.body.amount),
         eventName: req.body.eventName,
+        hasil: req.body.hasil || null,
         displayOrder: parseInt(req.body.displayOrder ?? "0"),
       };
       const record = await storage.createManualWinnerHistory(entry);
@@ -3486,6 +3487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.displayName !== undefined) updateData.displayName = req.body.displayName || null;
       if (req.body.amount !== undefined) updateData.amount = String(req.body.amount);
       if (req.body.eventName) updateData.eventName = req.body.eventName;
+      if (req.body.hasil !== undefined) updateData.hasil = req.body.hasil || null;
       if (req.body.displayOrder !== undefined) updateData.displayOrder = parseInt(req.body.displayOrder);
       const record = await storage.updateManualWinnerHistory(req.params.id, updateData);
       if (!record) return res.status(404).json({ error: "Entry not found" });

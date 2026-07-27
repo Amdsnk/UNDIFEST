@@ -16,8 +16,8 @@ export default function HistoryPage() {
     queryKey: ["/api/manual-winner-history"],
   });
 
-  const toNomorUndian = (id: string) =>
-    `UND-${id.slice(0, 8).toUpperCase()}`;
+  const toHasil = (entry: ManualWinnerHistory) =>
+    entry.hasil ?? `UND-${entry.id.slice(0, 8).toUpperCase()}`;
 
   const totalPages = Math.ceil((history?.length ?? 0) / ITEMS_PER_PAGE);
   const paginatedHistory = history?.slice(
@@ -53,7 +53,7 @@ export default function HistoryPage() {
             <div className="bg-[#FFB800] p-3">
               <div className="grid grid-cols-4 gap-1 md:gap-2 text-black font-bold text-[10px] md:text-sm">
                 <div>Tanggal</div>
-                <div>No. Undian</div>
+                <div>Hasil</div>
                 <div>Hadiah</div>
                 <div>Event</div>
               </div>
@@ -78,7 +78,7 @@ export default function HistoryPage() {
                       })}
                     </div>
                     <div className="font-mono text-[9px] md:text-xs break-all text-[#FFB800]">
-                      {toNomorUndian(entry.id)}
+                      {toHasil(entry)}
                     </div>
                     <div className="font-bold text-[9px] md:text-xs leading-tight">
                       {entry.amount}
