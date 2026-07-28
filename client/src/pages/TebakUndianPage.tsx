@@ -3,7 +3,7 @@ import { useRoute, useLocation } from "wouter";
 import { MobileHeader } from "@/components/MobileHeader";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import type { Event } from "@shared/schema";
+import type { Event, TermsCondition } from "@shared/schema";
 
 const PLATFORM_MIN = 10_000;
 
@@ -19,6 +19,11 @@ export default function TebakUndianPage() {
 
   const { data: event, isLoading } = useQuery<Event>({
     queryKey: ["/api/events", eventId],
+    enabled: !!eventId,
+  });
+
+  const { data: terms = [] } = useQuery<TermsCondition[]>({
+    queryKey: [`/api/events/${eventId}/terms`],
     enabled: !!eventId,
   });
 
@@ -164,28 +169,41 @@ export default function TebakUndianPage() {
           <div className="bg-[#1a2332] rounded-2xl p-5 space-y-4 border border-gray-600">
             <h3 className="text-white text-lg font-bold">Syarat &amp; Ketentuan</h3>
 
-            <div className="space-y-1">
-              <p className="text-gray-400 text-sm">Hadiah</p>
-              <p className="text-white text-sm">Sesuai nominal partisipasi yang dipilih.</p>
-              <p className="text-white text-sm mt-1">Contoh:</p>
-              <p className="text-white text-sm">• Pasang Rp 100.000 → Hadiah Rp 100.000</p>
-              <p className="text-white text-sm">• Pasang Rp 1.000.000 → Hadiah Rp 1.000.000</p>
-            </div>
+            {terms.length > 0 ? (
+              // Dynamic terms from database (editable via admin panel)
+              [...terms].sort((a, b) => a.order - b.order).map((term) => (
+                <div key={term.id} className="space-y-1">
+                  <p className="text-gray-400 text-sm">{term.title}</p>
+                  <p className="text-white text-sm whitespace-pre-line">{term.description}</p>
+                </div>
+              ))
+            ) : (
+              // Default fallback content
+              <>
+                <div className="space-y-1">
+                  <p className="text-gray-400 text-sm">Hadiah</p>
+                  <p className="text-white text-sm">Sesuai nominal partisipasi yang dipilih.</p>
+                  <p className="text-white text-sm mt-1">Contoh:</p>
+                  <p className="text-white text-sm">• Pasang Rp 100.000 → Hadiah Rp 100.000</p>
+                  <p className="text-white text-sm">• Pasang Rp 1.000.000 → Hadiah Rp 1.000.000</p>
+                </div>
 
-            <div className="space-y-1">
-              <p className="text-gray-400 text-sm">Harga</p>
-              <p className="text-white text-sm">Minimal Rp 10.000</p>
-            </div>
+                <div className="space-y-1">
+                  <p className="text-gray-400 text-sm">Harga</p>
+                  <p className="text-white text-sm">Minimal Rp 10.000</p>
+                </div>
 
-            <div className="space-y-1">
-              <p className="text-gray-400 text-sm">Refund</p>
-              <p className="text-white text-sm">Tidak</p>
-            </div>
+                <div className="space-y-1">
+                  <p className="text-gray-400 text-sm">Refund</p>
+                  <p className="text-white text-sm">Tidak</p>
+                </div>
 
-            <div className="space-y-1">
-              <p className="text-gray-400 text-sm">Pengumuman Pemenang</p>
-              <p className="text-white text-sm">Setiap hari pukul 20.00 WIB.</p>
-            </div>
+                <div className="space-y-1">
+                  <p className="text-gray-400 text-sm">Pengumuman Pemenang</p>
+                  <p className="text-white text-sm">Setiap hari pukul 16.00 WIB.</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
