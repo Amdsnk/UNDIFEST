@@ -378,6 +378,7 @@ export default function TransactionsPage() {
                           <TableHead className="font-bold text-gray-700">No WA</TableHead>
                           <TableHead className="font-bold text-gray-700">No Rekening</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">Tiket</TableHead>
+                          <TableHead className="font-bold text-gray-700 text-center">Pilihan</TableHead>
                           <TableHead className="font-bold text-gray-700">Total Rp</TableHead>
                           <TableHead className="font-bold text-gray-700">Status</TableHead>
                           <TableHead className="font-bold text-gray-700 text-center">WA</TableHead>
@@ -387,7 +388,7 @@ export default function TransactionsPage() {
                       <TableBody>
                         {isLoading ? (
                           <TableRow>
-                            <TableCell colSpan={12} className="text-center py-12">
+                            <TableCell colSpan={13} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                                 <p className="text-gray-500 font-medium">Memuat data transaksi...</p>
@@ -469,6 +470,16 @@ export default function TransactionsPage() {
                                 <span className="inline-flex items-center justify-center bg-purple-100 text-purple-700 font-bold text-sm rounded-full w-8 h-8">
                                   {transaction.ticketCount ?? 1}
                                 </span>
+                              </TableCell>
+                              {/* Pilihan Besar/Kecil */}
+                              <TableCell className="py-2 text-center">
+                                {(transaction as any).undianType === "A" ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-700">Besar</span>
+                                ) : (transaction as any).undianType === "B" ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-cyan-100 text-cyan-700">Kecil</span>
+                                ) : (
+                                  <span className="text-gray-300 text-xs">-</span>
+                                )}
                               </TableCell>
                               {/* Total Rp */}
                               <TableCell className="py-2">
@@ -794,7 +805,7 @@ export default function TransactionsPage() {
                           })
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={12} className="text-center py-12">
+                            <TableCell colSpan={13} className="text-center py-12">
                               <div className="flex flex-col items-center gap-3">
                                 <div className="bg-gray-100 rounded-full p-4">
                                   <Receipt className="w-12 h-12 text-gray-400" />
