@@ -99,10 +99,12 @@ export default function TebakUndianPage() {
 
         <div className="px-4 pt-4 pb-8 space-y-6">
           {/* Heading */}
-          <h1 className="text-white text-xl font-bold">Tebak Undian</h1>
-          <p className="text-white font-bold -mt-4">
-            Menang ditransfer <span style={{ color: "#fff000" }}>2X LIPAT!</span>
-          </p>
+          <div className="space-y-1">
+            <h1 className="text-white text-xl font-bold">Tebak Undian</h1>
+            <p className="text-white font-bold">
+              Menang ditransfer <span style={{ color: "#fff000" }}>2X LIPAT!</span>
+            </p>
+          </div>
 
           {/* Undian Card — slightly smaller so S&K fits below */}
           <div className="flex justify-center">
