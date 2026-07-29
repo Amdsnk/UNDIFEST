@@ -18,7 +18,7 @@ export function MobileHeader() {
           </div>
         </div>
       </div>
-      <div className="h-1 bg-gradient-to-r from-[#00D4FF] via-[#8B2FC9] to-[#FF1493]" />
+      <div className="h-1 header-border-animated" />
     </div>
   );
 }

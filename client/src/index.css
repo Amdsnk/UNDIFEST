@@ -140,6 +140,21 @@
 
 /* Holographic gradient button */
 @layer components {
+  .header-border-animated {
+    background: linear-gradient(90deg,
+      #00D4FF 0%,
+      #8B2FC9 33%,
+      #fedc88 66%,
+      #00D4FF 100%);
+    background-size: 200% 100%;
+    animation: header-border-shift 3s ease infinite;
+  }
+
+  @keyframes header-border-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
   .holographic-btn {
     background: linear-gradient(90deg, 
       #00D4FF 0%, 
