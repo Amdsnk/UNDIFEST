@@ -189,8 +189,8 @@ export default function TebakUndianPage() {
                   <p className="text-gray-400 text-sm">Hadiah</p>
                   <p className="text-white text-sm">Sesuai nominal partisipasi yang dipilih.</p>
                   <p className="text-white text-sm mt-1">Contoh:</p>
-                  <p className="text-white text-sm">• Pasang Rp 100.000 → Hadiah Rp 100.000</p>
-                  <p className="text-white text-sm">• Pasang Rp 1.000.000 → Hadiah Rp 1.000.000</p>
+                  <p className="text-white text-sm">• Beli Rp 100.000 → Hadiah Rp 100.000</p>
+                  <p className="text-white text-sm">• Beli Rp 1.000.000 → Hadiah Rp 1.000.000</p>
                 </div>
 
                 <div className="space-y-1">
