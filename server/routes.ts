@@ -1314,13 +1314,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const enabledPayments = enabledPaymentsMap[paymentChannel.toUpperCase()] || ['bni_va', 'bri_va', 'mandiri_va', 'permata_va', 'cimb_va'];
         const baseUrl = process.env.APP_URL || "https://undifest.com";
 
+        const undianSuffix = undianType === "A" ? " - Besar" : undianType === "B" ? " - Kecil" : "";
         const snapResult = await createSnapTransaction({
           orderId: transaction.id,
           grossAmount: amount,
           customerName: userName,
           customerEmail: userEmail,
           customerPhone: phoneNumber,
-          itemName: `Tiket ${eventName}`,
+          itemName: `Tiket ${eventName}${undianSuffix}`,
           enabledPayments,
           finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
           errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
@@ -1447,13 +1448,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("[Midtrans QRIS] Production mode - GoPay via Snap (no customer form)");
         try {
           const baseUrl = process.env.APP_URL || "https://undifest.com";
+          const undianSuffixGopay = undianTypeQris === "A" ? " - Besar" : undianTypeQris === "B" ? " - Kecil" : "";
           const snapResult = await createSnapTransaction({
             orderId: transaction.id,
             grossAmount: amount,
             customerName: userName,
             customerEmail: userEmail,
             customerPhone: phoneNumber,
-            itemName: `Tiket ${eventName}`,
+            itemName: `Tiket ${eventName}${undianSuffixGopay}`,
             enabledPayments: ['gopay'],
             finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
             errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
@@ -1483,13 +1485,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("[Midtrans QRIS] Production mode - QRIS via Snap (other_qris)");
         try {
           const baseUrl = process.env.APP_URL || "https://undifest.com";
+          const undianSuffixQris = undianTypeQris === "A" ? " - Besar" : undianTypeQris === "B" ? " - Kecil" : "";
           const snapResult = await createSnapTransaction({
             orderId: transaction.id,
             grossAmount: amount,
             customerName: userName,
             customerEmail: userEmail,
             customerPhone: phoneNumber,
-            itemName: `Tiket ${eventName}`,
+            itemName: `Tiket ${eventName}${undianSuffixQris}`,
             enabledPayments: ['other_qris'],
             finishUrl: `${baseUrl}/payment/success?trx=${transaction.id}`,
             errorUrl: `${baseUrl}/payment/cancel?trx=${transaction.id}`,
