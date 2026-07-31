@@ -128,10 +128,6 @@ export default function TebakUndianPage() {
           {/* Nominal Input */}
           <div className="bg-[#1a2332] rounded-2xl p-5 space-y-4">
             <h3 className="text-white text-lg font-bold">Masukkan Nominal Undian</h3>
-            <p className="text-gray-400 text-sm">
-              Minimal Rp {minPrice.toLocaleString("id-ID")}
-            </p>
-
             {event.allowCustomAmount ? (
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 font-semibold">
@@ -143,7 +139,7 @@ export default function TebakUndianPage() {
                   min={minPrice}
                   value={displayAmount}
                   onChange={handleAmountChange}
-                  placeholder={minPrice.toLocaleString("id-ID")}
+                  placeholder=""
                   className="w-full pl-12 pr-4 py-3 bg-[#0d1520] border border-gray-600 rounded-xl text-white text-lg font-semibold focus:outline-none focus:border-purple-500"
                 />
               </div>
