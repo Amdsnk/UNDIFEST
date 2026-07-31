@@ -651,6 +651,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Daily Tebak Undian participant stats (admin only)
+  app.get("/api/admin/tebak-undian/daily-stats", requireAdmin, async (req, res) => {
+    try {
+      const transactions = await storage.getAllTransactions();
+      // Only tebak undian transactions (undianType = "A" or "B"), paid only
+      const tebakTx = transactions.filter(
+        (t) => (t.undianType === "A" || t.undianType === "B") && t.paymentStatus === "paid"
+      );
+
+      // Group by date (YYYY-MM-DD) and undianType
+      const byDate: Record<string, { besar: number; kecil: number }> = {};
+      for (const t of tebakTx) {
+        const date = new Date(t.createdAt).toLocaleDateString("id-ID", {
+          year: "numeric", month: "2-digit", day: "2-digit",
+        });
+        if (!byDate[date]) byDate[date] = { besar: 0, kecil: 0 };
+        if (t.undianType === "A") byDate[date].besar++;
+        else byDate[date].kecil++;
+      }
+
+      // Sort by date descending (most recent first)
+      const result = Object.entries(byDate)
+        .map(([date, counts]) => ({ date, ...counts, total: counts.besar + counts.kecil }))
+        .sort((a, b) => {
+          // Parse dd/mm/yyyy
+          const [da, ma, ya] = a.date.split("/").map(Number);
+          const [db, mb, yb] = b.date.split("/").map(Number);
+          return new Date(yb, mb - 1, db).getTime() - new Date(ya, ma - 1, da).getTime();
+        });
+
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tebak undian stats" });
+    }
+  });
+
   // Sync all pending transactions with Midtrans status (admin only)
   app.post("/api/admin/transactions/sync-pending", requireAdmin, async (req, res) => {
     try {

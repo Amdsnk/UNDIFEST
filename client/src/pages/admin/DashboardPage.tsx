@@ -3,7 +3,15 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, CreditCard, Trophy, TrendingUp, ArrowUpRight, Users, DollarSign, Activity, Database } from "lucide-react";
+import { Calendar, CreditCard, Trophy, TrendingUp, ArrowUpRight, Users, DollarSign, Activity, Database, Shuffle } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { Event, Transaction, Winner } from "@shared/schema";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -44,6 +52,11 @@ export default function DashboardPage() {
 
   const { data: winners } = useQuery<Winner[]>({
     queryKey: ["/api/winners"],
+  });
+
+  type DailyUndianStat = { date: string; besar: number; kecil: number; total: number };
+  const { data: dailyUndianStats } = useQuery<DailyUndianStat[]>({
+    queryKey: ["/api/admin/tebak-undian/daily-stats"],
   });
 
   const activeEvents = events?.filter(e => e.status === "aktif").length || 0;
@@ -228,6 +241,63 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Tebak Undian Daily Stats */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-yellow-50 border-b pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg font-bold text-gray-900">Statistik Harian Tebak Undian</CardTitle>
+                      <p className="text-sm text-gray-600 mt-1">Jumlah peserta per hari (transaksi lunas)</p>
+                    </div>
+                    <Shuffle className="w-6 h-6 text-purple-600" />
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0 px-0">
+                  {dailyUndianStats && dailyUndianStats.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="font-semibold text-gray-700">Tanggal</TableHead>
+                            <TableHead className="text-center font-semibold text-blue-600">Besar (A)</TableHead>
+                            <TableHead className="text-center font-semibold text-purple-600">Kecil (B)</TableHead>
+                            <TableHead className="text-center font-semibold text-gray-800">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {dailyUndianStats.slice(0, 14).map((row) => (
+                            <TableRow key={row.date} className="hover:bg-gray-50 transition-colors">
+                              <TableCell className="font-medium text-gray-700">{row.date}</TableCell>
+                              <TableCell className="text-center">
+                                <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-700 min-w-[2.5rem]">
+                                  {row.besar}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-700 min-w-[2.5rem]">
+                                  {row.kecil}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-sm font-bold bg-gray-200 text-gray-800 min-w-[2.5rem]">
+                                  {row.total}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Shuffle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                      <p className="text-gray-500 font-medium">Belum ada data Tebak Undian</p>
+                      <p className="text-sm text-gray-400 mt-1">Data akan muncul setelah ada transaksi lunas</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white">
