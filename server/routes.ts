@@ -651,8 +651,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Daily Tebak Undian participant stats (admin only)
-  app.get("/api/admin/tebak-undian/daily-stats", requireAdmin, async (req, res) => {
+  // Tebak Undian stats + participant list (admin only)
+  app.get("/api/admin/tebak-undian/stats", requireAdmin, async (req, res) => {
     try {
       const transactions = await storage.getAllTransactions();
       // Only tebak undian transactions (undianType = "A" or "B"), paid only
@@ -660,7 +660,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (t) => (t.undianType === "A" || t.undianType === "B") && t.paymentStatus === "paid"
       );
 
-      // Group by date (YYYY-MM-DD) and undianType
+      // Build participant list (newest first)
+      const participants = tebakTx
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .map((t) => ({
+          id: t.id,
+          buyerName: t.buyerName || "-",
+          phoneNumber: t.phoneNumber || "-",
+          eventName: t.eventName || "-",
+          undianType: t.undianType,
+          label: t.undianType === "A" ? "Besar" : "Kecil",
+          amount: t.amount,
+          createdAt: t.createdAt,
+        }));
+
+      // Group by date for daily stats
       const byDate: Record<string, { besar: number; kecil: number }> = {};
       for (const t of tebakTx) {
         const date = new Date(t.createdAt).toLocaleDateString("id-ID", {
@@ -671,17 +685,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else byDate[date].kecil++;
       }
 
-      // Sort by date descending (most recent first)
-      const result = Object.entries(byDate)
+      const dailyStats = Object.entries(byDate)
         .map(([date, counts]) => ({ date, ...counts, total: counts.besar + counts.kecil }))
         .sort((a, b) => {
-          // Parse dd/mm/yyyy
           const [da, ma, ya] = a.date.split("/").map(Number);
           const [db, mb, yb] = b.date.split("/").map(Number);
           return new Date(yb, mb - 1, db).getTime() - new Date(ya, ma - 1, da).getTime();
         });
 
-      res.json(result);
+      res.json({
+        totalBesar: tebakTx.filter(t => t.undianType === "A").length,
+        totalKecil: tebakTx.filter(t => t.undianType === "B").length,
+        total: tebakTx.length,
+        dailyStats,
+        participants,
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch tebak undian stats" });
     }

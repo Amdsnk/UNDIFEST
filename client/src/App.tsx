@@ -56,6 +56,7 @@ const WebsiteConfirmPage = lazy(() => import("@/pages/admin/WebsiteConfirmPage")
 const EditLain2Page = lazy(() => import("@/pages/admin/EditLain2Page"));
 const AdminManagementPage = lazy(() => import("@/pages/admin/AdminManagementPage"));
 const DaftarTransferPage = lazy(() => import("@/pages/admin/DaftarTransferPage"));
+const TebakUndianStatsPage = lazy(() => import("@/pages/admin/TebakUndianStatsPage"));
 
 // Minimal loading fallback
 function PageLoader() {
@@ -179,6 +180,9 @@ function Router() {
       </Route>
       <Route path="/admin-panel-7x9k/daftar-transfer">
         <AdminRoute><DaftarTransferPage /></AdminRoute>
+      </Route>
+      <Route path="/admin-panel-7x9k/tebak-undian">
+        <AdminRoute><TebakUndianStatsPage /></AdminRoute>
       </Route>
 
       {/* Fallback to 404 */}

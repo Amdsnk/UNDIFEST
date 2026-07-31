@@ -31,6 +31,7 @@ import {
   LogOut,
   CircleUser,
   Video,
+  Shuffle,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Separator } from "@/components/ui/separator";
@@ -45,6 +46,7 @@ const mainMenuItems = [
   { title: "Nominasi Winner", url: "/admin-panel-7x9k/winners", icon: Trophy, id: "winners" },
   { title: "Daftar Transaksi", url: "/admin-panel-7x9k/transactions", icon: CreditCard, id: "transactions" },
   { title: "Daftar Transfer", url: "/admin-panel-7x9k/daftar-transfer", icon: CreditCard, id: "daftar-transfer" },
+  { title: "Tebak Undian", url: "/admin-panel-7x9k/tebak-undian", icon: Shuffle, id: "tebak-undian" },
   { title: "Laporan", url: "/admin-panel-7x9k/reports", icon: FileText, id: "reports" },
 ];
 
@@ -87,7 +89,7 @@ export function AdminSidebar() {
     if (currentRole === "superadmin") return mainMenuItems;
     if (currentRole === "qs_custom") {
       return mainMenuItems.filter(item =>
-        ["dashboard", "members", "winners", "transactions", "daftar-transfer", "reports"].includes(item.id)
+        ["dashboard", "members", "winners", "transactions", "daftar-transfer", "tebak-undian", "reports"].includes(item.id)
       );
     }
     if (currentRole === "viewer") return mainMenuItems;
