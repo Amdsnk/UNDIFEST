@@ -200,6 +200,7 @@ export default function TebakUndianStatsPage() {
                                 <TableHead className="font-semibold text-gray-600">No. HP</TableHead>
                                 <TableHead className="font-semibold text-gray-600">Event</TableHead>
                                 <TableHead className="text-center font-semibold text-gray-600">Pilihan</TableHead>
+                                 <TableHead className="text-right font-semibold text-green-700">Nominal</TableHead>
                                 <TableHead className="font-semibold text-gray-600">Tanggal</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -222,6 +223,9 @@ export default function TebakUndianStatsPage() {
                                     >
                                       {p.label}
                                     </span>
+                                  </TableCell>
+                                  <TableCell className="text-right font-semibold text-green-700 whitespace-nowrap">
+                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.amount ?? 0)}
                                   </TableCell>
                                   <TableCell className="text-gray-500 text-sm whitespace-nowrap">
                                     {new Date(p.createdAt).toLocaleDateString("id-ID", {
