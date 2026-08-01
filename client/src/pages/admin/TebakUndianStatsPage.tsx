@@ -23,7 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Shuffle, Users, TrendingUp, BarChart3 } from "lucide-react";
 
-type DailyStat = { date: string; besar: number; kecil: number; total: number };
+type DailyStat = { date: string; besar: number; kecil: number; total: number; totalAmount: number };
 type Participant = {
   id: string;
   buyerName: string;
@@ -292,6 +292,7 @@ export default function TebakUndianStatsPage() {
                               <TableHead className="text-center font-semibold text-blue-600">Besar (A)</TableHead>
                               <TableHead className="text-center font-semibold text-purple-600">Kecil (B)</TableHead>
                               <TableHead className="text-center font-semibold text-gray-700">Total</TableHead>
+                              <TableHead className="text-right font-semibold text-green-700">Nominal</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -312,6 +313,9 @@ export default function TebakUndianStatsPage() {
                                   <span className="inline-flex items-center justify-center w-9 h-7 rounded-full text-sm font-bold bg-gray-200 text-gray-800">
                                     {row.total}
                                   </span>
+                                </TableCell>
+                                <TableCell className="text-right font-semibold text-green-700 whitespace-nowrap">
+                                  {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(row.totalAmount ?? 0)}
                                 </TableCell>
                               </TableRow>
                             ))}

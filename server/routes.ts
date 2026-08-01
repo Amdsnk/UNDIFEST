@@ -675,14 +675,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }));
 
       // Group by date for daily stats
-      const byDate: Record<string, { besar: number; kecil: number }> = {};
+      const byDate: Record<string, { besar: number; kecil: number; totalAmount: number }> = {};
       for (const t of tebakTx) {
         const date = new Date(t.createdAt).toLocaleDateString("id-ID", {
           year: "numeric", month: "2-digit", day: "2-digit",
         });
-        if (!byDate[date]) byDate[date] = { besar: 0, kecil: 0 };
+        if (!byDate[date]) byDate[date] = { besar: 0, kecil: 0, totalAmount: 0 };
         if (t.undianType === "A") byDate[date].besar++;
         else byDate[date].kecil++;
+        byDate[date].totalAmount += Number(t.amount) || 0;
       }
 
       const dailyStats = Object.entries(byDate)
