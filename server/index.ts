@@ -6,6 +6,7 @@ import { seedDatabase, seedManualWinnerHistory } from "./db-seed";
 import { runMigrations } from "./db-migrate";
 import { storage } from "./storage";
 import { checkMidtransStatusWithFallback, isMidtransConfigured } from "./midtrans";
+import { buildPaymentSuccessMessage } from "./payment-message";
 
 const app = express();
 
@@ -203,9 +204,13 @@ app.use((req, res, next) => {
               const nomorUndian = `UND-${t.id.slice(0, 8).toUpperCase()}`;
               const ev = await storage.getEvent(t.eventId).catch(() => null);
               const hasEbook = !!(ev?.ebookFile);
-              const waMsg = hasEbook
-                ? `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${t.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n📥 *Download E-book:*\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan. Link di atas juga bisa digunakan untuk download ulang e-book kapan saja._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`
-                : `✅ *Pembayaran Berhasil!*\n\nHalo! Pembayaran untuk *${t.eventName}* telah dikonfirmasi.\n\n🎟️ *Nomor Undian Anda:* ${nomorUndian}\n\n🔗 Lihat detail transaksi:\n${downloadLink}\n\n_Simpan nomor undian sebagai bukti keikutsertaan._\n\nTerima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+              const waMsg = buildPaymentSuccessMessage({
+                eventName: t.eventName,
+                eventPrice: ev?.price,
+                nomorUndian,
+                downloadLink,
+                hasEbook,
+              });
               // Format phone number: strip non-digits, convert 08xx → 628xx
               let formattedPhone = t.phoneNumber.replace(/\D/g, '');
               if (formattedPhone.startsWith('0')) {
