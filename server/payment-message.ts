@@ -4,6 +4,7 @@ type PaymentSuccessMessageParams = {
   nomorUndian: string;
   downloadLink: string;
   hasEbook: boolean;
+  undianType?: string | null;
   pilihanLine?: string;
 };
 
@@ -13,8 +14,20 @@ export function buildPaymentSuccessMessage({
   nomorUndian,
   downloadLink,
   hasEbook,
+  undianType,
   pilihanLine = "",
 }: PaymentSuccessMessageParams): string {
+  if (undianType === "A" || undianType === "B") {
+    const pilihan = undianType === "A" ? "Besar" : "Kecil";
+    return `✅ Pembayaran Berhasil!
+
+Halo! Pembayaran untuk Program (Pilih) ${pilihan} telah dikonfirmasi.
+
+🎟️ Nomor Program Anda: ${nomorUndian}
+
+Simpan nomor program sebagai bukti keikutsertaan. Terima kasih sudah berpartisipasi di UNDIFEST! 🎉`;
+  }
+
   if (eventPrice === 10000) {
     return `✅ Pembayaran Berhasil!
 

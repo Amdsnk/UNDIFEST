@@ -633,6 +633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     nomorUndian,
                     downloadLink,
                     hasEbook,
+                    undianType: t.undianType,
                   });
                   sendWhatsAppMessage(t.phoneNumber, waMsg).then(ok => {
                     if (ok) storage.updateTransaction(t.id, { waSentAt: new Date() }).catch(() => {});
@@ -750,6 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   nomorUndian,
                   downloadLink,
                   hasEbook,
+                  undianType: t.undianType,
                 });
                 sendWhatsAppMessage(t.phoneNumber, waMsg).then(ok => {
                   if (ok) storage.updateTransaction(t.id, { waSentAt: new Date() }).catch(() => {});
@@ -803,6 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nomorUndian,
         downloadLink,
         hasEbook,
+        undianType: transaction.undianType,
       });
 
       const sent = await sendWhatsAppMessage(transaction.phoneNumber, waMsg);
@@ -914,6 +917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             nomorUndian,
             downloadLink,
             hasEbook,
+            undianType: transaction.undianType,
             pilihanLine,
           });
           sendWhatsAppMessage(transaction.phoneNumber, waMessage).catch(e =>
@@ -1009,6 +1013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   nomorUndian,
                   downloadLink,
                   hasEbook,
+                  undianType: transaction.undianType,
                 });
                 sendWhatsAppMessage(transaction.phoneNumber, waMsg).then(ok => {
                   if (ok) storage.updateTransaction(transactionId, { waSentAt: new Date() }).catch(() => {});
@@ -1086,6 +1091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             nomorUndian,
             downloadLink,
             hasEbook,
+            undianType: transaction.undianType,
           });
           sendWhatsAppMessage(transaction.phoneNumber, waMsg).then(ok => {
             if (ok) storage.updateTransaction(transactionId, { waSentAt: new Date() }).catch(() => {});
@@ -1712,6 +1718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             nomorUndian,
             downloadLink,
             hasEbook,
+            undianType: dbTransaction.undianType,
             pilihanLine,
           });
           sendWhatsAppMessage(dbTransaction.phoneNumber, waMessage).then(ok => {

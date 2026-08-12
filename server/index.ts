@@ -210,6 +210,7 @@ app.use((req, res, next) => {
                 nomorUndian,
                 downloadLink,
                 hasEbook,
+                undianType: t.undianType,
               });
               // Format phone number: strip non-digits, convert 08xx → 628xx
               let formattedPhone = t.phoneNumber.replace(/\D/g, '');
