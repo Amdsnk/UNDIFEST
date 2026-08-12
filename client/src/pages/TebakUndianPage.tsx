@@ -100,7 +100,7 @@ export default function TebakUndianPage() {
         <div className="px-4 pt-4 pb-8 space-y-6">
           {/* Heading */}
           <div className="space-y-1">
-            <h1 className="text-white text-xl font-bold">Tebak Undian</h1>
+            <h1 className="text-white text-xl font-bold">Tebak Besar-Kecil</h1>
             <p className="text-white font-bold">
               Menang ditransfer <span style={{ color: "#fff000" }}>2X LIPAT!</span>
             </p>
@@ -127,7 +127,7 @@ export default function TebakUndianPage() {
 
           {/* Nominal Input */}
           <div className="bg-[#1a2332] rounded-2xl p-5 space-y-4">
-            <h3 className="text-white text-lg font-bold">Masukkan Nominal Undian</h3>
+            <h3 className="text-white text-lg font-bold">Masukkan Nominal Pembelian</h3>
             {event.allowCustomAmount ? (
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 font-semibold">
