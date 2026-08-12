@@ -260,7 +260,7 @@ export default function HomePage() {
                 <div className="space-y-6">
                   {dailyEvents.length > 0 && (
                     <div>
-                      <h2 className="text-xl font-bold text-white mb-3">Undian Harian</h2>
+                      <h2 className="text-xl font-bold text-white mb-3">Program Harian</h2>
                       <div className="space-y-4">{dailyEvents.map(renderEventCard)}</div>
                     </div>
                   )}
