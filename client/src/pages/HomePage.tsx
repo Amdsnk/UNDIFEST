@@ -10,7 +10,7 @@ import logoUrl from "@assets/logo undifest_1763476451738.png";
 import banner01Url from "@assets/banner01_1763489481905.jpg";
 import undian01Url from "@assets/undian01_1763489504866.png";
 import undian02Url from "@assets/undian02_1763489504867.png";
-import prizePanelUrl from "@assets/prize-panel2_1785347306956.webp";
+import prizePanelUrl from "@assets/prize-panel3(1)_1786543198812.webp";
 import choice1Url from "@assets/choice1_1784728157093.webp";
 import choice2Url from "@assets/choice2_1784728157093.webp";
 import bankUrl from "@assets/bank_1763489481904.png";
