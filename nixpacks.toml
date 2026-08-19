@@ -2,7 +2,9 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm ci"]
+# Railway may set production mode during the image build, which otherwise
+# omits packages needed by the build command.
+cmds = ["npm ci --include=dev"]
 
 [phases.build]
 cmds = ["npm run build"]
