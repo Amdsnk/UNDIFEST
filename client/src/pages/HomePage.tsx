@@ -264,6 +264,7 @@ export default function HomePage() {
                       <div className="space-y-4">{dailyEvents.map(renderEventCard)}</div>
                     </div>
                   )}
+                  <UndifestVideoSection setSelectedVideo={setSelectedVideo} />
                   {weeklyEvents.length > 0 && (
                     <div>
                       <h2 className="text-xl font-bold text-white mb-3">Undian Mingguan</h2>
@@ -291,9 +292,6 @@ export default function HomePage() {
             </div>
           )}
         </div>
-
-        {/* Undifest Video */}
-        <UndifestVideoSection setSelectedVideo={setSelectedVideo} />
 
         {/* Video Modal - Shopee Live style (no controls) */}
         {selectedVideo && (

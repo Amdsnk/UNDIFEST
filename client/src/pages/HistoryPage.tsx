@@ -97,38 +97,42 @@ export default function HistoryPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-800">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#2e3e59] text-white disabled:opacity-30 hover:bg-[#FFB800] hover:text-black transition-colors"
-                >
-                  ← Prev
-                </button>
+              <div className="overflow-x-auto border-t border-gray-800">
+                <div className="flex min-w-max items-center justify-start gap-2 p-4">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#2e3e59] text-white disabled:opacity-30 hover:bg-[#FFB800] hover:text-black transition-colors"
+                  >
+                    ← Prev
+                  </button>
 
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
-                        page === currentPage
-                          ? "bg-[#FFB800] text-black"
-                          : "bg-[#2e3e59] text-white hover:bg-[#FFB800] hover:text-black"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        aria-label={`Buka halaman ${page}`}
+                        aria-current={page === currentPage ? "page" : undefined}
+                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+                          page === currentPage
+                            ? "bg-[#FFB800] text-black"
+                            : "bg-[#2e3e59] text-white hover:bg-[#FFB800] hover:text-black"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#2e3e59] text-white disabled:opacity-30 hover:bg-[#FFB800] hover:text-black transition-colors"
+                  >
+                    Next →
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#2e3e59] text-white disabled:opacity-30 hover:bg-[#FFB800] hover:text-black transition-colors"
-                >
-                  Next →
-                </button>
               </div>
             )}
           </div>
