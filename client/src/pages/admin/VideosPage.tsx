@@ -485,16 +485,7 @@ export default function VideosPage() {
                   </div>
                 ) : videos && videos.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4">
-                    {videos.map((video, index) => {
-                      const homepageVideos = videos
-                        .filter((item) => item.showOnHomepage)
-                        .sort((a, b) =>
-                          (a.displayOrder ?? 0) - (b.displayOrder ?? 0) ||
-                          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-                        );
-                      const homepagePosition = homepageVideos.findIndex((item) => item.id === video.id) + 1;
-
-                      return (
+                    {videos.map((video, index) => (
                       <div
                         key={video.id}
                         className="flex items-center gap-6 p-5 border-2 border-gray-200 rounded-xl hover:bg-purple-50/50 hover:border-purple-300 transition-all shadow-sm"
@@ -504,30 +495,27 @@ export default function VideosPage() {
                         </div>
 
                         <div className="relative group">
-                          {video.thumbnailUrl ? (
-                            <>
-                              <img
-                                src={video.thumbnailUrl}
-                                alt={video.title}
-                                className="w-48 h-28 object-cover rounded-xl shadow-md border-2 border-gray-200"
-                                loading="lazy"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
-                              <div className="absolute inset-0 bg-black/25 rounded-xl flex items-center justify-center">
-                                <Play className="w-10 h-10 text-white drop-shadow-lg" />
-                              </div>
-                            </>
-                          ) : video.videoFile ? (
+                          {video.videoFile ? (
                             <video
                               src={video.videoFile}
                               className="w-48 h-28 object-cover rounded-xl shadow-md border-2 border-gray-200"
                               muted
                               loop
                               playsInline
-                              preload="metadata"
                             />
+                          ) : video.thumbnailUrl ? (
+                            <>
+                              <img
+                                src={video.thumbnailUrl}
+                                alt={video.title}
+                                className="w-48 h-28 object-cover rounded-xl shadow-md border-2 border-gray-200"
+                              />
+                              {video.videoUrl && (
+                                <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <Play className="w-12 h-12 text-white" />
+                                </div>
+                              )}
+                            </>
                           ) : (
                             <div className="w-48 h-28 bg-gray-200 rounded-xl shadow-md border-2 border-gray-300 flex items-center justify-center">
                               <VideoIcon className="w-12 h-12 text-gray-400" />
@@ -546,7 +534,7 @@ export default function VideosPage() {
                             {video.showOnHomepage && (
                               <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white text-xs font-bold rounded-full shadow-md">
                                 <Home className="w-3 h-3" />
-                                HOMEPAGE #{homepagePosition}
+                                HOMEPAGE #{video.displayOrder}
                               </span>
                             )}
                             <span className="text-sm text-gray-500 font-medium">
@@ -618,8 +606,7 @@ export default function VideosPage() {
                           </Button>
                         </div>
                       </div>
-                      );
-                    })}
+                    ))}
                   </div>
                 ) : (
                   <div className="text-center py-12">

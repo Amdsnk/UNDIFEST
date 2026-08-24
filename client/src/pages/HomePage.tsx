@@ -426,18 +426,28 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (video: 
     return null;
   }
 
+  // Filter out videos without valid source
+  const validVideos = homepageVideos.filter(video => {
+    const videoSrc = video.videoFile || video.videoUrl || '';
+    return videoSrc.trim() !== '';
+  });
+
+  // Don't show section if no valid videos
+  if (validVideos.length === 0) {
+    return null;
+  }
+
   return (
     <div id="video-section" className="px-4 pt-2 pb-6 bg-[#16202a]">
       <h2 className="text-xl font-bold text-white mb-4">Undifest Video</h2>
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {homepageVideos.map((video) => {
+        {validVideos.map((video) => {
+          const videoSrc = video.videoFile || video.videoUrl || '';
+
           return (
             <div
               key={video.id}
-              onClick={() => setSelectedVideo({
-                url: video.videoFile || video.videoUrl || "",
-                title: video.title,
-              })}
+              onClick={() => setSelectedVideo({ url: videoSrc, title: video.title })}
               className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black flex-shrink-0 w-24"
             >
               {video.thumbnailUrl ? (
@@ -453,9 +463,9 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (video: 
                     <Play className="w-8 h-8 text-white" />
                   </div>
                 </div>
-              ) : video.videoFile || video.videoUrl ? (
+              ) : videoSrc ? (
                 <video
-                  src={video.videoFile || video.videoUrl || ""}
+                  src={videoSrc}
                   className="w-full h-40 object-cover"
                   autoPlay
                   muted
