@@ -386,8 +386,7 @@ export class MemStorage implements IStorage {
   async getHomepageVideos(): Promise<Video[]> {
     return Array.from(this.videos.values())
       .filter(video => video.showOnHomepage)
-      .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
-      .slice(0, 4); // Limit to 4 videos
+      .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
   }
 
   async createVideo(insertVideo: InsertVideo): Promise<Video> {

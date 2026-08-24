@@ -1811,6 +1811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deleted) {
         return res.status(404).json({ error: "Video not found" });
       }
+      res.setHeader("Cache-Control", "no-store");
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete video" });
@@ -1838,11 +1839,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update video
   app.put("/api/videos/:id", requireAdmin, async (req, res) => {
     try {
-      const data = {
-        ...req.body,
-        isLive: req.body.isLive === "true" || req.body.isLive === true,
-        showOnHomepage: req.body.showOnHomepage === "true" || req.body.showOnHomepage === true,
-      };
+      const data = { ...req.body };
+      if ("isLive" in req.body) {
+        data.isLive = req.body.isLive === "true" || req.body.isLive === true;
+      }
+      if ("showOnHomepage" in req.body) {
+        data.showOnHomepage = req.body.showOnHomepage === "true" || req.body.showOnHomepage === true;
+      }
 
       const validated = updateVideoSchema.parse(data);
       const video = await storage.updateVideo(req.params.id, validated);

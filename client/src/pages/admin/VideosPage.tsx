@@ -11,7 +11,14 @@ import { useState } from "react";
 import type { Video } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Video as VideoIcon, Plus, Play, Upload, Home } from "lucide-react";
+import { Trash2, Video as VideoIcon, Plus, Play, Upload, Home, Pencil } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function VideosPage() {
   const [formData, setFormData] = useState({
@@ -26,6 +33,9 @@ export default function VideosPage() {
   });
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<Video | null>(null);
+  const [editData, setEditData] = useState<Partial<typeof formData>>({});
+  const [uploadingEditVideo, setUploadingEditVideo] = useState(false);
   const { toast } = useToast();
 
   const { data: videos, isLoading } = useQuery<Video[]>({
@@ -52,6 +62,7 @@ export default function VideosPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/videos/homepage"] });
       toast({
         title: "Video Berhasil Ditambahkan",
         description: "Video baru telah ditambahkan ke sistem",
@@ -97,6 +108,7 @@ export default function VideosPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/videos/homepage"] });
       toast({
         title: "Video Berhasil Diupdate",
         description: "Perubahan telah disimpan",
@@ -128,6 +140,7 @@ export default function VideosPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/videos/homepage"] });
       toast({
         title: "Video Berhasil Dihapus",
         description: "Video telah dihapus dari sistem",
@@ -225,6 +238,78 @@ export default function VideosPage() {
       id: videoId,
       data: { showOnHomepage: !currentValue },
     });
+  };
+
+  const openEdit = (video: Video) => {
+    setEditingVideo(video);
+    setEditData({
+      title: video.title,
+      thumbnailUrl: video.thumbnailUrl || "",
+      videoUrl: video.videoUrl || "",
+      videoFile: video.videoFile || "",
+      type: video.type,
+      isLive: video.isLive,
+      showOnHomepage: video.showOnHomepage,
+      displayOrder: video.displayOrder ?? 0,
+    });
+  };
+
+  const handleEditVideoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const maxSize = 30 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        variant: "destructive",
+        title: "Video Terlalu Besar",
+        description: "Maksimal 30MB untuk upload lokal.",
+      });
+      e.target.value = "";
+      return;
+    }
+
+    setUploadingEditVideo(true);
+    try {
+      const uploadData = new FormData();
+      uploadData.append("video", file);
+      const response = await fetch("/api/videos/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` },
+        body: uploadData,
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Gagal mengupload video pengganti");
+      }
+      const data = await response.json();
+      setEditData((prev) => ({ ...prev, videoFile: data.videoFile, videoUrl: "" }));
+      toast({ title: "Video pengganti berhasil diupload", description: file.name });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Gagal Upload Video",
+        description: error instanceof Error ? error.message : "Terjadi kesalahan",
+      });
+      e.target.value = "";
+    } finally {
+      setUploadingEditVideo(false);
+    }
+  };
+
+  const handleEditSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVideo || (!editData.videoUrl && !editData.videoFile)) {
+      toast({
+        variant: "destructive",
+        title: "Video Diperlukan",
+        description: "Video harus memiliki URL atau file video.",
+      });
+      return;
+    }
+    updateMutation.mutate(
+      { id: editingVideo.id, data: editData },
+      { onSuccess: () => setEditingVideo(null) },
+    );
   };
 
   return (
@@ -353,7 +438,7 @@ export default function VideosPage() {
                         placeholder="0"
                         className="h-12 border-2 border-gray-200 focus:border-purple-400"
                       />
-                      <p className="text-sm text-gray-500">Urutan 0 = pertama, 1 = kedua, dst. Maksimal 4 video di homepage.</p>
+                              <p className="text-sm text-gray-500">Urutan 0 = pertama, 1 = kedua, dst. Semua video yang aktif akan ditampilkan.</p>
                     </div>
                   )}
 
@@ -494,6 +579,16 @@ export default function VideosPage() {
 
                           <Button
                             size="sm"
+                            variant="outline"
+                            onClick={() => openEdit(video)}
+                            className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                          >
+                            <Pencil className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+
+                          <Button
+                            size="sm"
                             onClick={() => handleDelete(video.id)}
                             disabled={deleteMutation.isPending}
                             className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-semibold shadow-md"
@@ -531,6 +626,72 @@ export default function VideosPage() {
           </div>
         </div>
       </div>
+      <Dialog open={!!editingVideo} onOpenChange={(open) => !open && setEditingVideo(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Pengaturan Video</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSave} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Judul Video</Label>
+              <Input
+                id="edit-title"
+                value={editData.title || ""}
+                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-order">Nomor Urutan di Homepage</Label>
+                <Input
+                  id="edit-order"
+                  type="number"
+                  min="0"
+                  value={editData.displayOrder ?? 0}
+                  onChange={(e) => setEditData({ ...editData, displayOrder: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                />
+                <p className="text-xs text-gray-500">Nomor lebih kecil tampil lebih dulu.</p>
+              </div>
+              <div className="flex items-center gap-3 pt-7">
+                <Switch
+                  id="edit-homepage"
+                  checked={editData.showOnHomepage || false}
+                  onCheckedChange={(checked) => setEditData({ ...editData, showOnHomepage: checked })}
+                />
+                <Label htmlFor="edit-homepage">Tampilkan di Homepage</Label>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-url">URL Video (YouTube/Vimeo)</Label>
+              <Input
+                id="edit-url"
+                value={editData.videoUrl || ""}
+                onChange={(e) => setEditData({ ...editData, videoUrl: e.target.value, videoFile: e.target.value ? "" : editData.videoFile })}
+                placeholder="Kosongkan jika memakai file lokal"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-file">Ganti Video Lokal (Max 30MB)</Label>
+              <Input
+                id="edit-file"
+                type="file"
+                accept="video/*"
+                onChange={handleEditVideoFileChange}
+                disabled={uploadingEditVideo}
+              />
+              {uploadingEditVideo && <p className="text-sm text-purple-600">Mengupload video pengganti...</p>}
+              {editData.videoFile && <p className="text-xs text-green-600">File video aktif: {editData.videoFile.split("/").pop()}</p>}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingVideo(null)}>Batal</Button>
+              <Button type="submit" disabled={updateMutation.isPending || uploadingEditVideo}>
+                {updateMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }

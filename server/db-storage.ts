@@ -283,8 +283,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(videos)
       .where(eq(videos.showOnHomepage, true))
-      .orderBy(videos.displayOrder)
-      .limit(4);
+      .orderBy(videos.displayOrder, videos.createdAt);
   }
 
   // Partners
