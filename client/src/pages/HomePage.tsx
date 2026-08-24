@@ -407,7 +407,6 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (video: 
   const { data: homepageVideos, isLoading } = useQuery<Video[]>({
     queryKey: ["/api/videos/homepage"],
   });
-  const [currentVideoSlide, setCurrentVideoSlide] = useState(0);
 
   if (isLoading) {
     return (
@@ -427,98 +426,62 @@ function UndifestVideoSection({ setSelectedVideo }: { setSelectedVideo: (video: 
     return null;
   }
 
-  // Filter out videos without valid source
-  const validVideos = homepageVideos.filter(video => {
-    const videoSrc = video.videoFile || video.videoUrl || '';
-    return videoSrc.trim() !== '';
-  });
-
-  // Don't show section if no valid videos
-  if (validVideos.length === 0) {
+  if (homepageVideos.length === 0) {
     return null;
   }
 
-  const videosPerSlide = 4;
-  const videoSlides = Array.from(
-    { length: Math.ceil(validVideos.length / videosPerSlide) },
-    (_, index) => validVideos.slice(index * videosPerSlide, (index + 1) * videosPerSlide),
-  );
-  const safeCurrentSlide = Math.min(currentVideoSlide, videoSlides.length - 1);
-  const hasMultipleSlides = videoSlides.length > 1;
-
   return (
     <div id="video-section" className="px-4 pt-2 pb-6 bg-[#16202a]">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-white">Undifest Video</h2>
-        {hasMultipleSlides && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              aria-label="Video sebelumnya"
-              onClick={() => setCurrentVideoSlide((slide) => Math.max(0, slide - 1))}
-              disabled={safeCurrentSlide === 0}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-white/15 text-white transition-colors hover:bg-white/30 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <span className="text-xs text-white/70 tabular-nums">
-              {safeCurrentSlide + 1}/{videoSlides.length}
-            </span>
-            <button
-              type="button"
-              aria-label="Video berikutnya"
-              onClick={() => setCurrentVideoSlide((slide) => Math.min(videoSlides.length - 1, slide + 1))}
-              disabled={safeCurrentSlide === videoSlides.length - 1}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-white/15 text-white transition-colors hover:bg-white/30 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        )}
-      </div>
-      <div className="overflow-hidden pb-2">
-        <div className="grid grid-cols-4 gap-3">
-          {videoSlides[safeCurrentSlide].map((video) => {
-            const videoSrc = video.videoFile || video.videoUrl || '';
+      <h2 className="text-xl font-bold text-white mb-4">Undifest Video</h2>
+      <div
+        className="flex overflow-x-auto snap-x snap-mandatory pb-2 [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {homepageVideos.map((video) => {
+          const videoSrc = video.videoFile || video.videoUrl || "";
+          const canPlay = videoSrc.trim() !== "";
 
-            return (
-              <div
-                key={video.id}
-                onClick={() => setSelectedVideo({ url: videoSrc, title: video.title })}
-                className="relative rounded-xl overflow-hidden cursor-pointer hover-elevate transition-all bg-black min-w-0"
-              >
-                {video.thumbnailUrl ? (
-                  <div className="relative w-full h-40">
-                    <img
-                      src={video.thumbnailUrl}
-                      alt={video.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                      <Play className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-                ) : videoSrc ? (
-                  <video
-                    src={videoSrc}
-                    className="w-full h-40 object-cover"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="auto"
+          return (
+            <div
+              key={video.id}
+              onClick={() => canPlay && setSelectedVideo({ url: videoSrc, title: video.title })}
+              className={`relative flex-[0_0_100%] snap-center overflow-hidden rounded-xl bg-black ${
+                canPlay ? "cursor-pointer" : "cursor-default"
+              }`}
+            >
+              {video.thumbnailUrl ? (
+                <div className="relative w-full h-64">
+                  <img
+                    src={video.thumbnailUrl}
+                    alt={video.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
-                ) : (
-                  <div className="relative w-full h-40 bg-gray-800 flex items-center justify-center">
-                    <Play className="w-12 h-12 text-white/40" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+                    <Play className="w-14 h-14 text-white drop-shadow-lg" />
                   </div>
-                )}
+                </div>
+              ) : canPlay ? (
+                <video
+                  src={videoSrc}
+                  className="w-full h-64 object-cover"
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                />
+              ) : (
+                <div className="relative w-full h-64 bg-gray-800 flex items-center justify-center">
+                  <Play className="w-14 h-14 text-white/40" />
+                </div>
+              )}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 pt-10 pb-3">
+                <p className="text-white font-semibold truncate">{video.title}</p>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
